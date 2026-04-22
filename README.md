@@ -1,181 +1,227 @@
-# Gemini 音乐 - 项目标准
+# Resound Player
 
-## 统一入场动画规范（必须遵循）
+一个基于 `Vue 3 + Vite + Electron` 构建的桌面音乐播放器项目，聚焦于统一歌单详情体验、桌面端沉浸式播放交互，以及面向后续迭代的稳定工程结构。
 
-本项目已建立全局统一动画系统，后续所有新页面/新组件默认必须接入，确保视觉与交互一致。
+## 项目状态
 
-### 1. 全局基础
+- 当前状态：稳定可用
+- 仓库状态：已完成首个稳定版本归档，可作为后续功能迭代与发布主仓库持续维护
+- 运行形态：支持桌面端开发运行，内嵌 API 启动链路已接通
+- 适用场景：本地开发、界面迭代、播放链路联调、桌面端工程扩展
 
-- 全局动画样式入口：`src/styles/animations.css`
-- 全局引入位置：`src/main.ts`
-- 统一动画包装组件：`src/components/AnimatedAppear.vue`
+## 项目简介
 
-### 2. 动画设计约束
+Resound Player 当前以桌面端音乐播放器为核心形态，整合了首页推荐、搜索、歌单、专辑、歌手、排行榜、MV、播客、用户中心、历史记录与设置等页面能力，并通过统一详情页与统一播放工具收敛多来源数据体验。
 
-- 仅做「首次出现」入场动画（不做循环重播）
-- 不改变原有布局流，不允许出现重叠错位
-- 时长范围：`300ms ~ 500ms`（项目当前令牌：320/380/460ms）
-- 缓动函数：统一 `ease-out`
-- 列表项支持错峰延迟（通过 `:index`）
-- 必须兼容无障碍：`prefers-reduced-motion: reduce`
+项目当前重点不只是“能播放音乐”，而是建立一套可持续维护的桌面音乐应用基础架构，包括：
 
-### 3. 语义映射（统一使用）
+- 统一歌单详情页模型
+- 统一播放 URL 解析与播放触发逻辑
+- 统一页面入场动画规范
+- Electron 内嵌 API 启动方式
+- 面向后续发布的稳定项目结构
 
-> 新增节点时，按语义选 variant，不要随意自定义动画名。
+## 功能特性
 
-- 容器/区块：`variant="content"`
-- 标题：`variant="title"`
-- 普通文本/列表行：`variant="text"`
-- 图片/封面/媒体卡片：`variant="media"`
-- 按钮/图标/可点击控件：`variant="control"`
-- 导航项：`variant="nav"`
-- 侧边栏容器：`variant="sidebar"`
-- 弹窗/浮层：`variant="modal"`
+### 已具备的主要功能
 
-### 4. 统一延迟节奏表（收口版）
+- 首页推荐与内容入口聚合
+- 搜索页与多类型结果跳转
+- 歌单列表与歌单详情浏览
+- 每日推荐与统一歌单化展示
+- 专辑详情、歌手详情、用户详情
+- 排行榜与榜单详情浏览
+- MV 列表与播放弹层
+- 播客列表与播客详情
+- 用户中心、历史记录、设置页
+- 底部播放器与展开态播放器
+- 统一播放链路与按需解析歌曲 URL
+- 统一入场动画接入规范
 
-> 所有 `AnimatedAppear` 场景统一使用节奏槽位，避免每个页面“各写各的延迟”。
+### 当前工程特性
 
-节奏变量（全局）：
+- 基于 `Electron` 提供桌面应用壳
+- 基于 `Vite` 提供前端开发与构建能力
+- 启动桌面端时可自动拉起内嵌 API
+- 页面结构已按模块拆分，便于后续维护
+- 关键设计与规范文档已统一沉淀到 `docs/` 目录
 
-- `--an-rhythm-step: 42ms`
-- `--an-rhythm-shell: 0`
-- `--an-rhythm-head: 1`
-- `--an-rhythm-title: 2`
-- `--an-rhythm-body: 3`
-- `--an-rhythm-actions: 4`
-- `--an-rhythm-list: 5`
-- `--an-rhythm-overlay: 6`
+## 技术栈
 
-`AnimatedAppear` 新增属性：`rhythm`
+### 前端
 
-可选值：`shell | head | title | body | actions | list | overlay`
+- `Vue 3`
+- `TypeScript`
+- `Vite`
+- `lucide-vue-next`
+- `Axios`
 
-推荐默认映射：
+### 桌面端
 
-- 页面根容器：`rhythm="shell"`
-- 头部工具区：`rhythm="head"`
-- 标题：`rhythm="title"`
-- 主体文本/内容区：`rhythm="body"`
-- 操作按钮组：`rhythm="actions"`
-- 列表循环项：`rhythm="list"` + `:index="idx"`
-- 弹窗与浮层：`rhythm="overlay"`
+- `Electron`
 
-### 5. 开发落地模板
+### 音乐 API
 
-#### 5.1 区块模板
+- `@neteasecloudmusicapienhanced/api`
 
-```vue
-<AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="block">
-  <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">标题</AnimatedAppear>
-  <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="desc">描述文本</AnimatedAppear>
+### 工程辅助
 
-  <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="btn">主要操作</AnimatedAppear>
-</AnimatedAppear>
-```
+- `concurrently`
+- `wait-on`
 
-#### 5.2 列表模板（错峰）
+## 启动方式
 
-```vue
-<AnimatedAppear
-  v-for="(item, idx) in list"
-  :key="item.id"
-  tag="li"
-  variant="text"
-  rhythm="list"
-  :index="idx"
-  class-name="item"
->
-  <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="cover" :src="item.cover" :alt="item.name" />
-  <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="idx" class-name="play-btn">播放</AnimatedAppear>
-</AnimatedAppear>
-```
-
-#### 5.3 弹层模板
-
-```vue
-<AnimatedAppear v-if="open" tag="section" variant="modal" rhythm="overlay" class-name="dialog">
-  <AnimatedAppear tag="h3" variant="title" rhythm="title">弹层标题</AnimatedAppear>
-  <AnimatedAppear tag="p" variant="text" rhythm="body">弹层内容</AnimatedAppear>
-  <AnimatedAppear tag="button" variant="control" rhythm="actions">关闭</AnimatedAppear>
-</AnimatedAppear>
-```
-
-### 6. 团队开发约束清单（强约束）
-
-1. **新增组件必须使用 `AnimatedAppear`**：禁止直接写页面私有入场动画（除非经过评审）。
-2. **先选语义 variant，再写样式**：`content/title/text/media/control/nav/sidebar/modal`。
-3. **必须指定节奏槽位 rhythm**：至少在根容器、标题、按钮组、列表项上明确设置。
-4. **列表项必须错峰**：循环节点必须传 `:index="idx"`。
-5. **同元素禁止叠加多重入场动画**：避免冲突与重绘抖动。
-6. **禁止改布局换动画**：动画接入不得改变原有网格、尺寸与主流程交互。
-7. **弹层必须使用 overlay 节奏**：弹窗/抽屉/浮层统一 `rhythm="overlay"`。
-8. **可访问性强制**：不得破坏 `prefers-reduced-motion` 降级行为。
-9. **PR 必须附自检结果**：说明使用了哪些 variant/rhythm，哪些列表加了 `index`。
-10. **扩展动画令牌需集中维护**：仅允许在 `src/styles/animations.css` 扩展。
-
-### 7. 动画规范自动校验脚本（强制建议）
-
-新增脚本：`scripts/check-animated-rhythm.mjs`
-
-作用：
-
-- 扫描 `src/components/**/*.vue`
-- 检查所有带 `variant` 的 `<AnimatedAppear ...>` 标签
-- 若缺少 `rhythm` 属性则报错并返回非 0 退出码
-
-执行方式：
+### 1. 安装依赖
 
 ```bash
-# 仅检查
-npm run check:animated-rhythm
-
-# 自动修复（为缺失 rhythm 的 AnimatedAppear 自动补默认节奏）
-npm run fix:animated-rhythm
+npm install
 ```
 
-默认修复映射：
+### 2. 桌面端开发模式
 
-- `content -> body`
-- `title -> title`
-- `text -> body`
-- `media -> list`
-- `control -> actions`
-- `modal -> overlay`
-- `nav -> list`
-- `sidebar -> shell`
+启动渲染进程并拉起 Electron：
 
-推荐接入时机：
+```bash
+npm run dev
+```
 
-- 提交前本地自检
-- CI 流水线校验
-- PR 合并前门禁
+等价于：
 
-### 8. 新增组件验收清单（PR 自检）
+```bash
+npm run dev:desktop
+```
 
-- [ ] 根容器已接入 `variant="content"`
-- [ ] 标题已接入 `variant="title"`
-- [ ] 文本/列表项已接入 `variant="text"`
-- [ ] 图片/封面已接入 `variant="media"`
-- [ ] 按钮/图标已接入 `variant="control"`
-- [ ] 列表循环项已加 `:index="idx"` 错峰
-- [ ] 未改变原布局与尺寸约束
-- [ ] `prefers-reduced-motion` 生效
+### 3. 仅启动前端页面
 
----
+```bash
+npm run dev:web
+```
 
-## 组件开发约定（补充）
+### 4. 启动前端并连接独立 API 调试
 
-1. 优先复用 `AnimatedAppear`，禁止在业务组件里散落重复动画定义。
-2. 仅在确有必要时扩展 `animations.css`，扩展后需保持语义命名与现有体系一致。
-3. 避免对同一元素叠加多套入场动画（防止节奏冲突和性能抖动）。
-4. 视觉新增需求优先通过 variant 映射完成，不通过“页面私有硬编码动画”实现。
+```bash
+npm run dev:web:full
+```
 
----
+该模式会并行启动：
 
-如需批量改造旧页面，请按本标准执行：
+- 本地 API 服务
+- Vite 前端开发服务
 
-1) 先容器与标题；
-2) 再列表项与图片；
-3) 最后按钮与弹层；
-4) 完成后进行 lints 检查。
+### 5. 启动内嵌 Electron 应用
+
+如果前端资源已准备好，也可直接运行：
+
+```bash
+npm start
+```
+
+### 6. 构建前端资源
+
+```bash
+npm run build:web
+```
+
+或：
+
+```bash
+npm run build:renderer
+```
+
+## 常用脚本
+
+| 命令 | 说明 |
+| --- | --- |
+| `npm run dev` | 启动桌面端开发环境 |
+| `npm run dev:desktop` | 启动 Vite + Electron |
+| `npm run dev:web` | 仅启动前端页面 |
+| `npm run dev:web:full` | 启动前端与独立 API 调试环境 |
+| `npm run dev:api` | 单独启动 API 服务 |
+| `npm run build:web` | 构建前端资源 |
+| `npm run check:animated-rhythm` | 检查动画节奏规范 |
+| `npm run fix:animated-rhythm` | 自动补齐缺失的动画节奏配置 |
+| `npm start` | 直接启动 Electron 应用 |
+
+## 目录结构
+
+```text
+.
+├── docs/               # 项目文档与规范
+├── electron/           # Electron 主进程、预加载与内嵌 API 启动逻辑
+├── scripts/            # 工程辅助脚本
+├── src/
+│   ├── api/            # 接口访问层
+│   ├── components/     # 页面组件与通用组件
+│   ├── stores/         # 全局状态
+│   ├── styles/         # 主题与动画样式
+│   └── utils/          # 播放、图片与数据适配工具
+├── index.html          # 前端入口 HTML
+├── package.json        # 项目脚本与依赖配置
+└── vite.config.ts      # Vite 配置
+```
+
+## 核心架构要点
+
+### 统一详情页模型
+
+项目已将不同来源的内容统一收敛为一致的歌单详情体验，核心思路是：
+
+- 统一数据模型
+- 统一详情页组件
+- 统一播放行为
+- 保留数据源差异，收敛展示层体验
+
+当前统一能力主要覆盖：
+
+- 普通歌单
+- 每日推荐
+- 云盘/伪歌单化内容
+
+### 统一播放链路
+
+播放逻辑已抽离为通用工具，重点优化方向是：
+
+- 首屏避免批量请求所有歌曲播放地址
+- 用户真正触发播放时再按需解析 URL
+- 首页、详情页、云盘等入口复用同一播放逻辑
+
+### Electron 内嵌 API 模式
+
+桌面端启动时会自动：
+
+1. 选择可用端口
+2. 启动内嵌 API 进程
+3. 等待 API 可用
+4. 创建 Electron 主窗口
+
+这使项目在桌面端开发和运行时具备更稳定的一体化体验。
+
+## 文档说明
+
+详细设计、规范与架构文档统一维护在 `docs/` 目录。
+
+推荐阅读：
+
+- [文档入口](./docs/README.md)
+- [统一架构说明](./docs/统一架构说明.md)
+- [统一入场动画规范](./docs/统一入场动画规范.md)
+- [组件说明](./docs/组件说明.md)
+- [接口说明](./docs/接口说明.md)
+- [播放链路说明](./docs/播放链路说明.md)
+
+## 首次提交说明
+
+建议作为首次提交说明使用：
+
+- 中文：`初始化 Resound Player 主工程，导入稳定可运行版本并补齐基础项目结构`
+- 英文：`Initialize Resound Player with the stable runnable app, core Electron/Vite setup, and baseline project structure`
+
+## 首次发布说明
+
+建议本仓库首个稳定版本使用如下发布标题：
+
+- `Resound Player - Stable Initial Release`
+
+更完整的发布文案已整理到：
+
+- [初始发布说明](./docs/初始发布说明.md)
