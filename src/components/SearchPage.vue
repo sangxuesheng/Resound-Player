@@ -737,6 +737,7 @@ function handleClearAll() {
 }
 
 function resetSearchState() {
+  searchRequestSeq += 1;
   keywords.value = '';
   uiStore.searchKeyword = '';
   hasSearched.value = false;
@@ -940,6 +941,7 @@ watch(
   () => keywords.value,
   (next) => {
     if (next.trim()) return;
+    searchRequestSeq += 1;
     hasSearched.value = false;
     loading.value = false;
     songs.value = [];

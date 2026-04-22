@@ -22,14 +22,28 @@
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="featured-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
-              <div class="featured-overlay" />
-              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="featured-meta">
-                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="featured-top">
-                  <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="featured-name">{{ item.name }}</AnimatedAppear>
-                  <AnimatedAppear tag="span" variant="control" rhythm="actions" :index="idx" class-name="trend" :class="trendClass(item)">{{ trendLabel(item) }}</AnimatedAppear>
-                </AnimatedAppear>
-                <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="featured-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
-              </AnimatedAppear>
+            </AnimatedAppear>
+          </AnimatedAppear>
+        </AnimatedAppear>
+
+        <AnimatedAppear v-if="curatedList.length" tag="section" variant="content" rhythm="body" class-name="section curated-section">
+          <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
+            <AnimatedAppear tag="h3" variant="title" rhythm="title">精选榜</AnimatedAppear>
+          </AnimatedAppear>
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="curated-grid">
+            <AnimatedAppear
+              v-for="(item, idx) in curatedList"
+              :key="item.id"
+              tag="button"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="curated-card"
+              :class="`palette-${(idx % 5) + 1}`"
+              :style="{ '--curated-cover': `url(${item.coverImgUrl})` }"
+              type="button"
+              @click="openDetail(item.id)"
+            >
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -96,7 +110,7 @@
             <AnimatedAppear tag="h3" variant="title" rhythm="title">全球榜</AnimatedAppear>
             <AnimatedAppear tag="span" variant="text" rhythm="body" class-name="section-sub">海外与国际热度榜单</AnimatedAppear>
           </AnimatedAppear>
-          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="grid-wrap">
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="global-grid">
             <AnimatedAppear
               v-for="(item, idx) in globalList"
               :key="item.id"
@@ -104,24 +118,25 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="rank-card"
-              :style="rankCardStyle(item.coverImgUrl)"
+              class-name="global-card"
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="rank-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
-              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-main">
-                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-top">
-                  <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="rank-name">{{ item.name }}</AnimatedAppear>
-                  <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="idx" class-name="rank-tags">
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-cover-wrap">
+                <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="global-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              </AnimatedAppear>
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-info">
+                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-block">
+                  <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-row">
+                    <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="global-name">{{ item.name }}</AnimatedAppear>
                     <AnimatedAppear tag="span" variant="control" rhythm="actions" :index="idx" class-name="trend" :class="trendClass(item)">{{ trendLabel(item) }}</AnimatedAppear>
-                    <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="pill">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
                   </AnimatedAppear>
+                  <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="global-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
                 </AnimatedAppear>
-                <AnimatedAppear tag="ol" variant="content" rhythm="list" :index="idx" class-name="track-list">
-                  <AnimatedAppear v-for="(track, trackIdx) in getTopTracks(item)" :key="`${item.id}-${trackIdx}`" tag="li" variant="text" rhythm="list" :index="trackIdx">
-                    <AnimatedAppear tag="span" variant="text" rhythm="list" :index="trackIdx" class-name="track-no" :class="`n-${trackIdx + 1}`">{{ trackIdx + 1 }}</AnimatedAppear>
-                    <AnimatedAppear tag="span" variant="content" rhythm="list" :index="trackIdx" class-name="track-text">
+                <AnimatedAppear tag="ol" variant="content" rhythm="list" :index="idx" class-name="global-track-list">
+                  <AnimatedAppear v-for="(track, trackIdx) in getTopTracks(item).slice(0, 3)" :key="`${item.id}-${trackIdx}`" tag="li" variant="text" rhythm="list" :index="trackIdx">
+                    <AnimatedAppear tag="span" variant="text" rhythm="list" :index="trackIdx" class-name="global-track-no">{{ trackIdx + 1 }}</AnimatedAppear>
+                    <AnimatedAppear tag="span" variant="content" rhythm="list" :index="trackIdx" class-name="global-track-text">
                       <span class="track-song">{{ track.name }}</span>
                       <template v-if="track.artists.length">
                         <span class="track-separator"> - </span>
@@ -148,12 +163,82 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
+        <AnimatedAppear v-if="languageList.length" tag="section" variant="content" rhythm="body" class-name="section language-section">
+          <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
+            <AnimatedAppear tag="h3" variant="title" rhythm="title">语种榜</AnimatedAppear>
+          </AnimatedAppear>
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="language-grid">
+            <AnimatedAppear
+              v-for="(item, idx) in languageList"
+              :key="item.id"
+              tag="button"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="language-card"
+              type="button"
+              @click="openDetail(item.id)"
+            >
+              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-cover" :src="item.coverImgUrl" :alt="formatLanguageTitle(item.name)" loading="lazy" />
+              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-flag" :src="getLanguageFlag(item.id)" :alt="`${formatLanguageTitle(item.name)} 国旗`" loading="lazy" />
+            </AnimatedAppear>
+          </AnimatedAppear>
+        </AnimatedAppear>
+
+        <AnimatedAppear v-if="genreList.length" tag="section" variant="content" rhythm="body" class-name="section genre-section">
+          <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
+            <AnimatedAppear tag="h3" variant="title" rhythm="title">曲风榜</AnimatedAppear>
+            <AnimatedAppear tag="span" variant="text" rhythm="body" class-name="section-sub">按风格聚合的热门歌单</AnimatedAppear>
+          </AnimatedAppear>
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="genre-grid">
+            <AnimatedAppear
+              v-for="(item, idx) in genreList"
+              :key="item.id"
+              tag="button"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="genre-card"
+              type="button"
+              @click="openDetail(item.id)"
+            >
+              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="genre-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="genre-meta">
+                <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="genre-name">{{ item.name }}</AnimatedAppear>
+                <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="genre-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
+              </AnimatedAppear>
+            </AnimatedAppear>
+          </AnimatedAppear>
+        </AnimatedAppear>
+
+        <AnimatedAppear v-if="carList.length" tag="section" variant="content" rhythm="body" class-name="section car-section">
+          <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
+            <AnimatedAppear tag="h3" variant="title" rhythm="title">车友榜</AnimatedAppear>
+            <AnimatedAppear tag="span" variant="text" rhythm="body" class-name="section-sub">车主与出行场景热门歌单</AnimatedAppear>
+          </AnimatedAppear>
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="car-grid">
+            <AnimatedAppear
+              v-for="(item, idx) in carList"
+              :key="item.id"
+              tag="button"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="car-card"
+              type="button"
+              @click="openDetail(item.id)"
+            >
+              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="car-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+            </AnimatedAppear>
+          </AnimatedAppear>
+        </AnimatedAppear>
+
         <AnimatedAppear v-if="otherList.length" tag="section" variant="content" rhythm="body" class-name="section">
           <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
             <AnimatedAppear tag="h3" variant="title" rhythm="title">更多榜单</AnimatedAppear>
             <AnimatedAppear tag="span" variant="text" rhythm="body" class-name="section-sub">风格与场景榜</AnimatedAppear>
           </AnimatedAppear>
-          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="grid-wrap">
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="global-grid">
             <AnimatedAppear
               v-for="(item, idx) in otherList"
               :key="item.id"
@@ -161,24 +246,25 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="rank-card"
-              :style="rankCardStyle(item.coverImgUrl)"
+              class-name="global-card"
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="rank-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
-              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-main">
-                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-top">
-                  <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="rank-name">{{ item.name }}</AnimatedAppear>
-                  <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="idx" class-name="rank-tags">
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-cover-wrap">
+                <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="global-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              </AnimatedAppear>
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-info">
+                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-block">
+                  <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-row">
+                    <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="global-name">{{ item.name }}</AnimatedAppear>
                     <AnimatedAppear tag="span" variant="control" rhythm="actions" :index="idx" class-name="trend" :class="trendClass(item)">{{ trendLabel(item) }}</AnimatedAppear>
-                    <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="pill">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
                   </AnimatedAppear>
+                  <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="global-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
                 </AnimatedAppear>
-                <AnimatedAppear tag="ol" variant="content" rhythm="list" :index="idx" class-name="track-list">
-                  <AnimatedAppear v-for="(track, trackIdx) in getTopTracks(item)" :key="`${item.id}-${trackIdx}`" tag="li" variant="text" rhythm="list" :index="trackIdx">
-                    <AnimatedAppear tag="span" variant="text" rhythm="list" :index="trackIdx" class-name="track-no" :class="`n-${trackIdx + 1}`">{{ trackIdx + 1 }}</AnimatedAppear>
-                    <AnimatedAppear tag="span" variant="content" rhythm="list" :index="trackIdx" class-name="track-text">
+                <AnimatedAppear tag="ol" variant="content" rhythm="list" :index="idx" class-name="global-track-list">
+                  <AnimatedAppear v-for="(track, trackIdx) in getTopTracks(item).slice(0, 3)" :key="`${item.id}-${trackIdx}`" tag="li" variant="text" rhythm="list" :index="trackIdx">
+                    <AnimatedAppear tag="span" variant="text" rhythm="list" :index="trackIdx" class-name="global-track-no">{{ trackIdx + 1 }}</AnimatedAppear>
+                    <AnimatedAppear tag="span" variant="content" rhythm="list" :index="trackIdx" class-name="global-track-text">
                       <span class="track-song">{{ track.name }}</span>
                       <template v-if="track.artists.length">
                         <span class="track-separator"> - </span>
@@ -248,6 +334,8 @@ const RECOMMEND_NAMES = [
   '云音乐日本热歌榜',
 ];
 
+const FIXED_CURATED_IDS = [7785066739, 7785123708, 6723173524, 8532443277, 7775163417];
+
 const emit = defineEmits<{
   (e: 'open-detail', playlistId: number, coverUrl?: string): void;
   (e: 'open-artist', artist: ArtistBrief): void;
@@ -275,27 +363,80 @@ const featuredList = computed(() => {
 
 const officialList = computed(() => list.value.filter((item) => item.ToplistType === 'A' || item.category === '官方'));
 
+const curatedList = computed(() => {
+  const byId = new Map(list.value.map((item) => [item.id, item]));
+  return FIXED_CURATED_IDS.map((id) => byId.get(id)).filter(Boolean) as ToplistItem[];
+});
+
+const FIXED_GLOBAL_IDS = [60198, 180106, 60131, 27135204, 6939992364, 3812895];
+const FIXED_LANGUAGE_IDS = [2809513713, 2809577409, 5059644681, 745956260, 6732051320, 7095271308, 6732014811];
+const FIXED_GENRE_IDS = [5059642708, 5059661515, 5059633707, 6723173524, 7785066739];
+const FIXED_CAR_IDS = [8703179781, 8703052295, 8702582160, 8703220480, 8702982391, 10131772880, 10162841534, 12717025277];
+
 const globalList = computed(() => {
-  const officialIds = new Set(officialList.value.map((item) => item.id));
-  return list.value.filter((item) => {
-    if (officialIds.has(item.id)) return false;
-    const byType = item.ToplistType === 'G';
-    const byName = /欧美|英国|日本|韩国|Billboard|iTunes|UK|Hito/i.test(item.name);
-    return byType || byName;
-  });
+  const byId = new Map(list.value.map((item) => [item.id, item]));
+  return FIXED_GLOBAL_IDS.map((id) => byId.get(id)).filter(Boolean) as ToplistItem[];
+});
+
+const languageList = computed(() => {
+  const byId = new Map(list.value.map((item) => [item.id, item]));
+  return FIXED_LANGUAGE_IDS.map((id) => byId.get(id)).filter(Boolean) as ToplistItem[];
+});
+
+const genreList = computed(() => {
+  const byId = new Map(list.value.map((item) => [item.id, item]));
+  return FIXED_GENRE_IDS.map((id) => byId.get(id)).filter(Boolean) as ToplistItem[];
+});
+
+const carList = computed(() => {
+  const byId = new Map(list.value.map((item) => [item.id, item]));
+  return FIXED_CAR_IDS.map((id) => byId.get(id)).filter(Boolean) as ToplistItem[];
 });
 
 const otherList = computed(() => {
   const occupied = new Set<number>();
   for (const item of featuredList.value) occupied.add(item.id);
+  for (const item of curatedList.value) occupied.add(item.id);
   for (const item of officialList.value) occupied.add(item.id);
   for (const item of globalList.value) occupied.add(item.id);
+  for (const item of languageList.value) occupied.add(item.id);
+  for (const item of genreList.value) occupied.add(item.id);
+  for (const item of carList.value) occupied.add(item.id);
   return list.value.filter((item) => !occupied.has(item.id));
 });
 
 function rankCardStyle(coverUrl?: string) {
   if (!coverUrl) return {};
   return { '--cover-bg': `url(${coverUrl})`, '--detail-head-fade-height': '102px', '--detail-head-fade-soft': '72px' } as Record<string, string>;
+}
+
+function formatCuratedName(name: string) {
+  return (name || '').replace(/^黑胶/, 'VIP').replace(/排行榜周榜|排行榜|周榜/g, '').trim();
+}
+
+function formatLanguageTitle(name: string) {
+  const source = (name || '').trim();
+  if (/欧美热歌/.test(source)) return '欧美热歌榜';
+  if (/欧美新歌/.test(source)) return '欧美新歌榜';
+  if (/日语|日本/.test(source)) return '日语榜';
+  if (/韩语|韩国/.test(source)) return '韩语榜';
+  if (/俄/.test(source)) return '俄语榜';
+  if (/泰语|泰国/.test(source)) return '泰语榜';
+  if (/越南/.test(source)) return '越南语榜';
+  return source.replace(/^网易云/, '').trim();
+}
+
+function getLanguageFlag(id: number) {
+  const map: Record<number, string> = {
+    2809513713: 'https://flagcdn.com/w40/eu.png',
+    2809577409: 'https://flagcdn.com/w40/eu.png',
+    5059644681: 'https://flagcdn.com/w40/jp.png',
+    745956260: 'https://flagcdn.com/w40/kr.png',
+    6732051320: 'https://flagcdn.com/w40/ru.png',
+    7095271308: 'https://flagcdn.com/w40/th.png',
+    6732014811: 'https://flagcdn.com/w40/vn.png',
+  };
+  return map[id] || 'https://flagcdn.com/w40/un.png';
 }
 
 function openDetail(id: number) {
@@ -435,22 +576,97 @@ onMounted(() => {
 .section-head h3 { margin: 0; font-size: 17px; color: var(--text-main); }
 .section-sub { color: var(--text-soft); font-size: 12px; }
 .featured-scroll { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
-.featured-card { position: relative; border: none; border-radius: 14px; overflow: hidden; padding: 0; text-align: left; cursor: pointer; background: #111827; aspect-ratio: 2.35 / 1; min-height: 96px; box-shadow: 0 8px 18px rgba(2, 6, 23, 0.18); }
-.featured-cover { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.featured-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.74)); }
-.featured-meta { position: relative; z-index: 1; padding: var(--space-3); display: grid; gap: var(--space-1); }
-.featured-top { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.featured-name { margin: 0; color: #fff; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.featured-update { margin: 0; color: rgba(255, 255, 255, 0.92); font-size: 12px; }
+.curated-section { gap: var(--space-2); }
+.curated-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.curated-card {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  background: var(--bg-surface);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
+}
+.curated-card::before {
+  content: '';
+  position: absolute;
+  inset: 10px;
+  border-radius: 10px;
+  background-image: var(--curated-cover);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: var(--bg-surface);
+}
+.curated-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+
+.language-section { gap: var(--space-2); }
+.language-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
+.language-card { position: relative; border: 1px solid color-mix(in srgb, var(--border) 66%, transparent); border-radius: 14px; min-height: 128px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 8%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.language-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.language-cover { width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; display: block; }
+.language-flag { position: absolute; top: 14px; right: 14px; width: 32px; height: 23px; border-radius: 5px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22); }
+
+.genre-section { gap: var(--space-2); }
+.genre-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
+.genre-card { border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.genre-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.genre-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
+.genre-meta { min-width: 0; display: grid; gap: 4px; }
+.genre-name { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.genre-update { font-size: 11px; color: var(--text-soft); }
+
+.car-section { gap: var(--space-2); }
+.car-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--space-2); }
+.car-card { border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: block; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.car-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.car-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
+
+.global-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
+.global-card {
+  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-surface) 94%, var(--bg-muted) 6%);
+  padding: var(--space-2);
+  display: grid;
+  grid-template-columns: 142px 1fr;
+  gap: 10px;
+  align-items: start;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--text-main) 7%, transparent);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.global-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--text-main) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+.global-info { min-width: 0; align-self: stretch; display: grid; align-content: space-between; gap: 8px; }
+.global-title-block { min-width: 0; display: grid; gap: 4px; align-content: start; }
+.global-title-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: flex-start; gap: var(--space-1); }
+.global-name { min-width: 0; margin: 0; font-size: 22px; line-height: 1.15; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.global-update { justify-self: end; font-size: 11px; color: var(--text-soft); }
+.global-cover-wrap { position: relative; width: 142px; height: 142px; border-radius: 14px; overflow: hidden; }
+.global-cover { width: 142px; height: 142px; border-radius: 14px; object-fit: cover; display: block; box-shadow: none; }
+.global-track-list { align-self: end; margin: 0; padding: 0 0 2px; list-style: none; display: grid; gap: 5px; color: var(--text-sub); font-size: 12px; }
+.global-track-list li { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 6px; min-width: 0; }
+.global-track-no { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 6px; font-size: 11px; line-height: 1; font-weight: 700; color: var(--text-sub); background: var(--bg-muted); }
+.global-track-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 1.2; color: var(--text-sub); }
+.featured-card { position: relative; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; padding: 10px; text-align: left; cursor: pointer; background: var(--bg-surface); aspect-ratio: 2.35 / 1; min-height: 96px; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.featured-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+.featured-cover { display: block; width: 100%; height: 100%; border-radius: 10px; object-fit: cover; }
 .trend { height: 20px; min-width: 20px; border-radius: 999px; padding: 0 var(--space-1); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
 .trend.rise { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
 .trend.new { color: #92400e; background: #fef3c7; border-color: #fde68a; }
 .trend.steady { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
 .grid-wrap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
-.rank-card { position: relative; isolation: isolate; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); display: grid; grid-template-columns: 96px 1fr; padding: var(--space-2); gap: var(--space-2); text-align: left; cursor: pointer; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.rank-card::before { content: ''; position: absolute; inset: 0; z-index: 0; background-image: var(--cover-bg); background-size: cover; background-position: center; filter: blur(18px) saturate(128%); transform: scale(1.08); opacity: 0.56; pointer-events: none; }
-.rank-card::after { content: ''; position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.26) 34%, rgba(255, 255, 255, 0.56) 62%, rgba(255, 255, 255, 0) 100%); pointer-events: none; }
-.rank-card > * { position: relative; z-index: 2; }
+.rank-card { position: relative; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); display: grid; grid-template-columns: 96px 1fr; padding: var(--space-2); gap: var(--space-2); text-align: left; cursor: pointer; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .rank-card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 16%, rgba(15, 23, 42, 0.1)); }
 .rank-cover { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; }
 .rank-main { min-width: 0; display: grid; gap: var(--space-1); }
@@ -464,13 +680,19 @@ onMounted(() => {
 .track-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .track-song,
 .track-artist-fallback { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.global-track-text .track-song,
+.global-track-text .track-artist-fallback { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.global-track-text .track-song { color: inherit; font-weight: inherit; }
+.global-track-text .track-artist-fallback,
+.global-track-text .artist-link,
+.global-track-text .track-separator { color: inherit; }
 .track-separator { color: var(--text-soft); }
 .artist-link { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
 .artist-link:hover { color: var(--accent); text-decoration: underline; }
 .artist-link + .artist-link::before { content: '/'; margin: 0 2px; color: var(--text-soft); }
 .muted { margin: 0; color: var(--text-soft); }
 .rank-content { display: grid; gap: var(--space-3); }
-@media (max-width: 1280px) { .featured-scroll { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 980px) { .featured-scroll { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(1, minmax(0, 1fr)); } }
-@media (max-width: 767px) { .rank-page-header { align-items: flex-start; flex-direction: column; } .featured-scroll { display: flex; overflow-x: auto; padding-bottom: var(--space-0); } .featured-card { flex: 0 0 196px; } .rank-card { grid-template-columns: 80px 1fr; } .rank-cover { width: 80px; height: 80px; } .rank-tags { flex-wrap: wrap; justify-content: flex-end; } }
+@media (max-width: 1280px) { .featured-scroll { grid-template-columns: repeat(3, minmax(0, 1fr)); } .curated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .language-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .genre-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } .global-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 980px) { .featured-scroll { grid-template-columns: repeat(2, minmax(0, 1fr)); } .curated-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .language-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .genre-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(1, minmax(0, 1fr)); } .global-card { grid-template-columns: 104px 1fr; padding: var(--space-2); gap: var(--space-2); } .global-name { font-size: 20px; } .global-cover-wrap, .global-cover { width: 104px; height: 104px; } }
+@media (max-width: 767px) { .rank-page-header { align-items: flex-start; flex-direction: column; } .featured-scroll { display: flex; overflow-x: auto; padding-bottom: var(--space-0); } .featured-card { flex: 0 0 196px; } .curated-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .curated-card { min-height: 112px; padding: 8px; border-radius: 12px; } .curated-card::before { inset: 8px; border-radius: 8px; } .language-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .language-card { min-height: 110px; border-radius: 12px; } .genre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rank-card { grid-template-columns: 80px 1fr; } .rank-cover { width: 80px; height: 80px; } .rank-tags { flex-wrap: wrap; justify-content: flex-end; } .global-card { grid-template-columns: 1fr; } .global-cover-wrap { width: 112px; height: 112px; } .global-cover { width: 112px; height: 112px; } .global-track-list { gap: 10px; } .global-track-no { font-size: 20px; } .global-track-text { font-size: 14px; } }
 </style>

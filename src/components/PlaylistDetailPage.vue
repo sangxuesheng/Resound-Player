@@ -891,13 +891,17 @@ watch(
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-main-shell) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto;
   align-items: center;
-  gap: var(--space-3);
+  column-gap: var(--space-3);
+  row-gap: 0;
   width: 100%;
   min-height: 54px;
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell) {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   max-width: 100%;
 }
@@ -913,17 +917,16 @@ watch(
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-meta-shell) {
-  max-height: 0;
-  opacity: 0;
-  transform: translate3d(0, -10px, 0);
-  pointer-events: none;
+  display: none;
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-actions-shell) {
-  flex: none;
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   align-items: center;
   justify-self: end;
+  align-self: center;
   min-width: max-content;
 }
 

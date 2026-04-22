@@ -110,6 +110,9 @@ const selectedHistoryDate = ref('');
 const historyLoading = ref(false);
 const dailyLoading = ref(false);
 const dailyError = ref('');
+let dailyRequestSeq = 0;
+let historyDatesRequestSeq = 0;
+let historyDetailRequestSeq = 0;
 const historyButtonLabel = computed(() => (historyLoading.value ? '历史日推加载中…' : '历史日推'));
 const historySelectOptions = computed(() => ['返回今日推荐', ...historyDates.value.map((item) => item.label)]);
 const historySelectedLabel = computed(() => {
@@ -157,13 +160,16 @@ function normalizeHistoryDateLabel(dateStr: string) {
 }
 
 async function loadHistoryDates() {
+  const requestSeq = ++historyDatesRequestSeq;
   if (!userStore.isLogin) {
+    if (requestSeq !== historyDatesRequestSeq) return;
     currentSongs.value = baseSongs.value;
     return;
   }
   historyLoading.value = true;
   try {
     const { data } = await getHistoryRecommendSongDates(userStore.loginCookie || undefined);
+    if (requestSeq !== historyDatesRequestSeq) return;
     const list = Array.isArray(data?.data?.dates)
       ? data.data.dates
       : Array.isArray(data?.data)
@@ -183,40 +189,53 @@ async function loadHistoryDates() {
       currentSongs.value = baseSongs.value;
     }
   } catch {
+    if (requestSeq !== historyDatesRequestSeq) return;
     currentSongs.value = baseSongs.value;
   } finally {
-    historyLoading.value = false;
+    if (requestSeq === historyDatesRequestSeq) {
+      historyLoading.value = false;
+    }
   }
 }
 
 async function loadDailyRecommend() {
+  const requestSeq = ++dailyRequestSeq;
   dailyError.value = '';
   dailyLoading.value = true;
   try {
     const { data } = await getRecommendSongs(userStore.loginCookie || undefined);
+    if (requestSeq !== dailyRequestSeq) return;
     const list = Array.isArray(data?.recommend) ? data.recommend : Array.isArray(data?.songs) ? data.songs : Array.isArray(data?.data) ? data.data : [];
     const normalized = list.map((song: any) => normalizeRecommendSong(song)).filter(Boolean);
     currentSongs.value = normalized.length ? normalized : baseSongs.value;
   } catch {
+    if (requestSeq !== dailyRequestSeq) return;
     dailyError.value = '每日推荐加载失败';
     currentSongs.value = baseSongs.value;
   } finally {
-    dailyLoading.value = false;
+    if (requestSeq === dailyRequestSeq) {
+      dailyLoading.value = false;
+    }
   }
 }
 
 async function loadHistoryByDate(date: string) {
   if (!date) return;
+  const requestSeq = ++historyDetailRequestSeq;
   historyLoading.value = true;
   selectedHistoryDate.value = date;
   try {
     const { data } = await getHistoryRecommendSongDetail(date, userStore.loginCookie || undefined);
+    if (requestSeq !== historyDetailRequestSeq) return;
     const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.songs) ? data.songs : Array.isArray(data?.list) ? data.list : [];
     currentSongs.value = list.length ? list : baseSongs.value;
   } catch {
+    if (requestSeq !== historyDetailRequestSeq) return;
     currentSongs.value = baseSongs.value;
   } finally {
-    historyLoading.value = false;
+    if (requestSeq === historyDetailRequestSeq) {
+      historyLoading.value = false;
+    }
   }
 }
 

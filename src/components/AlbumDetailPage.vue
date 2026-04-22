@@ -62,7 +62,17 @@
       <AnimatedAppear v-if="loading && !album" tag="div" variant="text" rhythm="body" class-name="state">专辑加载中…</AnimatedAppear>
       <AnimatedAppear v-else-if="error" tag="div" variant="text" rhythm="body" class-name="state error">{{ error }}</AnimatedAppear>
       <AnimatedAppear v-else-if="album" tag="ul" variant="content" rhythm="list" class-name="song-list">
-        <AnimatedAppear v-for="(song, idx) in songs" :key="song.id" tag="li" variant="text" rhythm="list" :index="idx" class-name="song-item" @dblclick="onSongItemDblClick($event, idx)">
+        <AnimatedAppear
+          v-for="(song, idx) in songs"
+          :key="song.id"
+          tag="li"
+          variant="text"
+          rhythm="list"
+          :index="idx"
+          class-name="song-item"
+          :class="{ 'song-item--playing': isCurrentTrack(song) }"
+          @dblclick="onSongItemDblClick($event, idx)"
+        >
           <PlayPauseButton :song-id="Number(song.id || 0)" :index-label="idx + 1" @play="playOne(idx)" />
           <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="song-cover" :src="song.al?.picUrl || album.picUrl" :alt="song.name" />
           <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="song-meta">
@@ -223,6 +233,10 @@ function openAlbumArtistDetail() {
   emit('open-artist', artist);
 }
 
+function isCurrentTrack(song: any) {
+  return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
+}
+
 async function playAll() {
   if (!songs.value.length) return;
   playerStore.setPlaylist(songs.value, 0);
@@ -266,6 +280,10 @@ watch(() => props.albumId, (id) => {
 
 <style scoped>
 @import '../styles/detail-page.css';
+
+.song-item--playing .song-cover {
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.18));
+}
 
 .user-detail-panel {
   border: 0;
