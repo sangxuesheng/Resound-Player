@@ -1,0 +1,907 @@
+/*
+ * Theme token reference
+ *
+ * Tokens
+ * - Colors: --bg-* / --text-* / --border* / --accent* / --danger*
+ * - Radius: --radius-*
+ * - Glass: --glass-*
+ * - Spacing: --space-*
+ * - Layout: --layout-*
+ *
+ * Semantic controls
+ * - Primary: .search-btn .play-btn .play .ctrl.main
+ * - Secondary: .icon-btn .edit-btn .close-btn .tab-btn .clear
+ * - Danger: .action-btn .remove-btn.btn-danger
+ *
+ * Maintenance rules
+ * - Prefer tokens over hard-coded colors
+ * - Keep hover / active / disabled states present
+ * - Preserve compatibility with :root[data-glass='off']
+ */
+:root {
+  --bg-app: radial-gradient(1200px 900px at 8% 8%, #f7fbff 0%, #edf4ff 36%, #e9f2ff 64%, #eef4ff 100%);
+  --bg-surface: rgba(255, 255, 255, 0.34);
+  --bg-muted: rgba(255, 255, 255, 0.22);
+  --bg-soft: rgba(245, 249, 255, 0.36);
+  --bg-solid: #f4f8ff;
+  --text-main: #0f172a;
+  --text-sub: #475569;
+  --text-soft: #64748b;
+  --border: rgba(255, 255, 255, 0.58);
+  --border-soft: rgba(255, 255, 255, 0.34);
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.18);
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+  --accent-purple: #a855f7;
+  --accent-orange: #f97316;
+
+  /*
+   * Theme primary (single-source-of-truth for icon color)
+   * - Components should NOT hardcode icon colors.
+   * - Derived states are computed from tokens for hover/active feedback.
+   */
+  --theme-primary: var(--accent);
+  --theme-primary-strong: var(--theme-primary);
+  --theme-primary-soft: color-mix(in srgb, var(--theme-primary) 14%, var(--bg-surface));
+  --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 18%, var(--bg-surface));
+  --theme-primary-active: color-mix(in srgb, var(--theme-primary) 26%, var(--bg-surface));
+
+  --glass-blur: 18px;
+  --glass-shadow: 0 14px 34px rgba(15, 23, 42, 0.14), 0 2px 10px rgba(15, 23, 42, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+  --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.2) 22%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.02) 100%);
+
+  --radius-xl: 16px;
+  --radius-lg: 14px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --layout-page-gap: var(--space-4);
+  --layout-section-gap: var(--space-3);
+  --layout-card-padding: var(--space-4);
+  --layout-card-gap: var(--space-2);
+  --layout-control-gap: var(--space-2);
+  --layout-inline-gap: var(--space-1);
+}
+
+.page-stack {
+  display: grid;
+  gap: var(--layout-page-gap);
+}
+
+.page-stack--compact {
+  gap: var(--layout-section-gap);
+}
+
+.page-stack--loose {
+  gap: var(--space-5);
+}
+
+.inline-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--layout-inline-gap);
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-control-gap);
+}
+
+:root[data-theme='dark'] {
+  --bg-app: radial-gradient(1400px 900px at 14% 10%, #0d1a31 0%, #0a1426 38%, #090f1e 72%, #070d19 100%);
+  --bg-surface: rgba(17, 25, 40, 0.46);
+  --bg-muted: rgba(15, 23, 42, 0.4);
+  --bg-soft: rgba(13, 20, 38, 0.5);
+  --bg-solid: #0f1728;
+  --text-main: #e2e8f0;
+  --text-sub: #a5b4c8;
+  --text-soft: #7b8aa1;
+  --border: rgba(255, 255, 255, 0.24);
+  --border-soft: rgba(148, 163, 184, 0.2);
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.22);
+  --accent-green: #22c55e;
+  --accent-blue: #3b82f6;
+  --accent-purple: #a855f7;
+  --accent-orange: #f97316;
+
+  /* Dark mode: deepen primary ~10% for better contrast */
+  --theme-primary: var(--accent);
+  --theme-primary-strong: color-mix(in srgb, var(--theme-primary) 90%, #000);
+  --theme-primary-soft: color-mix(in srgb, var(--theme-primary-strong) 16%, var(--bg-surface));
+  --theme-primary-hover: color-mix(in srgb, var(--theme-primary-strong) 20%, var(--bg-surface));
+  --theme-primary-active: color-mix(in srgb, var(--theme-primary-strong) 28%, var(--bg-surface));
+
+  --glass-blur: 20px;
+  --glass-shadow: 0 16px 38px rgba(2, 6, 23, 0.45), 0 3px 14px rgba(2, 6, 23, 0.3);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 22%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0) 100%);
+}
+
+:root[data-accent='green'] {
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.2);
+}
+
+:root[data-accent='blue'] {
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.2);
+}
+
+:root[data-accent='purple'] {
+  --accent: #a855f7;
+  --accent-soft: rgba(168, 85, 247, 0.2);
+}
+
+:root[data-accent='orange'] {
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, 0.2);
+}
+
+:root[data-accent='custom'] {
+  --accent: #22c55e;
+  --accent-soft: rgba(34, 197, 94, 0.2);
+}
+
+html,
+body,
+#app {
+  background: var(--bg-app);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input,
+textarea,
+[contenteditable='true'],
+[contenteditable='plaintext-only'] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+.layout,
+.main-area,
+.content {
+  background: transparent;
+}
+
+/* Layout aliases and compatibility helpers */
+:root {
+  --layout-page-gap: var(--space-2);
+  --layout-section-gap: var(--space-2);
+  --layout-card-gap: var(--space-2);
+  --layout-inline-gap: var(--space-2);
+  --layout-stack-gap: var(--space-2);
+  --layout-tight-gap: var(--space-1);
+}
+
+/* Legacy layout aliases */
+.stack,
+.page-stack {
+  display: grid;
+  gap: var(--layout-stack-gap);
+}
+
+.stack--compact,
+.page-stack--compact {
+  gap: var(--layout-tight-gap);
+}
+
+.stack--loose,
+.page-stack--loose {
+  gap: var(--space-4);
+}
+
+.cluster,
+.inline-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--layout-inline-gap);
+}
+
+/* Surface fallback when glass is disabled */
+
+/* Surfaces and glass system */
+.card,
+.setting-group,
+.top-tabs-wrap,
+.placeholder-panel,
+.panel,
+.bar,
+.sidebar,
+.profile,
+.search-wrap,
+.menu-item,
+.song,
+.item,
+.row,
+.editor-wrap,
+.editor-modal,
+.grid-canvas,
+.grid-item {
+  border-radius: var(--radius-lg) !important;
+  background: var(--glass-reflection), var(--bg-surface) !important;
+  border: 1px solid var(--border) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(145%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(145%);
+  box-shadow: var(--glass-shadow), var(--glass-highlight) !important;
+}
+
+.sidebar {
+  background: var(--glass-reflection), var(--bg-soft) !important;
+}
+
+/* Player footer bar should stay solid */
+html body #app .layout footer.bar,
+html body #app .layout footer.an-enter-card.bar,
+html body #app .layout footer.bar.an-enter-card,
+html body #app .layout footer.an-enter-card.bar[data-v-efc867c7],
+html body #app .layout footer.bar[data-v-efc867c7] {
+  background: var(--bg-solid) !important;
+  background-image: none !important;
+  background-color: var(--bg-solid) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--border) 72%, transparent), 0 -10px 30px rgba(15, 23, 42, 0.08) !important;
+}
+
+.menu-item:hover,
+.song:hover,
+.hot-item:hover,
+.tab-btn:hover,
+.tag:hover {
+  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 16%, var(--bg-surface)) !important;
+}
+
+.menu-item.active,
+.tab-btn.active,
+.tag.active,
+.tag[aria-selected='true'] {
+  background: var(--glass-reflection), var(--accent-soft) !important;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border)) !important;
+  color: var(--accent) !important;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.label,
+.title,
+.group-title,
+.brand,
+.name,
+.kw {
+  color: var(--text-main) !important;
+}
+
+p,
+.desc,
+.artist,
+.muted,
+.count,
+.sub,
+.album-artist,
+.empty,
+.xy {
+  color: var(--text-sub) !important;
+}
+
+/* Controls keep functionality unchanged */
+input,
+select,
+textarea,
+button {
+  color: var(--text-main);
+}
+
+button,
+[role='button'],
+.type-tab,
+.chip,
+.tab-btn,
+.tag,
+.menu-item,
+.play-btn,
+.search-btn,
+.clear,
+.refresh-btn,
+.load-more,
+.close-btn,
+.ctrl,
+.ghost,
+.recent-item,
+.recent-clear,
+.comment-submit,
+.reply-submit,
+.comment-more,
+.mixed-more,
+.text-btn,
+.artist-chip,
+.daily-hover-item,
+.fm-hover-item,
+.featured-card,
+.rank-card,
+.entity-card.clickable,
+.hot-item,
+.line-wrap,
+.play-all,
+.back-btn,
+.album,
+.latest-row,
+.comment-item,
+.reply-item,
+.stat-chip,
+.welcome-close,
+.comment-editor,
+.reply-editor,
+.search-wrap,
+.profile,
+.top-mini-card,
+.playlist-gradient-card,
+.album-gradient-card {
+  transition:
+    transform 220ms var(--an-ease),
+    box-shadow 220ms var(--an-ease),
+    border-color 220ms var(--an-ease),
+    background-color 220ms var(--an-ease),
+    color 220ms var(--an-ease),
+    opacity 220ms var(--an-ease);
+}
+
+/* Icon-only play/pause button (SVG uses currentColor) */
+.play-icon-btn {
+  width: 32px;
+  min-width: 32px;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px !important;
+  background: var(--glass-reflection), var(--theme-primary-soft) !important;
+  border-color: color-mix(in srgb, var(--theme-primary-strong) 34%, var(--border)) !important;
+  color: var(--theme-primary-strong) !important;
+  box-shadow: var(--glass-highlight) !important;
+}
+
+.play-icon-btn:hover {
+  background: var(--glass-reflection), var(--theme-primary-hover) !important;
+  border-color: color-mix(in srgb, var(--theme-primary-strong) 46%, var(--border)) !important;
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--theme-primary-strong) 12%, transparent), var(--glass-highlight) !important;
+}
+
+.play-icon-btn:active {
+  background: var(--glass-reflection), var(--theme-primary-active) !important;
+}
+
+.play-icon-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+  fill: currentColor;
+}
+
+.text-btn,
+.artist-chip,
+.menu-item,
+.recent-item,
+.hot-item,
+.line-wrap,
+.latest-row,
+.album,
+.tab-btn,
+.tag,
+.play-all,
+.back-btn,
+.comment-more,
+.mixed-more,
+.comment-submit,
+.reply-submit,
+.welcome-close,
+a,
+[role='link'],
+.artist-name,
+.album-name,
+.song-name,
+.name,
+.mv-title,
+.song-item--playing,
+.song-item--playing .name,
+.song-item--playing .song-name,
+.song-item--playing .artist,
+.song-item--playing .artist-link,
+.song-item--playing .idx,
+.song-item--playing .latest-name,
+.song-item--playing .latest-artist {
+  transition:
+    color 220ms ease,
+    text-shadow 220ms ease,
+    opacity 220ms ease,
+    transform 220ms var(--an-ease),
+    background-color 220ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.song-item--playing {
+  border-radius: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, var(--bg-surface)), color-mix(in srgb, var(--accent) 8%, transparent)) !important;
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border)) !important;
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 12%, rgba(15, 23, 42, 0.12));
+}
+
+.song-item--playing .name,
+.song-item--playing .song-name,
+.song-item--playing .idx,
+.song-item--playing .latest-name,
+.song-item--playing .artist-link {
+  color: var(--accent) !important;
+}
+
+.song-item--playing .artist,
+.song-item--playing .latest-artist {
+  color: color-mix(in srgb, var(--accent) 74%, var(--text-sub)) !important;
+}
+
+.page-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.page-stack--compact {
+  gap: var(--space-3);
+}
+
+.page-stack--loose {
+  gap: var(--space-6);
+}
+
+@media (hover: hover) {
+  button:hover,
+  [role='button']:hover,
+  .type-tab:hover,
+  .chip:hover,
+  .tab-btn:hover,
+  .tag:hover,
+  .menu-item:hover,
+  .play-btn:hover,
+  .search-btn:hover,
+  .clear:hover,
+  .refresh-btn:hover,
+  .load-more:hover,
+  .close-btn:hover,
+  .ctrl:hover,
+  .ghost:hover,
+  .recent-item:hover,
+  .recent-clear:hover,
+  .comment-submit:hover,
+  .reply-submit:hover,
+  .comment-more:hover,
+  .mixed-more:hover,
+  .text-btn:hover,
+  .artist-chip:hover,
+  .daily-hover-item:hover,
+  .fm-hover-item:hover,
+  .featured-card:hover,
+  .rank-card:hover,
+  .entity-card.clickable:hover,
+  .hot-item:hover,
+  .line-wrap:hover,
+  .back-btn:hover,
+  .latest-row:hover,
+  .welcome-close:hover,
+  .row:hover,
+  .cloud-item:hover {
+    transform: translateY(-1px);
+  }
+
+  .text-btn:hover,
+  .artist-chip:hover,
+  .menu-item:hover,
+  .recent-item:hover,
+  .hot-item:hover,
+  .line-wrap:hover,
+  .latest-row:hover,
+  .album:hover,
+  .tab-btn:hover,
+  .tag:hover,
+  .play-all:hover,
+  .back-btn:hover,
+  .comment-more:hover,
+  .mixed-more:hover,
+  .comment-submit:hover,
+  .reply-submit:hover,
+  .welcome-close:hover,
+  a:hover,
+  [role='link']:hover,
+  .artist-chip:hover .artist-name,
+  .album:hover .album-name,
+  .album-gradient-card:hover .album-name,
+  .playlist-gradient-card:hover .name,
+  .entity-card.clickable:hover .name,
+  .hot-item:hover .name,
+  .song-item:hover .name,
+  .song-item:hover .song-name,
+  .song:hover .name,
+  .song:hover .song-name,
+  .line-wrap:hover .name,
+  .latest-row:hover .name,
+  .row:hover .name,
+  .artist-name:hover,
+  .album-name:hover,
+  .song-name:hover,
+  .name:hover,
+  .mv-title:hover {
+    color: var(--accent) !important;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .featured-card:hover,
+  .rank-card:hover,
+  .entity-card.clickable:hover,
+  .artist-chip:hover,
+  .play-all:hover,
+  .album:hover,
+  .comment-item:hover,
+  .reply-item:hover,
+  .top-mini-card:hover,
+  .playlist-gradient-card:hover,
+  .album-gradient-card:hover,
+  .cloud-item:hover {
+    box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 12%, rgba(15, 23, 42, 0.14));
+  }
+}
+
+button:active,
+[role='button']:active,
+.type-tab:active,
+.chip:active,
+.tab-btn:active,
+.tag:active,
+.menu-item:active,
+.play-btn:active,
+.search-btn:active,
+.clear:active,
+.refresh-btn:active,
+.load-more:active,
+.close-btn:active,
+.ctrl:active,
+.ghost:active,
+.recent-item:active,
+.recent-clear:active,
+.comment-submit:active,
+.reply-submit:active,
+.comment-more:active,
+.mixed-more:active,
+.text-btn:active,
+.artist-chip:active,
+.daily-hover-item:active,
+.fm-hover-item:active,
+.featured-card:active,
+.rank-card:active,
+.entity-card.clickable:active,
+.hot-item:active,
+.line-wrap:active,
+.play-all:active,
+.back-btn:active,
+.album:active,
+.latest-row:active,
+.welcome-close:active,
+.row:active,
+.cloud-item:active {
+  transform: translateY(0) scale(0.99);
+}
+
+button,
+input,
+select,
+textarea {
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 1px;
+}
+
+/* Themed range/progress sliders */
+input[type='range'],
+.progress,
+.range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  background: transparent !important;
+}
+
+input[type='range']::-webkit-slider-runnable-track,
+.progress::-webkit-slider-runnable-track,
+.range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 36%, var(--bg-muted));
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border-soft));
+}
+
+input[type='range']::-webkit-slider-thumb,
+.progress::-webkit-slider-thumb,
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, #ffffff28);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+input[type='range']::-moz-range-track,
+.progress::-moz-range-track,
+.range::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 36%, var(--bg-muted));
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border-soft));
+}
+
+input[type='range']::-moz-range-thumb,
+.progress::-moz-range-thumb,
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 72%, #ffffff28);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent), 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.search-input,
+.input,
+.select,
+.range,
+.tag,
+.clear,
+.filter,
+.msg,
+.icon-btn,
+.action-btn,
+.tab-btn,
+.play,
+.play-btn,
+.btn,
+.edit-btn,
+.close-btn,
+.catalog-select,
+.remove-btn,
+.theme-select {
+  border-radius: var(--radius-sm) !important;
+  background: var(--glass-reflection), var(--bg-muted) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-main) !important;
+  box-shadow: var(--glass-highlight) !important;
+}
+
+.search-input::placeholder,
+.input::placeholder {
+  color: var(--text-soft);
+}
+
+.action-btn,
+.remove-btn.btn-danger {
+  background: var(--glass-reflection), color-mix(in srgb, #ef4444 18%, var(--bg-surface)) !important;
+  color: #ef4444 !important;
+}
+
+.msg,
+.ctrl {
+  display: inline-grid;
+  place-items: center;
+}
+
+.ctrl,
+.vol {
+  border-color: var(--border) !important;
+  color: var(--text-main) !important;
+}
+
+svg.icon,
+.lucide.icon {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.ctrl.main,
+.play-btn,
+.search-btn {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 92%, #fff), color-mix(in srgb, var(--accent) 74%, #000)) !important;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 34%, transparent), var(--glass-highlight) !important;
+}
+
+.row,
+.item,
+.song,
+.grid-item {
+  border-color: color-mix(in srgb, var(--border) 82%, transparent) !important;
+}
+
+/* 关闭液态玻璃时，回退为普通主题表面 */
+:root[data-glass='off'] .card,
+:root[data-glass='off'] .setting-group,
+:root[data-glass='off'] .top-tabs-wrap,
+:root[data-glass='off'] .placeholder-panel,
+:root[data-glass='off'] .panel,
+:root[data-glass='off'] .bar,
+:root[data-glass='off'] .topbar,
+:root[data-glass='off'] .sidebar,
+:root[data-glass='off'] .profile,
+:root[data-glass='off'] .search-wrap,
+:root[data-glass='off'] .menu-item,
+:root[data-glass='off'] .song,
+:root[data-glass='off'] .item,
+:root[data-glass='off'] .row,
+:root[data-glass='off'] .editor-wrap,
+:root[data-glass='off'] .editor-modal,
+:root[data-glass='off'] .grid-canvas,
+:root[data-glass='off'] .grid-item {
+  background: var(--bg-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Overlay glass polish */
+.editor-overlay {
+  background: color-mix(in srgb, #000 34%, transparent) !important;
+}
+
+/* 临时隐藏：详情区右上角 chip 按钮（如“最新”） */
+.head-op > .chip {
+  display: none !important;
+}
+
+/* Control states and contrast polish */
+:root {
+  --danger: #ef4444;
+  --danger-soft: color-mix(in srgb, var(--danger) 14%, var(--bg-surface));
+  --control-hover: color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  --control-active: color-mix(in srgb, var(--accent) 22%, var(--bg-surface));
+  --control-disabled-bg: color-mix(in srgb, var(--bg-muted) 72%, transparent);
+  --control-disabled-text: color-mix(in srgb, var(--text-soft) 70%, transparent);
+}
+
+:root[data-theme='dark'] {
+  --text-sub: #b8c6d8;
+  --text-soft: #93a5bb;
+  --border: rgba(203, 213, 225, 0.28);
+  --border-soft: rgba(148, 163, 184, 0.26);
+  --danger: #f87171;
+  --danger-soft: color-mix(in srgb, var(--danger) 18%, var(--bg-surface));
+}
+
+button,
+[role='button'],
+input[type='button'],
+input[type='submit'],
+input[type='reset'] {
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.16s ease;
+}
+
+button:hover,
+[role='button']:hover,
+input[type='button']:hover,
+input[type='submit']:hover,
+input[type='reset']:hover {
+  transform: translateY(-1px);
+}
+
+button:active,
+[role='button']:active,
+input[type='button']:active,
+input[type='submit']:active,
+input[type='reset']:active {
+  transform: translateY(0);
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  color: var(--control-disabled-text) !important;
+  border-color: color-mix(in srgb, var(--border) 70%, transparent) !important;
+  background: var(--control-disabled-bg) !important;
+  box-shadow: none !important;
+}
+
+.clear:hover,
+.icon-btn:hover,
+.edit-btn:hover,
+.close-btn:hover,
+.tab-btn:hover,
+.theme-select:hover,
+.search-input:hover,
+.input:hover,
+.select:hover,
+.catalog-select:hover,
+.filter:hover,
+.msg:hover {
+  background: var(--glass-reflection), var(--control-hover) !important;
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border)) !important;
+}
+
+.clear:active,
+.icon-btn:active,
+.edit-btn:active,
+.close-btn:active,
+.tab-btn:active,
+.theme-select:active,
+.search-input:active,
+.input:active,
+.select:active,
+.catalog-select:active,
+.filter:active,
+.msg:active {
+  background: var(--glass-reflection), var(--control-active) !important;
+}
+
+.search-btn:hover,
+.play-btn:hover,
+.play:hover,
+.ctrl.main:hover {
+  filter: brightness(1.05) saturate(1.05);
+}
+
+.search-btn:active,
+.play-btn:active,
+.play:active,
+.ctrl.main:active {
+  filter: brightness(0.96) saturate(1);
+}
+
+.action-btn,
+.remove-btn.btn-danger {
+  background: var(--glass-reflection), var(--danger-soft) !important;
+  color: var(--danger) !important;
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--border)) !important;
+}
+
+.action-btn:hover,
+.remove-btn.btn-danger:hover {
+  background: var(--glass-reflection), color-mix(in srgb, var(--danger) 20%, var(--bg-surface)) !important;
+}

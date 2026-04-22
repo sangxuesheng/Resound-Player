@@ -1,0 +1,36 @@
+{
+  "name": "gemini-music",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:web": "vite",
+    "dev:api": "node node_modules/@neteasecloudmusicapienhanced/api/app.js",
+    "dev:web:full": "concurrently -k \"PORT=38761 npm run dev:api\" \"VITE_API_PROXY_TARGET=http://127.0.0.1:38761 npm run dev:web\"",
+    "dev:renderer": "vite",
+    "dev:electron": "wait-on tcp:5173 && electron .",
+    "dev:desktop": "concurrently -k \"npm run dev:renderer\" \"npm run dev:electron\"",
+    "dev:desktop:headless": "xvfb-run -a npm run dev:desktop",
+    "dev": "npm run dev:desktop",
+    "build:web": "vite build",
+    "build:renderer": "vite build",
+    "check:animated-rhythm": "node scripts/check-animated-rhythm.mjs",
+    "fix:animated-rhythm": "node scripts/check-animated-rhythm.mjs --fix",
+    "start": "electron ."
+  },
+  "dependencies": {
+    "@neteasecloudmusicapienhanced/api": "^4.31.0",
+    "axios": "^1.8.2",
+    "lucide-vue-next": "^0.507.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.3",
+    "concurrently": "^9.1.2",
+    "electron": "^34.3.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0",
+    "wait-on": "^8.0.3"
+  }
+}

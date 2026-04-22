@@ -1,0 +1,330 @@
+<template>
+  <AnimatedAppear
+    tag="button"
+    variant="control"
+    rhythm="actions"
+    type="button"
+    class-name="bookmark-icon-button"
+    :class="{ saved: isSaved, loading: isLoading }"
+    :aria-pressed="isSaved"
+    :aria-label="isSaved ? '取消收藏' : '收藏'"
+    :disabled="isLoading"
+    @click="toggleSaved"
+  >
+    <span class="button-core">
+      <span class="icon-wrap" aria-hidden="true">
+        <Heart class="outline-heart" :size="16" />
+        <Heart class="fill-heart" :size="16" />
+      </span>
+    </span>
+
+    <span class="glow" aria-hidden="true"></span>
+    <span class="pulse pulse-a" aria-hidden="true"></span>
+    <span class="pulse pulse-b" aria-hidden="true"></span>
+    <span class="pulse pulse-c" aria-hidden="true"></span>
+
+    <span class="sparkles" aria-hidden="true">
+      <span v-for="sparkle in sparkles" :key="sparkle.id" class="sparkle" :style="sparkle.style"></span>
+    </span>
+  </AnimatedAppear>
+</template>
+
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { Heart } from 'lucide-vue-next';
+import { userStore } from '../../stores/user';
+import { toggleSongLike } from '../../api/music';
+import AnimatedAppear from '../AnimatedAppear.vue';
+
+const props = defineProps<{
+  songId?: number;
+  liked?: boolean;
+}>();
+
+const isSaved = ref(Boolean(props.liked ?? (props.songId ? userStore.likedSongIds.includes(props.songId) : false)));
+const isLoading = ref(false);
+const burstSeed = ref(0);
+
+watch(
+  () => props.liked,
+  (value) => {
+    if (value !== undefined) {
+      isSaved.value = value;
+    } else if (typeof props.songId === 'number') {
+      isSaved.value = userStore.likedSongIds.includes(props.songId);
+    }
+  },
+  { immediate: true },
+);
+
+const sparkles = computed(() => {
+  const colors = ['rgba(244,63,94,0.95)', 'rgba(251,113,133,0.9)', 'rgba(253,164,175,0.88)', 'rgba(244,114,182,0.9)', 'rgba(255,255,255,0.9)'];
+  return Array.from({ length: 6 }, (_, index) => {
+    const angle = (index / 6) * Math.PI * 2;
+    const distance = 16 + (index % 3) * 7;
+    const x = Math.cos(angle) * distance;
+    const y = Math.sin(angle) * distance * 0.7;
+    return {
+      id: `${burstSeed.value}-${index}`,
+      style: {
+        '--tx': `${x}px`,
+        '--ty': `${y}px`,
+        '--delay': `${index * 40}ms`,
+        '--sparkle-color': colors[index % colors.length],
+      },
+    };
+  });
+});
+
+async function toggleSaved() {
+  if (isLoading.value) return;
+  if (typeof props.songId !== 'number') return;
+
+  const nextState = !isSaved.value;
+  isLoading.value = true;
+
+  try {
+    const response = await toggleSongLike({
+      id: props.songId,
+      like: nextState,
+      uid: userStore.profile?.userId,
+    });
+    const code = response?.data?.code ?? response?.data?.data?.code;
+    if (typeof code === 'number' && code !== 200) {
+      throw new Error(`收藏失败，接口返回 ${code}`);
+    }
+
+    isSaved.value = nextState;
+    if (typeof props.songId === 'number') {
+      const exists = userStore.likedSongIds.includes(props.songId);
+      if (nextState && !exists) userStore.likedSongIds = [...userStore.likedSongIds, props.songId];
+      if (!nextState && exists) userStore.likedSongIds = userStore.likedSongIds.filter((id) => id !== props.songId);
+    }
+    burstSeed.value += 1;
+  } catch (error) {
+    console.error('[bookmark-icon-button] toggle failed', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+</script>
+
+<style scoped>
+.bookmark-icon-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 100%);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  color: var(--text-main);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 180ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, box-shadow 220ms ease;
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.bookmark-icon-button::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 48%);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.bookmark-icon-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.bookmark-icon-button:hover {
+  transform: translateY(-1px) scale(1.02);
+  border-color: rgba(251, 113, 133, 0.28);
+  box-shadow:
+    0 14px 28px rgba(244, 63, 94, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.bookmark-icon-button.loading {
+  opacity: 0.72;
+  cursor: progress;
+}
+
+.bookmark-icon-button:focus-visible {
+  outline: 2px solid rgba(251, 113, 133, 0.62);
+  outline-offset: 2px;
+}
+
+.bookmark-icon-button.saved {
+  border-color: rgba(251, 113, 133, 0.34);
+  background: linear-gradient(180deg, rgba(255, 228, 230, 0.52), rgba(255, 255, 255, 0.2));
+  color: #fb7185;
+}
+
+.button-core {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.icon-wrap {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.outline-heart,
+.fill-heart {
+  position: absolute;
+  inset: 0;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.outline-heart {
+  color: var(--bookmark-heart-outline);
+  opacity: 0.96;
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12));
+}
+
+.fill-heart {
+  color: var(--bookmark-heart-fill);
+  fill: currentColor;
+  opacity: 0;
+  transform: scale(0.4);
+  filter: drop-shadow(0 4px 10px rgba(251, 113, 133, 0.28));
+}
+
+.bookmark-icon-button.saved .outline-heart {
+  opacity: 0;
+  transform: scale(0.35) rotate(-8deg);
+}
+
+.bookmark-icon-button.saved .fill-heart {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.glow,
+.pulse,
+.sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glow {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.34) 0%, rgba(251, 113, 133, 0.1) 42%, rgba(251, 113, 133, 0) 70%);
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 220ms ease, transform 260ms ease;
+}
+
+.bookmark-icon-button.saved .glow {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+.pulse {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  opacity: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.bookmark-icon-button.saved .pulse {
+  animation: pulse-bloom 700ms ease-out;
+}
+
+.pulse-a { animation-delay: 0ms; }
+.pulse-b { animation-delay: 90ms; }
+.pulse-c { animation-delay: 180ms; }
+
+.sparkles {
+  z-index: 2;
+}
+
+.sparkle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+  margin-top: -2.5px;
+  border-radius: 999px;
+  background: var(--sparkle-color);
+  opacity: 0;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--sparkle-color) 70%, white);
+}
+
+.bookmark-icon-button.saved .sparkle {
+  animation: sparkle-burst 680ms ease-out var(--delay);
+}
+
+@keyframes pulse-bloom {
+  0% { opacity: 0.78; transform: scale(0.6); }
+  100% { opacity: 0; transform: scale(2.15); }
+}
+
+@keyframes sparkle-burst {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.2);
+  }
+  20% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), var(--ty)) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bookmark-icon-button,
+  .outline-heart,
+  .fill-heart,
+  .glow {
+    transition: none;
+  }
+
+  .bookmark-icon-button.saved .pulse,
+  .bookmark-icon-button.saved .sparkle {
+    animation: none;
+  }
+}
+
+.bookmark-icon-button:disabled {
+  pointer-events: none;
+}
+
+:global(html[data-theme='light']) {
+  --bookmark-heart-outline: #ef4444;
+  --bookmark-heart-fill: #fb7185;
+}
+
+:global(html[data-theme='dark']) {
+  --bookmark-heart-outline: #fda4af;
+  --bookmark-heart-fill: #fb7185;
+}
+</style>

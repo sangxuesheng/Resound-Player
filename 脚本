@@ -1,0 +1,104 @@
+一键启动
+npm run dev:web:full
+
+
+已实现你要求的全局统一入场动画系统，并且满足“不改布局、不重叠、首次出现触发、时长 300~500ms、ease-out”的约束。
+
+已完成内容
+1) 新增全局动画系统文件
+src/styles/animations.css
+包含统一 keyframes 与动画类：
+
+an-sidebar-enter：侧边/导航左滑淡入
+an-topbar-enter：顶部区域左滑淡入
+an-title-enter：标题上到下淡入
+an-content-enter：主容器下上淡入
+an-text-enter：普通文本轻微上浮淡入
+an-media-enter：图片/封面下上弹入+轻缩放
+an-control-enter：按钮/图标缩放淡入
+an-modal-enter：弹层中心缩放淡入
+an-stagger / an-stagger-media：列表错峰延迟入场
+2) 全局接入
+src/main.ts 已引入：import './styles/animations.css'
+3) 组件级差异化动画已加
+Sidebar.vue：容器左滑、菜单项错峰
+TopBar.vue：顶部左滑、品牌标题下落淡入、按钮缩放淡入
+HomePanel.vue：
+板块容器整体入场
+分类标签错峰+控件动画
+热门列表文本错峰
+专辑封面卡片媒体动画（弹入+缩放）
+SearchPage.vue：
+热搜、历史、结果列表交错淡入上浮
+标签和按钮缩放淡入
+PlaylistPanel.vue：标题下落、歌单条目错峰淡入
+LoginPanel.vue：容器入场、标题下落、按钮缩放、二维码弹层入场
+PlayerBar.vue：整体入场，控制按钮/图标缩放淡入
+4) 动画规范符合你的要求
+时长在 320ms~460ms 范围内
+统一使用 ease-out
+仅首次渲染触发（通过普通 animation，不做重复重播机制）
+未改动原有布局网格与尺寸约束
+
+
+我已经做的两件关键事
+1) 升级全局动画系统（src/styles/animations.css）
+新增了“通用设计令牌 + 动画基类 + 可访问性策略”：
+
+统一变量：
+--an-duration-fast/base/slow（320/380/460ms）
+--an-ease: ease-out
+--an-stagger-step
+通用动画类（未来组件直接套用）：
+an-enter-card
+an-enter-text
+an-enter-control
+an-enter-media
+an-enter-modal
+an-enter-nav
+an-sidebar-enter
+列表错峰：
+支持 --i 延迟索引
+可访问性：
+prefers-reduced-motion: reduce 时自动禁用动画，避免眩晕/性能问题
+2) 新增动画包装组件（src/components/AnimatedAppear.vue）
+你以后开发新组件时可以直接用这个组件，统一入场规则，不再手写动画细节：
+
+variant 指定动画类型（content/title/text/media/control/modal/nav/sidebar）
+index 传错峰延迟索引（自动映射 --i）
+tag 指定渲染标签（div/section/li/button 等）
+你后续开发时的执行规范（建议固定成团队规则）
+任何新增组件默认至少满足：
+
+根容器：an-enter-card 或 variant="content"
+标题：an-title-enter 或 variant="title"
+列表项：variant="text" + index
+图片卡片：variant="media" + index
+按钮/图标：variant="control" + index
+弹窗抽屉：variant="modal"
+这样就能保证未来功能（歌词、评论、日推、播放器队列、设置页）天然保持同一高级动效风格。
+
+你现在的“未来组件开发规范”（已可直接执行）
+新增组件时按这套写就能自动统一风格：
+
+容器：<AnimatedAppear variant="content" />
+标题：variant="title"
+文本项：variant="text" :index="idx"
+图片/卡片：variant="media" :index="idx"
+按钮图标：variant="control" :index="idx"
+弹层：variant="modal"
+侧栏/导航：variant="sidebar" / variant="nav"
+
+现在的动画接入规则已真正统一
+所有元素按语义接入：
+
+容器/板块：variant="content"
+标题：variant="title"
+文本：variant="text"
+图片/封面：variant="media"
+按钮/控件：variant="control"
+导航项：variant="nav"
+弹层（二维码等）：variant="modal"
+侧边栏：variant="sidebar"
+列表全部支持 :index="idx" 错峰延迟，且使用同一套时长与缓动变量。
+

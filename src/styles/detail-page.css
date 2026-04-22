@@ -1,0 +1,286 @@
+.panel,
+.daily-page {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: var(--space-4);
+  background: var(--glass-reflection), var(--bg-surface);
+  box-sizing: border-box;
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.panel::before,
+.daily-page::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--detail-head-fade-height, 320px);
+  z-index: 0;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(17, 24, 39, 0.56) 0%,
+      rgba(17, 24, 39, 0.34) 28%,
+      rgba(17, 24, 39, 0.14) 56%,
+      rgba(17, 24, 39, 0) 100%
+    ),
+    var(--cover-bg);
+  background-size: cover, cover;
+  background-position: center, var(--detail-head-bg-position, center);
+  transform: scale(1.1);
+  transform-origin: top center;
+  filter: blur(24px) saturate(155%) contrast(1.08);
+  opacity: 0.98;
+  pointer-events: none;
+}
+
+.panel::after,
+.daily-page::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--detail-head-fade-height, 320px);
+  z-index: 1;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--bg-surface) 8%, transparent) 0%,
+      color-mix(in srgb, var(--bg-surface) 18%, transparent) 22%,
+      color-mix(in srgb, var(--bg-surface) 34%, transparent) 46%,
+      color-mix(in srgb, var(--bg-surface) 56%, transparent) 68%,
+      color-mix(in srgb, var(--bg-surface) 72%, transparent) 86%,
+      transparent 100%
+    );
+  pointer-events: none;
+}
+
+.panel > *,
+.daily-page > * {
+  position: relative;
+  z-index: 2;
+}
+
+.panel,
+.daily-page,
+.detail-hero {
+  overflow: visible;
+}
+
+.back-btn {
+  height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--glass-reflection), var(--bg-muted);
+  color: var(--text-main);
+  backdrop-filter: blur(var(--glass-blur)) saturate(145%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(145%);
+  box-shadow: var(--glass-highlight);
+  cursor: pointer;
+  margin: var(--space-2) 0 var(--space-4);
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.back-btn:hover {
+  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px color-mix(in srgb, var(--accent) 12%, rgba(15, 23, 42, 0.1));
+}
+
+.state {
+  padding: var(--space-6) 0;
+  color: var(--text-soft);
+}
+
+.state.error {
+  color: var(--danger);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 269px 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: 18px;
+  overflow: hidden;
+  padding: var(--space-3);
+}
+
+.cover {
+  width: 269px;
+  height: 269px;
+  border-radius: 16px;
+  object-fit: cover;
+  box-shadow: none;
+  will-change: transform, box-shadow, filter;
+  transform-origin: center;
+}
+
+.title {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: 38px;
+  line-height: 1.15;
+  color: var(--text-main);
+}
+
+.sub {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.desc {
+  margin: var(--space-2) 0 0;
+  color: var(--text-sub);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.desc--collapsed {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  max-height: calc(1.5em * 2);
+}
+
+.desc-toggle {
+  margin-top: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.desc-toggle:hover {
+  text-decoration: underline;
+}
+
+.ops {
+  margin-top: 12px;
+}
+
+.play-all {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--accent) 92%, #fff),
+    color-mix(in srgb, var(--accent) 74%, #000)
+  );
+  color: #fff;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 34%, transparent), var(--glass-highlight);
+  cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+}
+
+.play-all:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 26%, transparent), var(--glass-highlight);
+}
+
+.play-all:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.song-list {
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  border-top: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-surface) 72%, transparent);
+}
+
+.song-list--search {
+  padding: 0;
+  border-top: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.song-item {
+  display: grid;
+  grid-template-columns: 40px 52px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 16px;
+}
+
+.song-item:last-child {
+  border-bottom: 0;
+}
+
+.idx {
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.song-cover {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.song-name {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.song-artist {
+  margin: 4px 0 0;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.play-btn {
+  height: 32px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.play-btn:hover {
+  transform: translateY(-1px);
+}
+
+.play-btn:active {
+  transform: translateY(0) scale(0.99);
+}
+
+@media (max-width: 767px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+
+  .cover {
+    width: 140px;
+    height: 140px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+}

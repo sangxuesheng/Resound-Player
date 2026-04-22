@@ -1,0 +1,245 @@
+:root {
+  --an-ease: ease-out;
+  --an-duration-fast: 320ms;
+  --an-duration-base: 380ms;
+  --an-duration-slow: 460ms;
+  --an-stagger-step: 48ms;
+
+  /* 统一节奏表（区块级延迟） */
+  --an-rhythm-step: 42ms;
+  --an-rhythm-shell: 0;
+  --an-rhythm-head: 1;
+  --an-rhythm-title: 2;
+  --an-rhythm-body: 3;
+  --an-rhythm-actions: 4;
+  --an-rhythm-list: 5;
+  --an-rhythm-overlay: 6;
+}
+
+@keyframes anFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anSlideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes anDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes anPopUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes anScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes anModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 基础入场类：只执行一次 */
+.an-sidebar-enter {
+  animation: anSlideLeft var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-shell)) * var(--an-rhythm-step));
+}
+
+.an-nav-enter {
+  animation: anSlideLeft var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-list)) * var(--an-rhythm-step)) + (var(--i, 0) * var(--an-stagger-step)));
+}
+
+.an-topbar-enter {
+  animation: anSlideLeft var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-head)) * var(--an-rhythm-step));
+}
+
+.an-title-enter {
+  animation: anDropIn var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-title)) * var(--an-rhythm-step));
+}
+
+.an-content-enter {
+  animation: anFadeUp var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step));
+}
+
+.an-text-enter {
+  animation: anFadeUp var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step)) + (var(--i, 0) * var(--an-stagger-step)));
+}
+
+.an-media-enter {
+  animation: anPopUp var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step)) + (var(--i, 0) * 56ms));
+}
+
+.an-control-enter {
+  animation: anScaleIn var(--an-duration-fast) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-actions)) * var(--an-rhythm-step)) + (var(--i, 0) * 36ms));
+}
+
+.an-modal-enter {
+  animation: anModalIn var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-overlay)) * var(--an-rhythm-step));
+}
+
+/* 列表错峰容器 */
+.an-stagger > * {
+  animation: anFadeUp var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--i, 0) * var(--an-stagger-step));
+}
+
+.an-stagger-media > * {
+  animation: anPopUp var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc(var(--i, 0) * 56ms);
+}
+
+/* 新组件通用基类：未来组件默认可直接套用 */
+.an-enter,
+.an-enter-card,
+.an-enter-text,
+.an-enter-control,
+.an-enter-media,
+.an-enter-modal,
+.an-enter-nav {
+  will-change: transform, opacity;
+}
+
+.an-enter {
+  animation: anFadeUp var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step));
+}
+
+.an-enter-card {
+  animation: anFadeUp var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step));
+}
+
+.an-enter-text {
+  animation: anFadeUp var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step)) + (var(--i, 0) * var(--an-stagger-step)));
+}
+
+.an-enter-control {
+  animation: anScaleIn var(--an-duration-fast) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-actions)) * var(--an-rhythm-step)) + (var(--i, 0) * 36ms));
+  transform-origin: center center;
+}
+
+.an-enter-media {
+  animation: anPopUp var(--an-duration-slow) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-body)) * var(--an-rhythm-step)) + (var(--i, 0) * 56ms));
+  transform-origin: center center;
+}
+
+.an-enter-modal {
+  animation: anModalIn var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc(var(--rhythm-offset, var(--an-rhythm-overlay)) * var(--an-rhythm-step));
+  transform-origin: center center;
+}
+
+.an-enter-nav {
+  animation: anSlideLeft var(--an-duration-base) var(--an-ease) both;
+  animation-delay: calc((var(--rhythm-offset, var(--an-rhythm-list)) * var(--an-rhythm-step)) + (var(--i, 0) * var(--an-stagger-step)));
+}
+
+.an-sidebar-enter {
+  transform-origin: left center;
+}
+
+.an-enter-card,
+.an-enter-media,
+.an-enter-control,
+.an-enter-nav,
+.an-sidebar-enter {
+  transition:
+    transform 220ms var(--an-ease),
+    box-shadow 220ms var(--an-ease),
+    border-color 220ms var(--an-ease),
+    background-color 220ms var(--an-ease),
+    opacity 220ms var(--an-ease);
+}
+
+/* 全局图片动态放大（Hover / Focus） */
+img {
+  transform: scale(1);
+  transition: transform var(--an-duration-base) var(--an-ease), filter var(--an-duration-base) var(--an-ease);
+  transform-origin: center center;
+  will-change: transform;
+}
+
+img:hover,
+img:focus-visible {
+  transform: scale(1.04);
+  filter: saturate(1.04);
+}
+
+/* 触屏设备点击反馈 */
+@media (hover: none) {
+  img:active {
+    transform: scale(1.02);
+  }
+}
+
+/* 可访问性：系统开启减少动态时，禁用动画 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  img,
+  img:hover,
+  img:focus-visible,
+  img:active {
+    transform: none !important;
+  }
+}
