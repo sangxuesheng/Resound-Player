@@ -226,11 +226,13 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="album album-gradient-card"
+              class-name="album album-gradient-card hover-play-button-trigger"
               :style="{ '--album-cover': `url(${item.pic || ''})` }"
               @click="openAlbumDetail(item.id)"
             >
-              <div class="album-cover" :style="{ backgroundImage: `url(${item.pic})` }"></div>
+              <div class="album-cover" :style="{ backgroundImage: `url(${item.pic})` }">
+                <HoverPlayButton class="hover-play-button--sm" />
+              </div>
               <div class="album-name">{{ item.name }}</div>
               <div class="album-artist">
                 <button
@@ -352,6 +354,7 @@ import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
+import HoverPlayButton from './HoverPlayButton.vue';
 import GridLayoutEditor from './GridLayoutEditor.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
@@ -1234,6 +1237,7 @@ async function playLatestSong(index: number) {
 </script>
 
 <style scoped>
+@import '../styles/hover-play-button.css';
 .home-page { display: grid; gap: var(--space-3); min-width: 0; overflow-x: clip; }
 .home-actions { display: flex; justify-content: flex-end; }
 .top-artists-section { display: grid; gap: var(--space-2); padding: 0; }
@@ -1479,7 +1483,7 @@ async function playLatestSong(index: number) {
   position: relative;
   z-index: 2;
 }
-.album-cover { width: 100%; aspect-ratio: 1; border-radius: 12px; background: var(--bg-soft) center/cover no-repeat; }
+.album-cover { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; position: relative; overflow: hidden; width: 100%; aspect-ratio: 1; border-radius: 12px; background: var(--bg-soft) center/cover no-repeat; }
 .album-name { margin-top: 6px; color: var(--text-main); font-size: 13px; font-weight: 600; }
 .album-artist { color: var(--text-soft); font-size: 12px; }
 .latest-scroll {

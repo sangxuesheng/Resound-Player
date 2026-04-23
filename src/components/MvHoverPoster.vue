@@ -1,5 +1,5 @@
 <template>
-  <div class="mv-hover-poster" :class="{ 'is-interactive': interactive }">
+  <div class="mv-hover-poster" :class="{ 'is-interactive': interactive, 'hover-play-button-trigger': interactive }">
     <AnimatedAppear
       v-if="imageSrc"
       tag="img"
@@ -27,12 +27,12 @@
         variant="text"
         :rhythm="rhythm"
         :index="index"
-        class-name="mv-hover-poster__count"
+        class-name="mv-hover-poster__count hover-play-button-count"
       >
         {{ countLabel }}
       </AnimatedAppear>
-      <span class="mv-hover-poster__play-button">
-        <span class="mv-hover-poster__play-icon" />
+      <span class="mv-hover-poster__play-button hover-play-button">
+        <span class="mv-hover-poster__play-icon hover-play-button__icon" />
       </span>
     </div>
   </div>
@@ -40,6 +40,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import '../styles/hover-play-button.css';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 const props = withDefaults(
@@ -128,11 +129,6 @@ function formatPlayCount(count?: number | string) {
 .mv-hover-poster__count,
 .mv-hover-poster__play-button {
   position: absolute;
-  transition:
-    opacity 0.24s ease,
-    transform 0.24s ease,
-    filter 0.24s ease;
-  will-change: opacity, transform;
 }
 
 .mv-hover-poster__count {
@@ -158,19 +154,6 @@ function formatPlayCount(count?: number | string) {
 .mv-hover-poster__play-button {
   right: 10px;
   bottom: 10px;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08) 42%, rgba(15, 23, 42, 0.18) 100%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
-  opacity: 0;
-  transform: translateY(8px) scale(0.92);
 }
 
 .mv-hover-poster__play-icon {
@@ -181,19 +164,5 @@ function formatPlayCount(count?: number | string) {
   border-bottom: 7px solid transparent;
   border-left: 11px solid #fff;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.16));
-}
-
-.is-interactive:hover .mv-hover-poster__count,
-.is-interactive:focus-within .mv-hover-poster__count,
-.is-interactive:focus-visible .mv-hover-poster__count {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.is-interactive:hover .mv-hover-poster__play-button,
-.is-interactive:focus-within .mv-hover-poster__play-button,
-.is-interactive:focus-visible .mv-hover-poster__play-button {
-  opacity: 1;
-  transform: translateY(0) scale(1);
 }
 </style>

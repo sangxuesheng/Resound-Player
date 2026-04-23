@@ -17,11 +17,12 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="featured-card"
+              class-name="featured-card hover-play-button-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="featured-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <HoverPlayButton class="rank-hover-play hover-play-button--lg" />
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -38,12 +39,13 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="curated-card"
+              class-name="curated-card hover-play-button-trigger"
               :class="`palette-${(idx % 5) + 1}`"
               :style="{ '--curated-cover': `url(${item.coverImgUrl})` }"
               type="button"
               @click="openDetail(item.id)"
             >
+              <HoverPlayButton class="rank-hover-play hover-play-button--lg" />
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -175,12 +177,13 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="language-card"
+              class-name="language-card hover-play-button-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-cover" :src="item.coverImgUrl" :alt="formatLanguageTitle(item.name)" loading="lazy" />
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-flag" :src="getLanguageFlag(item.id)" :alt="`${formatLanguageTitle(item.name)} 国旗`" loading="lazy" />
+              <HoverPlayButton class="rank-hover-play hover-play-button--md" />
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -198,7 +201,7 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="genre-card"
+              class-name="genre-card hover-play-button-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
@@ -207,6 +210,7 @@
                 <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="genre-name">{{ item.name }}</AnimatedAppear>
                 <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="genre-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
               </AnimatedAppear>
+              <HoverPlayButton class="rank-hover-play" />
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -224,11 +228,12 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="car-card"
+              class-name="car-card hover-play-button-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="car-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <HoverPlayButton class="rank-hover-play" />
             </AnimatedAppear>
           </AnimatedAppear>
         </AnimatedAppear>
@@ -301,6 +306,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { getPlaylistTrackAll, getToplistDetail } from '../api/music';
 import AnimatedAppear from './AnimatedAppear.vue';
+import HoverPlayButton from './HoverPlayButton.vue';
 import PageLayoutShell from './PageLayoutShell.vue';
 
 type ToplistTrack = { first?: string; second?: string };
@@ -562,6 +568,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@import '../styles/hover-play-button.css';
+
 .rank-page-shell { }
 
 .rank-page-body { }
@@ -576,6 +584,7 @@ onMounted(() => {
 .section-head h3 { margin: 0; font-size: 17px; color: var(--text-main); }
 .section-sub { color: var(--text-soft); font-size: 12px; }
 .featured-scroll { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
+.rank-hover-play { right: 18px; bottom: 18px; z-index: 3; }
 .curated-section { gap: var(--space-2); }
 .curated-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
 .curated-card {
@@ -608,22 +617,24 @@ onMounted(() => {
 .language-section { gap: var(--space-2); }
 .language-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
 .language-card { position: relative; border: 1px solid color-mix(in srgb, var(--border) 66%, transparent); border-radius: 14px; min-height: 128px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 8%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.language-card { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; }
 .language-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .language-cover { width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; display: block; }
 .language-flag { position: absolute; top: 14px; right: 14px; width: 32px; height: 23px; border-radius: 5px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22); }
 
 .genre-section { gap: var(--space-2); }
 .genre-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
-.genre-card { border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.genre-card { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
 .genre-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .genre-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
 .genre-meta { min-width: 0; display: grid; gap: 4px; }
+.genre-card .rank-hover-play { right: 18px; bottom: 68px; z-index: 2; }
 .genre-name { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .genre-update { font-size: 11px; color: var(--text-soft); }
 
 .car-section { gap: var(--space-2); }
 .car-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--space-2); }
-.car-card { border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: block; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.car-card { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: block; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
 .car-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .car-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
 

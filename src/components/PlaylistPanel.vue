@@ -49,13 +49,14 @@
         variant="media"
         rhythm="list"
         :index="idx"
-        class-name="card playlist-gradient-card"
+        class-name="card playlist-gradient-card hover-play-button-trigger"
         :style="{ '--playlist-cover': `url(${resolveCover(item)})` }"
         @click="openDetail(item.id)"
       >
         <div class="cover">
           <img :src="resolveCover(item)" :alt="item.name" loading="lazy" />
-          <span class="count">{{ formatCount(item.playCount) }}</span>
+          <span class="count hover-play-button-count">{{ formatCount(item.playCount) }}</span>
+          <HoverPlayButton class="hover-play-button--md" />
         </div>
         <div class="info">
           <p class="name" :title="item.name">{{ item.name }}</p>
@@ -82,6 +83,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getHighQualityPlaylists, getPlaylistCatList, getTopPlaylists } from '../api/music';
 import { resolvePlaylistCoverUrl } from '../utils/image';
 import AnimatedAppear from './AnimatedAppear.vue';
+import HoverPlayButton from './HoverPlayButton.vue';
 import PlaylistHighlightSection from './PlaylistHighlightSection.vue';
 
 type PlaylistItem = {
@@ -544,9 +546,10 @@ watch(
   z-index: 2;
 }
 
-.cover { position: relative; }
+.cover { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; overflow: hidden; }
 .cover img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .count { position: absolute; right: var(--space-2); top: var(--space-2); font-size: 12px; color: #fff; background: rgba(0, 0, 0, 0.5); padding: 2px 6px; border-radius: 999px; z-index: 3; }
+.playlist-hover-play { right: 10px; bottom: 10px; z-index: 4; }
 .info { padding: var(--space-2); }
 .info .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .info .sub { margin: var(--space-1) 0 0; font-size: 12px; color: #6b7280; }

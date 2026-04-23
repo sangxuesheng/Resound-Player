@@ -1,0 +1,79 @@
+.hover-play-button {
+  --hover-play-button-size: 36px;
+  --hover-play-button-offset: 10px;
+  --hover-play-button-icon-width: calc(var(--hover-play-button-size) * 0.262);
+  --hover-play-button-icon-height: calc(var(--hover-play-button-size) * 0.167);
+  --hover-play-button-icon-shift: calc(var(--hover-play-button-size) * 0.071);
+  --hover-play-button-border-width: max(1px, calc(var(--hover-play-button-size) * 0.024));
+  --hover-play-button-shadow-y: calc(var(--hover-play-button-size) * 0.286);
+  --hover-play-button-shadow-blur: calc(var(--hover-play-button-size) * 0.667);
+  --hover-play-button-lift: max(6px, calc(var(--hover-play-button-size) * 0.19));
+  position: absolute;
+  right: var(--hover-play-button-offset);
+  bottom: var(--hover-play-button-offset);
+  width: var(--hover-play-button-size);
+  height: var(--hover-play-button-size);
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08) 42%, rgba(15, 23, 42, 0.18) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08));
+  border: var(--hover-play-button-border-width) solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 var(--hover-play-button-shadow-y) var(--hover-play-button-shadow-blur) rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  transform: translateY(var(--hover-play-button-lift)) scale(0.92);
+  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+  will-change: opacity, transform;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.hover-play-button__icon {
+  width: 0;
+  height: 0;
+  margin-left: var(--hover-play-button-icon-shift);
+  border-top: var(--hover-play-button-icon-height) solid transparent;
+  border-bottom: var(--hover-play-button-icon-height) solid transparent;
+  border-left: var(--hover-play-button-icon-width) solid #fff;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.16));
+}
+
+.hover-play-button--sm {
+  --hover-play-button-size: 30px;
+  --hover-play-button-offset: 8px;
+}
+
+.hover-play-button--md {
+  --hover-play-button-size: 36px;
+  --hover-play-button-offset: 10px;
+}
+
+.hover-play-button--lg {
+  --hover-play-button-size: 42px;
+  --hover-play-button-offset: 10px;
+}
+
+.hover-play-button-trigger:hover .hover-play-button,
+.hover-play-button-trigger:focus-within .hover-play-button,
+.hover-play-button-trigger:focus-visible .hover-play-button {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.hover-play-button-count,
+.hover-play-button-count-trigger {
+  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
+  will-change: opacity, transform;
+}
+
+.hover-play-button-trigger:hover .hover-play-button-count,
+.hover-play-button-trigger:focus-within .hover-play-button-count,
+.hover-play-button-trigger:focus-visible .hover-play-button-count,
+.hover-play-button-count-trigger:hover,
+.hover-play-button-count-trigger:focus-within,
+.hover-play-button-count-trigger:focus-visible {
+  opacity: 0;
+  transform: translateY(-8px);
+}
