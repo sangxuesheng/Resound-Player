@@ -25,6 +25,19 @@ export function getLoginStatus(cookie?: string) {
   });
 }
 
+export function logout(cookie?: string) {
+  return apiClient.post(
+    '/logout',
+    {},
+    {
+      params: {
+        timestamp: Date.now(),
+        ...(cookie ? { cookie } : {}),
+      },
+    },
+  );
+}
+
 export function getUserAccount() {
   return apiClient.get('/user/account', {
     params: { timestamp: Date.now() },

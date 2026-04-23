@@ -62,22 +62,74 @@
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg">
         <Bell :size="16" />
       </AnimatedAppear>
-      <AnimatedAppear tag="div" variant="control" rhythm="actions" :index="2" class-name="avatar">TW</AnimatedAppear>
+      <div class="user-menu-wrap">
+        <AnimatedAppear
+          tag="button"
+          variant="control"
+          rhythm="actions"
+          :index="2"
+          class-name="avatar"
+          :attrs="{ type: 'button', 'aria-label': userStore.isLogin ? '打开用户菜单' : '登录', 'aria-expanded': userStore.isLogin ? String(showUserMenu) : undefined }"
+          @click.stop="onUserButtonClick"
+        >
+          <img v-if="userAvatarUrl" :src="userAvatarUrl" :alt="userAvatarAlt" class="avatar-img" />
+          <span v-else class="avatar-text">{{ userInitials }}</span>
+        </AnimatedAppear>
+
+        <transition name="user-menu-fade">
+          <div v-if="showUserMenu && userStore.isLogin" class="user-menu" @click.stop>
+            <div class="user-card">
+              <img v-if="userAvatarUrl" :src="userAvatarUrl" :alt="userAvatarAlt" class="user-card-avatar" />
+              <div class="user-card-meta">
+                <strong>{{ userStore.profile?.nickname || '未命名用户' }}</strong>
+                <span>UID {{ userStore.profile?.userId || '-' }}</span>
+                <em>{{ loginModeLabel }}</em>
+              </div>
+            </div>
+
+            <div class="menu-section">
+              <button class="menu-item" type="button" @click="emitMenuAction('open-user')">用户中心</button>
+              <button class="menu-item" type="button" @click="emitMenuAction('open-settings-page')">设置页面</button>
+              <button class="menu-item" type="button" @click="refreshLoginState">刷新登录状态</button>
+            </div>
+
+            <div class="menu-section">
+              <button class="menu-item" type="button" @click="toggleThemeMode">主题模式<span>{{ currentThemeLabel }}</span></button>
+              <button class="menu-item" type="button" @click="toggleAccentMode">主题色<span>{{ currentAccentLabel }}</span></button>
+            </div>
+
+            <div class="menu-section">
+              <button class="menu-item" type="button" @click="copyUserId">复制用户 ID</button>
+              <button class="menu-item danger" type="button" @click="logoutUser">退出登录</button>
+            </div>
+
+            <p v-if="menuFeedback" class="menu-feedback">{{ menuFeedback }}</p>
+          </div>
+        </transition>
+      </div>
     </div>
   </AnimatedAppear>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Bell, Search } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 import { uiStore } from '../stores/ui';
+import { userStore } from '../stores/user';
 
 const RECENT_KEY = 'tm_search_history';
-const emit = defineEmits<{ (e: 'brand-click'): void; (e: 'search-submit', keyword: string): void }>();
+const emit = defineEmits<{
+  (e: 'brand-click'): void;
+  (e: 'search-submit', keyword: string): void;
+  (e: 'user-click'): void;
+  (e: 'open-settings-page'): void;
+}>();
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const showRecentPanel = ref(false);
+const showUserMenu = ref(false);
+const menuFeedback = ref('');
 const recentSearches = ref<string[]>(readRecentSearches());
 const isExpanded = ref(false);
 const isClicked = ref(false);
@@ -90,6 +142,32 @@ const searchKeyword = computed({
   },
 });
 const searchPlaceholder = computed(() => uiStore.defaultSearchHint || '搜索歌曲/歌手，热搜：周杰伦、林俊杰、告五人');
+const userAvatarUrl = computed(() => userStore.profile?.avatarUrl || '');
+const userAvatarAlt = computed(() => `${userStore.profile?.nickname || '用户'}头像`);
+const userInitials = computed(() => {
+  if (!userStore.isLogin) return '登录';
+  const name = userStore.profile?.nickname?.trim() || '用户';
+  return Array.from(name).slice(0, 2).join('').toUpperCase();
+});
+const loginModeLabel = computed(() => {
+  if (userStore.loginMode === 'uid') return '搜索用户模式';
+  if (userStore.loginMode === 'qr') return '扫码登录';
+  if (userStore.loginMode === 'cookie') return 'Cookie 登录';
+  return '已登录';
+});
+const accentModes = ['绿色', '蓝色', '紫色', '橙色', '自定义'] as const;
+const currentThemeLabel = computed(() => uiStore.themeMode);
+const currentAccentLabel = computed(() => uiStore.accentMode);
+function getNextThemeMode() {
+  if (uiStore.themeMode === '浅色') return '深色' as const;
+  if (uiStore.themeMode === '深色') return '跟随系统' as const;
+  return '浅色' as const;
+}
+function getNextAccentMode() {
+  const currentIndex = accentModes.indexOf(uiStore.accentMode);
+  const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+  return accentModes[(safeIndex + 1) % accentModes.length];
+}
 
 function readRecentSearches() {
   try {
@@ -179,14 +257,68 @@ function closeRecentPanel() {
 
 function onInputEscape() {
   closeRecentPanel();
+  closeUserMenu();
   if (!uiStore.searchKeyword.trim()) {
     collapseSearch();
   }
 }
 
+function closeUserMenu() {
+  showUserMenu.value = false;
+}
+
+function onUserButtonClick() {
+  if (!userStore.isLogin) {
+    emit('user-click');
+    return;
+  }
+
+  showUserMenu.value = !showUserMenu.value;
+  menuFeedback.value = '';
+}
+
+function emitMenuAction(action: 'open-user' | 'open-settings-page') {
+  closeUserMenu();
+  if (action === 'open-user') emit('user-click');
+  if (action === 'open-settings-page') emit('open-settings-page');
+}
+
+async function refreshLoginState() {
+  menuFeedback.value = '正在刷新...';
+  await userStore.refreshLoginStatus();
+  menuFeedback.value = '登录状态已刷新';
+}
+
+function toggleThemeMode() {
+  const nextMode = getNextThemeMode();
+  uiStore.setThemeMode(nextMode);
+  menuFeedback.value = `已切换到${uiStore.themeMode}`;
+}
+
+function toggleAccentMode() {
+  const nextAccent = getNextAccentMode();
+  uiStore.setAccentMode(nextAccent);
+  menuFeedback.value = `已切换到${uiStore.accentMode}主题`;
+}
+
+async function copyUserId() {
+  const uid = userStore.profile?.userId;
+  if (!uid) return;
+  await navigator.clipboard?.writeText(String(uid));
+  menuFeedback.value = '用户 ID 已复制';
+}
+
+async function logoutUser() {
+  await userStore.logout();
+  closeUserMenu();
+  emit('user-click');
+}
+
 function onDocClick(e: MouseEvent) {
   const target = e.target as Node;
   const root = searchInputRef.value?.closest('.search-wrap');
+  const userMenuRoot = document.querySelector('.user-menu-wrap');
+
   if (root && !root.contains(target)) {
     closeRecentPanel();
     if (!uiStore.searchKeyword.trim()) {
@@ -195,14 +327,27 @@ function onDocClick(e: MouseEvent) {
       isClicked.value = false;
     }
   }
+
+  if (userMenuRoot && !userMenuRoot.contains(target)) {
+    closeUserMenu();
+  }
+}
+
+function onDocKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    closeRecentPanel();
+    closeUserMenu();
+  }
 }
 
 onMounted(() => {
   window.addEventListener('click', onDocClick);
+  window.addEventListener('keydown', onDocKeydown);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener('click', onDocClick);
+  window.removeEventListener('keydown', onDocKeydown);
 });
 </script>
 
@@ -222,6 +367,9 @@ onBeforeUnmount(() => {
   gap: var(--space-3);
   box-sizing: border-box;
   min-width: 0;
+  position: relative;
+  z-index: 120;
+  overflow: visible;
 }
 .brand {
   width: 100%;
@@ -423,11 +571,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
+  position: relative;
+  z-index: 130;
+  overflow: visible;
 }
 .msg {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--glass-reflection), var(--bg-muted);
   color: var(--text-main);
@@ -443,15 +594,148 @@ onBeforeUnmount(() => {
 .msg:active {
   transform: translateY(0) scale(0.99);
 }
+.user-menu-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  z-index: 140;
+  overflow: visible;
+}
 .avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 92%, #fff), color-mix(in srgb, var(--accent) 74%, #000));
-  color: #fff;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--glass-reflection), var(--bg-muted);
+  color: var(--text-main);
+  cursor: pointer;
+  display: block;
   font-size: 12px;
   font-weight: 700;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.avatar:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
+  transform: translateY(-1px);
+}
+.avatar:active {
+  transform: translateY(0) scale(0.99);
+}
+.avatar-text {
+  writing-mode: horizontal-tb;
+  white-space: nowrap;
+  line-height: 1;
+  transform: none;
+}
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+.user-menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  z-index: 300;
+  width: 286px;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--bg-solid);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  display: grid;
+  gap: var(--space-3);
+}
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--bg-solid) 88%, var(--bg-muted));
+}
+.user-card-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+.user-card-meta {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+.user-card-meta strong,
+.user-card-meta span,
+.user-card-meta em {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-card-meta strong {
+  color: var(--text-main);
+  font-size: 15px;
+}
+.user-card-meta span,
+.user-card-meta em {
+  color: var(--text-sub);
+  font-size: 12px;
+  font-style: normal;
+}
+.menu-section {
+  display: grid;
+  gap: 6px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+}
+.menu-item {
+  min-height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.menu-item span {
+  color: var(--text-sub);
+  font-size: 12px;
+}
+.menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-solid));
+  color: var(--accent);
+}
+.menu-item.danger {
+  color: #dc2626;
+}
+.menu-feedback {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 12px;
+  text-align: center;
+}
+.user-menu-fade-enter-active,
+.user-menu-fade-leave-active {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.user-menu-fade-enter-from,
+.user-menu-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

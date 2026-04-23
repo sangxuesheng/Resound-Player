@@ -8,7 +8,7 @@
     />
 
     <div class="main-area">
-      <TopBar @brand-click="onBrandClick" @search-submit="openSearchPage" />
+      <TopBar @brand-click="onBrandClick" @search-submit="openSearchPage" @user-click="openUserLogin" @open-settings-page="() => openSettings('playback')" />
 
       <main class="content" :class="{ 'content--user-page': activePage === 'user', 'content--hero-sticky': isHeroStickyPage }">
         <div class="content-shell">
@@ -86,7 +86,7 @@
           <HistoryPanel v-else-if="activePage === 'history'" class="history-page-host" />
           <PodcastListPage v-else-if="activePage === 'podcast-list'" :items="podcastItems" :loading="podcastLoading" @back="backToUser" @open-detail="openPodcastDetail" />
           <PodcastDetailPage v-else-if="activePage === 'podcast-detail'" :title="activePodcastTitle" :items="podcastDetailItems" :loading="podcastDetailLoading" @back="backToPodcastList" />
-          <SettingsPage v-else-if="activePage === 'settings'" />
+          <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
       </main>
@@ -150,6 +150,7 @@ const apiReady = ref(false);
 const isNarrow = ref(false);
 const sidebarOpen = ref(true);
 const sidebarCollapsed = ref(false);
+const settingsInitialTab = ref<'playback' | 'appearance' | 'account'>('appearance');
 
 const layoutVars = computed<Record<string, string>>(() => {
   if (isNarrow.value) {
@@ -417,6 +418,15 @@ function openArtistFromHome(artist: any) {
 function openUserFromHome(userId: number) {
   activeUserId.value = Number(userId || 0);
   activePage.value = 'user-detail';
+}
+
+function openUserLogin() {
+  activePage.value = 'user';
+}
+
+function openSettings(tab: 'playback' | 'appearance' | 'account' = 'appearance') {
+  settingsInitialTab.value = tab;
+  activePage.value = 'settings';
 }
 
 function openArtistFromRank(artist: any) {

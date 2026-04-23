@@ -320,11 +320,12 @@ export async function getAlbumDetail(id: number) {
   });
 }
 
-export async function getAlbumSublist(params?: { limit?: number; offset?: number }) {
+export async function getAlbumSublist(params?: { limit?: number; offset?: number; cookie?: string }) {
   return apiClient.get('/album/sublist', {
     params: {
       limit: params?.limit ?? 25,
       offset: params?.offset ?? 0,
+      ...(params?.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -440,21 +441,23 @@ export async function getVoiceDetail(id: number) {
   });
 }
 
-export async function getCloudStorage(params?: { limit?: number; offset?: number }) {
+export async function getCloudStorage(params?: { limit?: number; offset?: number; cookie?: string }) {
   return apiClient.get('/user/cloud', {
     params: {
       limit: params?.limit ?? 30,
       offset: params?.offset ?? 0,
+      ...(params?.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export async function getCloudStorageDetail(ids: string | number | Array<string | number>) {
+export async function getCloudStorageDetail(ids: string | number | Array<string | number>, cookie?: string) {
   const value = Array.isArray(ids) ? ids.join(',') : String(ids);
   return apiClient.get('/user/cloud/detail', {
     params: {
       id: value,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });

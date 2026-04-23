@@ -43,35 +43,35 @@
         <p v-else class="mini-desc">{{ dailyRecommendLoading ? '每日推荐加载中…' : dailyRecommendError || '登录后可查看每日推荐' }}</p>
       </AnimatedAppear>
 
-      <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
-        <button v-if="dailyRecoRadar" class="radar-hero poster" :title="dailyRecoRadar.name" @click="openRecoDetail(dailyRecoRadar.id)">
-          <span class="radar-bg" :style="{ backgroundImage: `url(${radarCoverUrl || dailyRecoRadar.picUrl || ''})` }"></span>
+      <AnimatedAppear v-if="showRecoCard" tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
+        <button v-if="topRecoCard" class="radar-hero poster" :title="topRecoCard.name" @click="openRecoDetail(topRecoCard.id)">
+          <span class="radar-bg" :style="{ backgroundImage: `url(${topRecoCardCoverUrl})` }"></span>
           <span class="radar-poster-top">
-            <span class="radar-top-title">私人雷达</span>
+            <span class="radar-top-title">{{ topRecoCardTitle }}</span>
             <button
-              v-if="resolvePlaylistCreatorId(dailyRecoRadar)"
+              v-if="resolvePlaylistCreatorId(topRecoCard)"
               type="button"
               class="creator-inline-btn"
-              @click.stop="openUserDetailById(resolvePlaylistCreatorId(dailyRecoRadar))"
+              @click.stop="openUserDetailById(resolvePlaylistCreatorId(topRecoCard))"
             >
-              {{ resolvePlaylistCreatorName(dailyRecoRadar) }}
+              {{ resolvePlaylistCreatorName(topRecoCard) }}
             </button>
           </span>
           <span class="radar-bottom-zone">
-            <span class="radar-poster-bottom">私人雷达｜从「{{ radarTopTracks[0]?.name || '你的偏好音乐' }}」听起</span>
+            <span class="radar-poster-bottom">{{ topRecoCardSubtitle }}</span>
             <span class="radar-hover-list">
               <span
-                v-for="(track, idx) in radarTopTracks.slice(0, 3)"
-                :key="track.id"
+                v-for="(track, idx) in topRecoTracks.slice(0, 3)"
+                :key="track.id || `${track.name}-${idx}`"
                 class="radar-hover-item"
-                @click.stop="playRadarByIndex(idx)"
+                @click.stop="playRecoByIndex(idx)"
               >
                 <span class="radar-hover-rank">{{ idx + 1 }}</span>
                 <span class="radar-hover-name">{{ track.name }}</span>
                 <span class="radar-hover-artist">
                   <button
                     v-for="artist in getTrackArtists(track)"
-                    :key="`${track.id}-${artist.id || artist.name}`"
+                    :key="`${track.id || idx}-${artist.id || artist.name}`"
                     type="button"
                     class="artist-inline-btn"
                     @click.stop="openArtistDetail(artist)"
@@ -84,7 +84,7 @@
             </span>
           </span>
         </button>
-        <p v-else class="mini-desc">{{ privateRadarLoading ? '私人雷达加载中…' : privateRadarError || '登录后可查看私人雷达' }}</p>
+        <p v-else class="mini-desc">{{ topRecoLoading ? `${topRecoCardTitle}加载中…` : topRecoError || topRecoEmptyText }}</p>
       </AnimatedAppear>
 
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card fm-card" :index="2">
@@ -350,6 +350,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic } from '../api/music';
+import { getUserCreatedPlaylist } from '../api/auth';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
@@ -436,11 +437,33 @@ const radarCoverUrl = ref('');
 const privateRadar = ref<Array<{ id: number; name: string; picUrl?: string }>>([]);
 const privateRadarLoading = ref(false);
 const privateRadarError = ref('');
+const publicRecoLoading = ref(false);
+const publicRecoError = ref('');
 const dailyRecommendCoverUrl = computed(() => dailyRecommendSongs.value[0]?.al?.picUrl || dailyRecommendSongs.value[0]?.album?.picUrl || dailyRecommendSongs.value[0]?.album?.blurPicUrl || dailyRecommendSongs.value[0]?.picUrl || dailyRecommendSongs.value[0]?.coverImgUrl || '');
 const dailyRecommendHeroTitle = computed(() => dailyRecommendSongs.value[0]?.name || '每日推荐');
 const dailyRecommendHeroSubtitle = computed(() => dailyRecommendSongs.value[0]?.ar?.map((a: any) => a.name).join('/') || '每日为你更新的歌曲');
 const dailyRecommendTracks = computed(() => dailyRecommendSongs.value.slice(0, 3));
+const isUidLogin = computed(() => userStore.loginMode === 'uid');
+const publicRecoPlaylists = ref<Array<{ id: number; name: string; coverImgUrl?: string; picUrl?: string; creator?: any }>>([]);
+const publicRecoTracks = ref<any[]>([]);
+const publicRecoCoverUrl = ref('');
+const showRecoCard = computed(() => userStore.isLogin);
 const dailyRecoRadar = computed(() => privateRadar.value.find((item) => item.name.includes('私人雷达')) || null);
+const topRecoCard = computed(() => (isUidLogin.value ? publicRecoPlaylists.value[0] || null : dailyRecoRadar.value));
+const topRecoTracks = computed(() => (isUidLogin.value ? publicRecoTracks.value : radarTopTracks.value));
+const topRecoCardTitle = computed(() => (isUidLogin.value ? '我的喜欢' : '私人雷达'));
+const topRecoCardSubtitle = computed(() => {
+  const fallback = isUidLogin.value ? '当前账号的公开创建歌单' : '你的偏好音乐';
+  return `${topRecoCardTitle.value}｜从「${topRecoTracks.value[0]?.name || fallback}」听起`;
+});
+const topRecoCardCoverUrl = computed(() => (
+  isUidLogin.value
+    ? userStore.profile?.avatarUrl || publicRecoCoverUrl.value || topRecoCard.value?.coverImgUrl || topRecoCard.value?.picUrl || ''
+    : radarCoverUrl.value
+));
+const topRecoLoading = computed(() => (isUidLogin.value ? publicRecoLoading.value : privateRadarLoading.value));
+const topRecoError = computed(() => (isUidLogin.value ? publicRecoError.value : privateRadarError.value));
+const topRecoEmptyText = computed(() => (isUidLogin.value ? '该用户暂未公开创建歌单' : '登录后可查看私人雷达'));
 const personalFmTracks = ref<any[]>([]);
 const personalFmLoading = ref(false);
 const personalFmError = ref('');
@@ -655,10 +678,11 @@ async function fetchRadarPlaylistDetail() {
     radarTopTracks.value = (playlist?.tracks || []).slice(0, 8);
 
     const trackCover =
+      playlist?.tracks?.[0]?.al?.picUrl ||
+      playlist?.tracks?.[0]?.album?.picUrl ||
       playlist?.coverImgUrl ||
       playlist?.coverUrl ||
       playlist?.blurCoverImgUrl ||
-      playlist?.tracks?.[0]?.al?.picUrl ||
       '';
 
     radarCoverUrl.value = trackCover;
@@ -668,8 +692,88 @@ async function fetchRadarPlaylistDetail() {
   }
 }
 
+async function fetchPublicRecoPlaylistDetail() {
+  const playlist = publicRecoPlaylists.value[0];
+  if (!playlist?.id) {
+    publicRecoTracks.value = [];
+    publicRecoCoverUrl.value = '';
+    return;
+  }
+
+  try {
+    const { data } = await getPlaylistDetail(playlist.id, 8);
+    const detail = data?.playlist;
+    publicRecoTracks.value = (detail?.tracks || []).slice(0, 8);
+    publicRecoCoverUrl.value =
+      detail?.coverImgUrl ||
+      detail?.coverUrl ||
+      detail?.blurCoverImgUrl ||
+      detail?.tracks?.[0]?.al?.picUrl ||
+      playlist.coverImgUrl ||
+      playlist.picUrl ||
+      '';
+  } catch {
+    publicRecoTracks.value = [];
+    publicRecoCoverUrl.value = playlist.coverImgUrl || playlist.picUrl || '';
+  }
+}
+
+async function fetchPublicRecoPlaylists() {
+  if (!userStore.isLogin || !isUidLogin.value || !userStore.profile?.userId) {
+    publicRecoPlaylists.value = [];
+    publicRecoTracks.value = [];
+    publicRecoCoverUrl.value = '';
+    publicRecoError.value = '';
+    publicRecoLoading.value = false;
+    return;
+  }
+
+  publicRecoLoading.value = true;
+  publicRecoError.value = '';
+
+  try {
+    const { data } = await getUserCreatedPlaylist(userStore.profile.userId, 8, 0);
+    const list = Array.isArray(data?.playlist)
+      ? data.playlist
+      : Array.isArray(data?.list)
+        ? data.list
+        : Array.isArray(data?.data?.playlist)
+          ? data.data.playlist
+          : [];
+
+    publicRecoPlaylists.value = list
+      .filter((item: any) => Number(item?.id || 0) > 0)
+      .map((item: any) => ({
+        ...item,
+        creator: item?.creator || userStore.profile || null,
+      }));
+
+    await fetchPublicRecoPlaylistDetail();
+
+    if (!publicRecoPlaylists.value.length) {
+      publicRecoError.value = '该用户暂未公开创建歌单';
+    }
+  } catch (e: any) {
+    publicRecoPlaylists.value = [];
+    publicRecoTracks.value = [];
+    publicRecoCoverUrl.value = '';
+    publicRecoError.value = e?.message || '公开歌单获取失败，请稍后重试';
+  } finally {
+    publicRecoLoading.value = false;
+  }
+}
+
 async function fetchDailyRecommendPlaylists() {
   if (!userStore.isLogin) {
+    privateRadar.value = [];
+    radarTopTracks.value = [];
+    radarCoverUrl.value = '';
+    privateRadarError.value = '';
+    privateRadarLoading.value = false;
+    return;
+  }
+
+  if (userStore.loginMode === 'uid') {
     privateRadar.value = [];
     radarTopTracks.value = [];
     radarCoverUrl.value = '';
@@ -1017,7 +1121,7 @@ onMounted(async () => {
   await nextTick();
   setupHotSongsObserver();
 
-  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic()]);
+  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic()]);
 });
 
 onBeforeUnmount(() => {
@@ -1048,9 +1152,9 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => userStore.isLogin,
+  () => [userStore.isLogin, userStore.loginMode, userStore.profile?.userId],
   async () => {
-    await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPersonalFm()]);
+    await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm()]);
   },
 );
 
@@ -1138,7 +1242,7 @@ function openDailyRecommendDetail() {
 
 function openRecoDetail(playlistId: number) {
   if (!playlistId) return;
-  const cover = dailyRecoRadar.value?.picUrl || radarCoverUrl.value || '';
+  const cover = topRecoCardCoverUrl.value || '';
   emit('open-detail', playlistId, cover, 'home');
 }
 
@@ -1159,9 +1263,9 @@ async function playRadarTop() {
   await playerStore.playByIndex(0);
 }
 
-async function playRadarByIndex(index: number) {
-  if (!radarTopTracks.value.length) return;
-  playerStore.setPlaylist(radarTopTracks.value, index);
+async function playRecoByIndex(index: number) {
+  if (!topRecoTracks.value.length) return;
+  playerStore.setPlaylist(topRecoTracks.value, index);
   await playerStore.playByIndex(index);
 }
 

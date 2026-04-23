@@ -70,33 +70,101 @@
               </div>
             </template>
 
-            <AnimatedAppear v-else tag="button" variant="control" rhythm="actions" class-name="action-btn">{{ item.actionText || '操作' }}</AnimatedAppear>
+            <div v-else-if="item.type === 'input'" class="input-action-wrap">
+              <input
+                v-model="inputState[item.key]"
+                class="inline-input"
+                type="text"
+                :placeholder="item.placeholder || ''"
+                @keydown.enter.prevent="handleAction(item.key)"
+              />
+              <AnimatedAppear
+                tag="button"
+                variant="control"
+                rhythm="actions"
+                class-name="action-btn"
+                @click="handleAction(item.key)"
+              >
+                {{ item.actionText || '保存' }}
+              </AnimatedAppear>
+            </div>
+
+            <AnimatedAppear
+              v-else
+              tag="button"
+              variant="control"
+              rhythm="actions"
+              class-name="action-btn"
+              @click="handleAction(item.key)"
+            >
+              {{ item.actionText || '操作' }}
+            </AnimatedAppear>
           </div>
         </AnimatedAppear>
       </div>
     </AnimatedAppear>
+
+    <AnimatedAppear
+      v-if="showEmptyAccountState"
+      tag="section"
+      variant="content"
+      rhythm="body"
+      class-name="setting-group account-empty-state"
+    >
+      <AnimatedAppear tag="h3" variant="title" rhythm="title" class-name="group-title">账号设置</AnimatedAppear>
+      <div class="empty-card">
+        <p class="empty-title">当前未登录</p>
+        <p class="empty-desc">登录后可管理账号同步、隐私和退出登录等选项。</p>
+        <button class="empty-action-btn" type="button" @click="goToLogin">去登录</button>
+      </div>
+    </AnimatedAppear>
+
+    <transition name="toast-fade">
+      <div v-if="logoutMessage" class="toast" role="status" aria-live="polite">
+        {{ logoutMessage }}
+      </div>
+    </transition>
+
     <GridLayoutEditor storage-key="tm_home_widget_layout_v1" :initial-layout="homeWidgetLayout" @saved="onHomeLayoutSaved" />
   </AnimatedAppear>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
+
+type SettingsTabKey = 'playback' | 'appearance' | 'account';
+
+const props = withDefaults(
+  defineProps<{
+    initialTab?: SettingsTabKey;
+  }>(),
+  {
+    initialTab: 'appearance',
+  },
+);
+
 import AnimatedAppear from './AnimatedAppear.vue';
+
+const emit = defineEmits<{
+  (e: 'go-login'): void;
+}>();
 import GridLayoutEditor from './GridLayoutEditor.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
 import FancySwitch from './ui/FancySwitch.vue';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
+import { userStore } from '../stores/user';
 
 type SettingItem = {
   key: string;
   label: string;
   desc?: string;
-  type: 'switch' | 'select' | 'range' | 'action';
+  type: 'switch' | 'select' | 'range' | 'action' | 'input';
   options?: string[];
   min?: number;
   max?: number;
   actionText?: string;
+  placeholder?: string;
 };
 
 type SettingGroup = {
@@ -104,13 +172,15 @@ type SettingGroup = {
   items: SettingItem[];
 };
 
-const tabs = [
+const allTabs = [
   { key: 'playback', label: '播放' },
   { key: 'appearance', label: '外观' },
   { key: 'account', label: '账号' },
 ] as const;
 
-const activeTab = ref<(typeof tabs)[number]['key']>('appearance');
+const tabs = computed(() => allTabs);
+
+const activeTab = ref<SettingsTabKey>(props.initialTab);
 
 const groupsMap: Record<string, SettingGroup[]> = {
   playback: [
@@ -142,27 +212,58 @@ const groupsMap: Record<string, SettingGroup[]> = {
     {
       title: '账号设置',
       items: [
-        { key: 'sync', label: '自动同步歌单', desc: '定期同步云端歌单与本地缓存', type: 'switch' },
-        { key: 'privacy', label: '隐私级别', desc: '控制个人主页展示范围', type: 'select', options: ['公开', '仅好友', '仅自己'] },
+        { key: 'cookieEditor', label: 'Cookie 修改', desc: '支持手动输入或编辑 Cookie；扫码登录成功后会自动填入最新 Cookie', type: 'input', actionText: '保存', placeholder: '例如：MUSIC_U=...; __csrf=...' },
         { key: 'logout', label: '退出登录', desc: '退出当前账号并清除本地登录态', type: 'action', actionText: '退出' },
       ],
     },
   ],
 };
 
+const logoutMessage = ref('');
+let logoutMessageTimer: ReturnType<typeof setTimeout> | null = null;
+
+const showEmptyAccountState = computed(() => activeTab.value === 'account' && !currentGroups.value.length);
+
+watch(
+  () => props.initialTab,
+  (tab) => {
+    activeTab.value = tab;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => userStore.loginMode,
+  (mode) => {
+    if (mode === 'none' && activeTab.value === 'account') {
+      activeTab.value = 'appearance';
+    }
+  },
+  { immediate: true },
+);
+
 const currentGroups = computed(() => {
   const groups = groupsMap[activeTab.value] || [];
-  return groups.map((g) => ({
-    ...g,
-    items: g.items.filter((item) => item.key !== 'accentCustomColor' || selectState.accent === '自定义'),
-  }));
+  return groups
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((item) => {
+        if (item.key === 'accentCustomColor') return selectState.accent === '自定义';
+        if (item.key === 'logout') return userStore.isLogin;
+        if (item.key === 'cookieEditor') return userStore.isLogin;
+        if (!userStore.isLogin && activeTab.value === 'account') {
+          return false;
+        }
+        return true;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 });
 
 const switchState = reactive<Record<string, boolean>>({
   autoplay: playerStore.autoplayNext,
   liquidGlass: uiStore.liquidGlassEnabled,
   compact: false,
-  sync: true,
 });
 
 const selectState = reactive<Record<string, string>>({
@@ -171,10 +272,33 @@ const selectState = reactive<Record<string, string>>({
   playbackRate: `${playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0')}x`,
   theme: uiStore.themeMode,
   accent: uiStore.accentMode,
-  privacy: '仅好友',
 });
 
 const accentCustomColor = ref(uiStore.accentCustomColor);
+
+watch(
+  () => uiStore.themeMode,
+  (value) => {
+    selectState.theme = value;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => uiStore.accentMode,
+  (value) => {
+    selectState.accent = value;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => uiStore.accentCustomColor,
+  (value) => {
+    accentCustomColor.value = value;
+  },
+  { immediate: true },
+);
 
 const accentColors = computed<Record<string, string>>(() => ({
   绿色: 'var(--accent-green, #22c55e)',
@@ -187,6 +311,10 @@ const accentColors = computed<Record<string, string>>(() => ({
 const rangeState = reactive<Record<string, number>>({
   crossfade: playerStore.crossfadeSec,
   fontScale: 100,
+});
+
+const inputState = reactive<Record<string, string>>({
+  cookieEditor: userStore.loginCookie || '',
 });
 
 const homeWidgetLayout = [
@@ -283,6 +411,46 @@ watch(
   },
 );
 
+watch(
+  () => userStore.loginCookie,
+  (value) => {
+    inputState.cookieEditor = value || '';
+  },
+  { immediate: true },
+);
+
+function showLogoutMessage(message: string) {
+  logoutMessage.value = message;
+
+  if (logoutMessageTimer) {
+    clearTimeout(logoutMessageTimer);
+  }
+
+  logoutMessageTimer = setTimeout(() => {
+    logoutMessage.value = '';
+    logoutMessageTimer = null;
+  }, 2200);
+}
+
+function goToLogin() {
+  emit('go-login');
+}
+
+async function handleAction(key: string) {
+  if (key === 'cookieEditor') {
+    const normalizedCookie = String(inputState.cookieEditor || '').trim();
+    userStore.saveCookie(normalizedCookie);
+    showLogoutMessage(normalizedCookie ? 'Cookie 已保存' : 'Cookie 已清空');
+    return;
+  }
+
+  if (key === 'logout') {
+    await userStore.logout();
+    activeTab.value = 'account';
+    showLogoutMessage('已退出登录');
+  }
+}
+
 function onHomeLayoutSaved(payload: unknown) {
   window.dispatchEvent(
     new CustomEvent('tm-home-layout-updated', {
@@ -337,6 +505,10 @@ function onHomeLayoutSaved(payload: unknown) {
   overflow: visible;
 }
 
+.account-empty-state {
+  min-height: 220px;
+}
+
 .group-title {
   margin: 0 0 var(--space-3);
   font-size: 16px;
@@ -347,6 +519,42 @@ function onHomeLayoutSaved(payload: unknown) {
 .rows {
   display: grid;
   gap: var(--space-2);
+}
+
+.empty-card {
+  min-height: 144px;
+  display: grid;
+  place-content: center;
+  gap: var(--space-2);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg-muted);
+  text-align: center;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.empty-action-btn {
+  justify-self: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .row {
@@ -388,11 +596,35 @@ function onHomeLayoutSaved(payload: unknown) {
   color: var(--text-sub);
 }
 
-.right {
+ .right {
   min-width: 180px;
   display: flex;
   justify-content: flex-end;
   align-items: center;
+}
+
+.input-action-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  width: min(560px, 100%);
+}
+
+.inline-input {
+  width: min(440px, 100%);
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 var(--space-3);
+  background: var(--bg-muted);
+  color: var(--text-main);
+  outline: none;
+}
+
+.inline-input:focus {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .control-slot {
@@ -429,6 +661,12 @@ function onHomeLayoutSaved(payload: unknown) {
   border: 1px solid color-mix(in srgb, #ef4444 34%, var(--border));
   background: color-mix(in srgb, #ef4444 12%, var(--bg-surface));
   color: color-mix(in srgb, #ef4444 74%, var(--text-main));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  white-space: nowrap;
+  writing-mode: horizontal-tb;
 }
 
 .color-picker-wrap {
@@ -452,6 +690,32 @@ function onHomeLayoutSaved(payload: unknown) {
   color: var(--text-soft);
   min-width: 74px;
   text-transform: lowercase;
+}
+
+.toast {
+  position: fixed;
+  right: 28px;
+  bottom: 132px;
+  z-index: 120;
+  min-width: 132px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-surface) 86%, rgba(15, 23, 42, 0.08));
+  color: var(--text-main);
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 </style>
