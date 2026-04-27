@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const ncmProxy = import.meta.env.VITE_NCM_PROXY;
+
 export function getResolvedApiBaseUrl() {
   // Electron: 优先使用 preload 注入的动态端口
   if (window.appEnv?.apiBaseUrl) return window.appEnv.apiBaseUrl;
@@ -12,6 +14,19 @@ export const apiClient = axios.create({
   baseURL: getResolvedApiBaseUrl(),
   withCredentials: true,
   timeout: 15000,
+});
+
+apiClient.interceptors.request.use((config) => {
+  if (!ncmProxy) {
+    return config;
+  }
+
+  config.params = {
+    ...(config.params || {}),
+    proxy: ncmProxy,
+  };
+
+  return config;
 });
 
 export async function waitForApiReady(options?: {

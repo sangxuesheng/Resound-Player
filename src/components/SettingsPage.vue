@@ -471,13 +471,15 @@ function onHomeLayoutSaved(payload: unknown) {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--bg-surface);
-  padding: var(--space-2);
+  padding: calc(var(--space-2) + 2px) var(--space-2) var(--space-2);
+  overflow: visible;
 }
 
 .top-tabs {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+  overflow: visible;
 }
 
 .tab-btn {

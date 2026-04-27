@@ -3,6 +3,8 @@ import { getSongDetail, getSongUrl, trashPersonalFm } from '../api/music';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
+type TrackSource = 'song' | 'podcast';
+type PodcastMeta = { rid?: number };
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type PersonalFmFetcher = () => Promise<any[]>;
 
@@ -12,6 +14,10 @@ export type Track = {
   ar?: Artist[];
   al?: Album;
   url?: string;
+  source?: TrackSource;
+  podcast?: PodcastMeta;
+  liked?: boolean;
+  isLiked?: boolean;
 };
 
 const PLAYER_STORAGE_KEY = 'gm_player_state_v1';
@@ -22,6 +28,11 @@ function formatTrack(raw: any): Track {
     name: raw.name,
     ar: raw.ar || raw.artists || [],
     al: raw.al || raw.album || {},
+    url: raw.url,
+    source: raw.source === 'podcast' ? 'podcast' : 'song',
+    podcast: raw.podcast,
+    liked: Boolean(raw.liked || raw.isLiked),
+    isLiked: Boolean(raw.isLiked || raw.liked),
   };
 }
 
@@ -35,6 +46,8 @@ export const playerStore = reactive({
   currentTime: 0,
   duration: 0,
   volume: 0.7,
+  muted: false,
+  volumeBeforeMute: 0.7,
   loading: false,
   expanded: false,
   themePrimary: 'var(--theme-primary)',
@@ -83,6 +96,8 @@ export const playerStore = reactive({
       playlist: this.playlist,
       currentIndex: this.currentIndex,
       volume: this.volume,
+      muted: this.muted,
+      volumeBeforeMute: this.volumeBeforeMute,
       autoplayNext: this.autoplayNext,
       playMode: this.playMode,
       crossfadeSec: this.crossfadeSec,
@@ -108,7 +123,9 @@ export const playerStore = reactive({
       this.playlist = parsed.playlist || [];
       this.currentIndex = Number.isInteger(parsed.currentIndex) ? parsed.currentIndex : -1;
       this.volume = typeof parsed.volume === 'number' ? parsed.volume : 0.7;
-      this.audio.volume = this.volume;
+      this.muted = typeof parsed.muted === 'boolean' ? parsed.muted : false;
+      this.volumeBeforeMute = typeof parsed.volumeBeforeMute === 'number' ? parsed.volumeBeforeMute : this.volume;
+      this.audio.volume = this.muted ? 0 : this.volume;
       this.autoplayNext = typeof parsed.autoplayNext === 'boolean' ? parsed.autoplayNext : true;
       this.playMode = parsed.playMode === 'single' || parsed.playMode === 'shuffle' ? parsed.playMode : 'loop';
       this.crossfadeSec = typeof parsed.crossfadeSec === 'number' ? parsed.crossfadeSec : 0;
@@ -255,7 +272,18 @@ export const playerStore = reactive({
       try {
         const { data: detailRes } = await getSongDetail(track.id);
         const detail = detailRes?.songs?.[0];
-        if (detail) merged = formatTrack(detail);
+        if (detail) {
+          const normalizedDetail = formatTrack(detail);
+          merged = {
+            ...normalizedDetail,
+            name: track.name || normalizedDetail.name,
+            ar: track.ar?.length ? track.ar : normalizedDetail.ar,
+            al: track.al?.picUrl || track.al?.name ? track.al : normalizedDetail.al,
+            url: track.url || normalizedDetail.url,
+            source: track.source || normalizedDetail.source,
+            podcast: track.podcast || normalizedDetail.podcast,
+          };
+        }
       } catch {
         // cloud tracks may not have /song/detail support in this environment
       }
@@ -407,7 +435,22 @@ export const playerStore = reactive({
   setVolume(v: number) {
     const val = Math.max(0, Math.min(v, 1));
     this.volume = val;
+    if (this.muted) {
+      this.muted = false;
+    }
     this.audio.volume = val;
+    this.persist();
+  },
+
+  toggleMute() {
+    if (this.muted) {
+      this.muted = false;
+      this.audio.volume = this.volumeBeforeMute;
+    } else {
+      this.volumeBeforeMute = this.volume;
+      this.muted = true;
+      this.audio.volume = 0;
+    }
     this.persist();
   },
 

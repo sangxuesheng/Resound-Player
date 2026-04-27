@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUserPlaylist, logout as logoutRequest } from '../api/auth';
+import { getDjSublist } from '../api/music';
 
 const LOGIN_COOKIE_KEY = 'ncm_login_cookie';
 const LOGIN_MODE_KEY = 'ncm_login_mode';
@@ -36,6 +37,7 @@ export const userStore = reactive({
   profile: null as UserProfile | null,
   playlists: [] as UserPlaylist[],
   likedSongIds: [] as number[],
+  subscribedDjIds: [] as number[],
   loading: false,
   loginCookie: '',
   loginMode: 'none' as LoginMode,
@@ -79,6 +81,7 @@ export const userStore = reactive({
     this.profile = null;
     this.playlists = [];
     this.likedSongIds = [];
+    this.subscribedDjIds = [];
     this.loginMode = 'none';
     this.saveCookie('');
   },
@@ -128,7 +131,7 @@ export const userStore = reactive({
           this.profile = profile;
           this.isLogin = true;
           this.loginMode = 'cookie';
-          await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId)]);
+          await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
           logAuthDebug('loginWithCookie:accountFallbackApplied', {
             requestId,
             profileUserId: profile.userId,
@@ -196,10 +199,11 @@ export const userStore = reactive({
     this.isLogin = true;
     this.playlists = [];
     this.likedSongIds = [];
+    this.subscribedDjIds = [];
     this.loginMode = 'uid';
     this.saveCookie('uid=' + String(profile.userId));
 
-    await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId)]);
+    await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
     logAuthDebug('loginWithUid:success', {
       requestId,
       profileUserId: profile.userId,
@@ -232,9 +236,10 @@ export const userStore = reactive({
       this.loginMode = 'uid';
       this.playlists = [];
       this.likedSongIds = [];
+      this.subscribedDjIds = [];
       this.saveCookie(UID_LOGIN_PREFIX + String(profile.userId));
 
-      await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId)]);
+      await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
       logAuthDebug('restoreUidLogin:success', {
         requestId,
         profileUserId: profile.userId,
@@ -294,7 +299,7 @@ export const userStore = reactive({
     });
 
     if (this.isLogin && profile?.userId) {
-      const results = await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId)]);
+      const results = await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
       const rejected = results
         .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
         .map((result) => (result.reason as any)?.message || String(result.reason));
@@ -304,11 +309,13 @@ export const userStore = reactive({
         profileUserId: profile.userId,
         playlistCount: this.playlists.length,
         likedSongCount: this.likedSongIds.length,
+        subscribedDjCount: this.subscribedDjIds.length,
         rejected,
       });
     } else {
       this.playlists = [];
       this.likedSongIds = [];
+      this.subscribedDjIds = [];
       logAuthDebug('refreshLoginStatus:clearedUserData', {
         requestId,
       });
@@ -320,7 +327,17 @@ export const userStore = reactive({
   },
   async fetchLikedSongs(uid: number) {
     const { data } = await getUserLikeList(uid);
-    const ids = data?.ids || data?.songs?.map((song: any) => song?.id) || [];
-    this.likedSongIds = ids.filter((id: any): id is number => typeof id === 'number');
+    const ids = data?.ids || data?.data?.ids || data?.songs?.map((song: any) => song?.id) || data?.data?.songs?.map((song: any) => song?.id) || [];
+    this.likedSongIds = (Array.isArray(ids) ? ids : [])
+      .map((id: any) => Number(id))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
+  },
+  async fetchSubscribedDjs() {
+    const { data } = await getDjSublist(this.loginCookie || undefined);
+    const candidates = [data?.djRadios, data?.data?.djRadios, data?.list, data?.data?.list, data?.data, data?.data?.data];
+    const items = candidates.find((candidate) => Array.isArray(candidate)) || [];
+    this.subscribedDjIds = items
+      .map((item: any) => Number(item?.id || item?.radio?.id || item?.program?.radio?.id || item?.rid || 0))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
   },
 });

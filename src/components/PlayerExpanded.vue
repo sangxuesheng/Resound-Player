@@ -16,7 +16,19 @@
 
             <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
-              {{ artistText }}
+              <template v-if="playerStore.currentTrack?.ar?.length">
+                <button
+                  v-for="artist in playerStore.currentTrack.ar"
+                  :key="artist.id || artist.name"
+                  type="button"
+                  class="artist-inline-btn"
+                  :disabled="!(artist.id || artist.artistId)"
+                  @click.stop="openArtist(artist)"
+                >
+                  {{ artist.name }}
+                </button>
+              </template>
+              <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </AnimatedAppear>
 
@@ -67,8 +79,26 @@
             </div>
 
             <div class="volume-wrap">
-              <span>音量</span>
-              <input type="range" min="0" max="100" :value="Math.round(playerStore.volume * 100)" @input="onVolume" />
+              <div class="volume-control">
+                <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()">
+                  <VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" />
+                  <Volume v-else-if="playerStore.volume < 0.33" :size="18" />
+                  <Volume1 v-else-if="playerStore.volume < 0.66" :size="18" />
+                  <Volume2 v-else :size="18" />
+                </button>
+                <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
+              </div>
+              <button
+                class="ctrl favorite-ctrl"
+                type="button"
+                :class="{ saved: isCurrentLiked, loading: likeLoading }"
+                :aria-pressed="isCurrentLiked"
+                :aria-label="isCurrentLiked ? '取消收藏' : '收藏'"
+                :disabled="likeLoading || !canToggleCurrentLike"
+                @click="toggleCurrentLike"
+              >
+                <Heart :size="16" />
+              </button>
             </div>
           </div>
 
@@ -146,16 +176,27 @@
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, Repeat, Repeat1, Shuffle } from 'lucide-vue-next';
+import { AlignJustify, Heart, Repeat, Repeat1, Shuffle, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { getCloudLyric, getSongLyric } from '../api/music';
+import { getCloudLyric, getSongLyric, toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
+import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
+
+const emit = defineEmits<{
+  'open-artist': [artist: Record<string, any>];
+}>();
 
 const artistText = computed(() => {
   const ar = playerStore.currentTrack?.ar || [];
   return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist';
 });
+
+function openArtist(artist: Record<string, any>) {
+  const id = Number(artist?.id || artist?.artistId || 0);
+  if (!id) return;
+  emit('open-artist', artist);
+}
 
 const coverStyle = computed(() => {
   const url = playerStore.currentTrack?.al?.picUrl;
@@ -172,6 +213,27 @@ const palette = ref({
 
 const showPlaylistPopup = ref(false);
 const isPersonalFmCurrentTrack = computed(() => playerStore.isPersonalFmTrack(playerStore.currentTrack));
+const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
+const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
+const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
+const canToggleCurrentLike = computed(() => (isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0));
+const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
+const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
+const isCurrentLiked = computed(() => {
+  void likedSongSignature.value;
+  void subscribedDjSignature.value;
+  if (isCurrentPodcast.value) return userStore.subscribedDjIds.includes(currentPodcastRid.value);
+  return currentTrackId.value > 0 ? userStore.likedSongIds.includes(currentTrackId.value) : false;
+});
+const likeLoading = ref(false);
+
+watch(
+  () => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`,
+  () => {
+    likeLoading.value = false;
+  },
+  { immediate: true },
+);
 
 type LyricWord = {
   text: string;
@@ -526,6 +588,49 @@ function onVolume(e: Event) {
   playerStore.setVolume(value);
 }
 
+async function toggleCurrentLike() {
+  if (likeLoading.value || !canToggleCurrentLike.value) return;
+
+  const next = !isCurrentLiked.value;
+  likeLoading.value = true;
+
+  try {
+    const response = isCurrentPodcast.value
+      ? await toggleDjSubscribe({ rid: currentPodcastRid.value, subscribe: next, cookie: userStore.loginCookie || undefined })
+      : await toggleSongLike({
+        id: currentTrackId.value,
+        like: next,
+        uid: userStore.profile?.userId,
+        cookie: userStore.loginCookie || undefined,
+      });
+    const code = response?.data?.code ?? response?.data?.data?.code;
+    if (typeof code === 'number' && code !== 200) {
+      throw new Error(`收藏失败，接口返回 ${code}`);
+    }
+
+    if (isCurrentPodcast.value) {
+      const rid = currentPodcastRid.value;
+      const exists = userStore.subscribedDjIds.includes(rid);
+      if (next && !exists) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
+      if (!next && exists) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
+      return;
+    }
+
+    const id = currentTrackId.value;
+    if (next) {
+      if (!userStore.likedSongIds.includes(id)) {
+        userStore.likedSongIds = [...userStore.likedSongIds, id];
+      }
+    } else {
+      userStore.likedSongIds = userStore.likedSongIds.filter((songId) => songId !== id);
+    }
+  } catch (error) {
+    console.error('[player-expanded] toggle like failed', error);
+  } finally {
+    likeLoading.value = false;
+  }
+}
+
 function onSeekStart() {
   isSeeking.value = true;
   seekPreviewTime.value = playerStore.currentTime || 0;
@@ -806,8 +911,10 @@ function parseYrc(yrc: string): LyricLine[] {
 
 .controls {
   width: 300px;
+  height: 52px;
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: var(--space-3);
   margin-top: var(--space-1);
   justify-self: end;
@@ -817,6 +924,9 @@ function parseYrc(yrc: string): LyricLine[] {
   height: 42px;
   border-radius: 50%;
   color: #fff;
+  display: inline-grid;
+  place-items: center;
+  line-height: 1;
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 .ctrl:not(.main) {
@@ -870,11 +980,60 @@ function parseYrc(yrc: string): LyricLine[] {
 .volume-wrap {
   width: 300px;
   display: flex;
-  justify-content: center;
-  gap: var(--space-2);
+  justify-content: space-between;
+  gap: var(--space-3);
   align-items: center;
   color: rgba(255,255,255,0.8);
   justify-self: end;
+}
+.volume-control {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  align-items: center;
+}
+.volume-control input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.volume-icon-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.8);
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  transition: color 0.16s ease, background 0.16s ease;
+  flex-shrink: 0;
+}
+.volume-icon-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+}
+.volume-icon-btn:active {
+  color: rgba(255,255,255,0.65);
+}
+.favorite-ctrl {
+  flex: 0 0 42px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none;
+}
+.favorite-ctrl.saved {
+  color: #ff6b8a !important;
+}
+.favorite-ctrl.saved :deep(svg) {
+  fill: currentColor;
+}
+.favorite-ctrl.loading {
+  opacity: 0.7;
+  cursor: progress;
 }
 
 .right-zone {

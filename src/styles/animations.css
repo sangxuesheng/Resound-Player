@@ -5,6 +5,11 @@
   --an-duration-slow: 460ms;
   --an-stagger-step: 48ms;
 
+  --image-hover-scale: 1.06;
+  --image-hover-saturate: 1.05;
+  --image-hover-duration: var(--an-duration-base);
+  --image-hover-ease: var(--an-ease);
+
   /* 统一节奏表（区块级延迟） */
   --an-rhythm-step: 42ms;
   --an-rhythm-shell: 0;
@@ -205,23 +210,94 @@
     opacity 220ms var(--an-ease);
 }
 
-/* 全局图片动态放大（Hover / Focus） */
-img {
+/* 明确声明的封面交互类，避免全局 img 误伤 */
+.hover-scale-image,
+img.cover,
+img[class*='cover'],
+img.song-cover,
+img.rank-cover,
+img.global-cover,
+img.language-cover,
+img.genre-cover,
+img.car-cover,
+img.featured-cover,
+img.detail-cover,
+img.hero-cover,
+img.entity-cover.cover-image {
   transform: scale(1);
-  transition: transform var(--an-duration-base) var(--an-ease), filter var(--an-duration-base) var(--an-ease);
+  transition: transform var(--image-hover-duration) var(--image-hover-ease), filter var(--image-hover-duration) var(--image-hover-ease);
   transform-origin: center center;
   will-change: transform;
 }
 
-img:hover,
-img:focus-visible {
-  transform: scale(1.04);
-  filter: saturate(1.04);
+@media (hover: hover) and (pointer: fine) {
+  .hover-scale-image:hover,
+  .hover-scale-image:focus-visible,
+  img.cover:hover,
+  img.cover:focus-visible,
+  img[class*='cover']:hover,
+  img[class*='cover']:focus-visible,
+  img.song-cover:hover,
+  img.song-cover:focus-visible,
+  img.rank-cover:hover,
+  img.rank-cover:focus-visible,
+  img.global-cover:hover,
+  img.global-cover:focus-visible,
+  img.language-cover:hover,
+  img.language-cover:focus-visible,
+  img.genre-cover:hover,
+  img.genre-cover:focus-visible,
+  img.car-cover:hover,
+  img.car-cover:focus-visible,
+  img.featured-cover:hover,
+  img.featured-cover:focus-visible,
+  img.detail-cover:hover,
+  img.detail-cover:focus-visible,
+  img.hero-cover:hover,
+  img.hero-cover:focus-visible,
+  img.entity-cover.cover-image:hover,
+  img.entity-cover.cover-image:focus-visible,
+  .cover:hover img,
+  .cover:focus-within img,
+  .cover:hover img.cover,
+  .cover:focus-within img.cover,
+  .song-item:hover img.song-cover,
+  .song-item:focus-within img.song-cover,
+  .row:hover img.cover,
+  .row:focus-within img.cover,
+  .hero:hover img.hero-cover,
+  .hero:focus-within img.hero-cover,
+  .detail-head:hover img.detail-cover,
+  .detail-head:focus-within img.detail-cover,
+  .entity-card:hover img.entity-cover.cover-image,
+  .entity-card:focus-within img.entity-cover.cover-image {
+    transform: scale(var(--image-hover-scale));
+    filter: saturate(var(--image-hover-saturate));
+  }
 }
 
 /* 触屏设备点击反馈 */
 @media (hover: none) {
-  img:active {
+  .hover-scale-image:active,
+  img.cover:active,
+  img[class*='cover']:active,
+  img.song-cover:active,
+  img.rank-cover:active,
+  img.global-cover:active,
+  img.language-cover:active,
+  img.genre-cover:active,
+  img.car-cover:active,
+  img.featured-cover:active,
+  img.detail-cover:active,
+  img.hero-cover:active,
+  img.entity-cover.cover-image:active,
+  .cover:active img,
+  .cover:active img.cover,
+  .song-item:active img.song-cover,
+  .row:active img.cover,
+  .hero:active img.hero-cover,
+  .detail-head:active img.detail-cover,
+  .entity-card:active img.entity-cover.cover-image {
     transform: scale(1.02);
   }
 }
@@ -236,10 +312,55 @@ img:focus-visible {
     scroll-behavior: auto !important;
   }
 
-  img,
-  img:hover,
-  img:focus-visible,
-  img:active {
+  .hover-scale-image,
+  .hover-scale-image:hover,
+  .hover-scale-image:focus-visible,
+  .hover-scale-image:active,
+  img.cover,
+  img.cover:hover,
+  img.cover:focus-visible,
+  img.cover:active,
+  img.song-cover,
+  img.song-cover:hover,
+  img.song-cover:focus-visible,
+  img.song-cover:active,
+  img.rank-cover,
+  img.rank-cover:hover,
+  img.rank-cover:focus-visible,
+  img.rank-cover:active,
+  img.global-cover,
+  img.global-cover:hover,
+  img.global-cover:focus-visible,
+  img.global-cover:active,
+  img.language-cover,
+  img.language-cover:hover,
+  img.language-cover:focus-visible,
+  img.language-cover:active,
+  img.genre-cover,
+  img.genre-cover:hover,
+  img.genre-cover:focus-visible,
+  img.genre-cover:active,
+  img.car-cover,
+  img.car-cover:hover,
+  img.car-cover:focus-visible,
+  img.car-cover:active,
+  img.featured-cover,
+  img.featured-cover:hover,
+  img.featured-cover:focus-visible,
+  img.featured-cover:active,
+  img.detail-cover,
+  img.detail-cover:hover,
+  img.detail-cover:focus-visible,
+  img.detail-cover:active,
+  img.hero-cover,
+  img.hero-cover:hover,
+  img.hero-cover:focus-visible,
+  img.hero-cover:active,
+  img.entity-cover.cover-image,
+  img.entity-cover.cover-image:hover,
+  img.entity-cover.cover-image:focus-visible,
+  img.entity-cover.cover-image:active {
     transform: none !important;
+    filter: none !important;
   }
 }

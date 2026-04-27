@@ -18,7 +18,7 @@
       :style="{ '--playlist-panel-sticky-top': `${stickyTopOffset}px` }"
     >
       <div class="cat-header-inner" :class="{ 'cat-header-inner--fixed': stickyFallbackActive }">
-        <div class="cat-tags" role="tablist" aria-label="歌单分类">
+        <div class="cat-tags ui-safe-rail" role="tablist" aria-label="歌单分类">
           <button
             v-for="cat in allCatsFlat"
             :key="cat"
@@ -53,8 +53,10 @@
         :style="{ '--playlist-cover': `url(${resolveCover(item)})` }"
         @click="openDetail(item.id)"
       >
-        <div class="cover">
-          <img :src="resolveCover(item)" :alt="item.name" loading="lazy" />
+        <div class="cover playlist-card-media-shell">
+          <div class="playlist-card-cover-motion-shell">
+            <img class="playlist-card-cover-image" :src="resolveCover(item)" :alt="item.name" loading="lazy" />
+          </div>
           <span class="count hover-play-button-count">{{ formatCount(item.playCount) }}</span>
           <HoverPlayButton class="hover-play-button--md" />
         </div>
@@ -384,10 +386,7 @@ watch(
 .panel {
   --playlist-panel-sticky-top: 0px;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 16px;
   padding: var(--space-4);
-  background: var(--bg-surface);
   color: var(--text-main);
   box-sizing: border-box;
   display: grid;
@@ -411,11 +410,6 @@ watch(
   width: 100%;
   min-height: 52px;
   margin: var(--space-2) 0 0;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-surface);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
-  backdrop-filter: blur(14px);
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -447,18 +441,12 @@ watch(
 :global(.dark) .cat-header,
 :global([data-theme='dark']) .cat-header {
   border-color: var(--border);
-  background: var(--bg-surface);
-  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.28);
 }
 
 .cat-tags {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   padding-bottom: var(--space-0);
 }
 
@@ -501,8 +489,8 @@ watch(
 .hq-item .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hq-item .sub { margin: var(--space-1) 0 0; font-size: 12px; color: #6b7280; }
 
-.list-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
-.card { border: 1px solid #edf2f7; border-radius: 12px; overflow: hidden; background: #fff; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.list-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-1); }
+.card { overflow: hidden; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12); }
 
 .playlist-gradient-card {
@@ -547,7 +535,34 @@ watch(
 }
 
 .cover { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; overflow: hidden; }
-.cover img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.playlist-card-media-shell {
+  border-radius: 12px 12px 0 0;
+  transform: translateZ(0);
+}
+.playlist-card-cover-motion-shell {
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
+}
+.playlist-card-cover-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .playlist-card-media-shell:hover .playlist-card-cover-image,
+  .playlist-card-media-shell:focus-within .playlist-card-cover-image {
+    transform: scale(var(--image-hover-scale, 1.04));
+    filter: saturate(var(--image-hover-saturate, 1.04));
+  }
+}
 .count { position: absolute; right: var(--space-2); top: var(--space-2); font-size: 12px; color: #fff; background: rgba(0, 0, 0, 0.5); padding: 2px 6px; border-radius: 999px; z-index: 3; }
 .playlist-hover-play { right: 10px; bottom: 10px; z-index: 4; }
 .info { padding: var(--space-2); }

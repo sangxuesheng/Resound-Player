@@ -1,22 +1,7 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-page user-page--fixed">
-    <div v-if="!isLogin" class="page-header">
-      <div>
-        <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">用户中心</AnimatedAppear>
-        <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="subtitle">
-          登录后可查看用户详情与歌单数据。
-        </AnimatedAppear>
-      </div>
-      <button class="refresh-btn" :disabled="loading" @click="loadUserData">
-        {{ loading ? '加载中…' : '刷新数据' }}
-      </button>
-    </div>
-
     <div v-if="!isLogin" class="empty-state">
-      <div class="empty-card">
-        <h3>当前未登录</h3>
-        <p>请先完成登录，系统会自动拉取用户详情和歌单数据。</p>
-      </div>
+      <LoginPanel />
     </div>
 
     <UserSplitView
@@ -28,11 +13,16 @@
       :playlist-items="currentPlaylistItems"
       :album-items="albumItems"
       :selected-item="selectedItem"
+      :show-cloud-tab="!isPublicUserMode"
+      :show-album-tab="!isPublicUserMode"
+      :show-podcast-tab="!isPublicUserMode"
+      :dj-items="currentDjItems"
+      :fill-sub-tabs="isPublicUserMode"
       @select-item="handleSelectItem"
     >
       <template #detail="{ item }">
         <PlaylistDetailPage
-          v-if="activeTab === 'playlists' && playlistSubTab !== 'albums'"
+          v-if="activeTab === 'playlists' && (playlistSubTab === 'created' || playlistSubTab === 'collected')"
           :playlist-id="item.id"
           back-label="返回用户中心"
           :embedded="true"
@@ -44,6 +34,16 @@
           v-else-if="activeTab === 'playlists' && playlistSubTab === 'albums'"
           :album-id="item.id"
           back-label="返回用户中心"
+          :embedded="true"
+          scroll-host-selector=".detail-panel"
+          @back="selectedItem = null"
+        />
+
+        <PodcastDetailPage
+          v-else-if="activeTab === 'playlists' && playlistSubTab === 'podcast'"
+          :detail="djDetail"
+          :items="djDetailItems"
+          :loading="djDetailLoading"
           :embedded="true"
           scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
@@ -66,11 +66,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import AnimatedAppear from './AnimatedAppear.vue';
+import LoginPanel from './LoginPanel.vue';
 import UserSplitView from './UserSplitView.vue';
 import PlaylistDetailPage from './PlaylistDetailPage.vue';
 import AlbumDetailPage from './AlbumDetailPage.vue';
-import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserDetail } from '../api/auth';
-import { getAlbumDetail, getAlbumSublist, getCloudStorage, getCloudStorageDetail, getSongUrl } from '../api/music';
+import PodcastDetailPage from './PodcastDetailPage.vue';
+import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserDetail, getUserPlaylist } from '../api/auth';
+import { getAlbumDetail, getAlbumSublist, getCloudStorage, getCloudStorageDetail, getDjDetail, getDjProgram, getDjSublist, getSongUrl } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 
@@ -81,6 +83,10 @@ const detail = ref<any>(null);
 const createdPlaylists = ref<any[]>([]);
 const collectedPlaylists = ref<any[]>([]);
 const albumItems = ref<any[]>([]);
+const djSublist = ref<any[]>([]);
+const djDetailLoading = ref(false);
+const djDetail = ref<any>(null);
+const djDetailItems = ref<any[]>([]);
 const cloudPlaylists = ref<any[]>([]);
 const cloudDetailItems = ref<any[]>([]);
 const cloudLoading = ref(false);
@@ -94,13 +100,14 @@ const cloudPseudoPlaylist = computed(() => ({
   tracks: cloudPlaylists.value,
 }));
 const activeTab = ref<'playlists' | 'cloud'>('playlists');
-const playlistSubTab = ref<'created' | 'collected' | 'albums'>('created');
+const playlistSubTab = ref<'created' | 'collected' | 'albums' | 'podcast'>('created');
 const selectedItem = ref<any>(null);
 const albumSongs = ref<any[]>([]);
 const albumLoading = ref(false);
 const albumError = ref('');
 
 const isLogin = computed(() => userStore.isLogin);
+const isPublicUserMode = computed(() => userStore.loginMode === 'uid');
 const profileMeta = computed(() => ({
   avatarUrl: detail.value?.profile?.avatarUrl || userStore.profile?.avatarUrl || '',
   nickname: detail.value?.profile?.nickname || userStore.profile?.nickname || '未命名用户',
@@ -114,8 +121,21 @@ const currentPlaylistItems = computed(() => {
   return [];
 });
 
+const currentDjItems = computed(() => {
+  return djSublist.value.map((item: any) => ({
+    ...item,
+    id: item.id ?? 0,
+    name: item.name || item.title || '播客',
+    subtitle: `${item.subCount ?? item.programCount ?? 0} 期`,
+    coverImgUrl: item.picUrl || item.coverImgUrl || item.coverUrl || '',
+    type: 'djradio',
+    source: 'dj',
+  }));
+});
+
 const activeDetailItem = computed(() => {
   if (activeTab.value === 'cloud') return cloudPseudoPlaylist.value || null;
+  if (playlistSubTab.value === 'podcast') return currentDjItems.value[0] || null;
   return currentPlaylistItems.value[0] || null;
 });
 
@@ -135,20 +155,35 @@ watch(activeTab, async (tab) => {
 
 watch([activeTab, playlistSubTab], () => {
   if (activeTab.value === 'playlists') {
-    selectedItem.value = currentPlaylistItems.value[0] || null;
+    if (playlistSubTab.value === 'podcast') {
+      selectedItem.value = currentDjItems.value[0] || null;
+    } else {
+      djDetail.value = null;
+      djDetailItems.value = [];
+      selectedItem.value = currentPlaylistItems.value[0] || null;
+    }
   } else if (activeTab.value === 'cloud') {
+    djDetail.value = null;
+    djDetailItems.value = [];
     selectedItem.value = cloudPseudoPlaylist.value || null;
   }
 });
 
 watch(
-  [currentPlaylistItems, cloudPseudoPlaylist],
-  ([playlistItems, cloudItem]) => {
+  [currentPlaylistItems, cloudPseudoPlaylist, currentDjItems],
+  ([playlistItems, cloudItem, djItems]) => {
     if (activeTab.value === 'playlists') {
-      const nextItems = Array.isArray(playlistItems) ? playlistItems : [];
-      const currentId = selectedItem.value?.id;
-      const matched = nextItems.find((item: any) => item?.id === currentId);
-      selectedItem.value = matched || nextItems[0] || null;
+      if (playlistSubTab.value === 'podcast') {
+        const nextItems = Array.isArray(djItems) ? djItems : [];
+        const currentId = selectedItem.value?.id;
+        const matched = nextItems.find((item: any) => item?.id === currentId);
+        selectedItem.value = matched || nextItems[0] || null;
+      } else {
+        const nextItems = Array.isArray(playlistItems) ? playlistItems : [];
+        const currentId = selectedItem.value?.id;
+        const matched = nextItems.find((item: any) => item?.id === currentId);
+        selectedItem.value = matched || nextItems[0] || null;
+      }
       return;
     }
 
@@ -252,7 +287,51 @@ function normalizePlaylistArray(payload: any): any[] {
 }
 
 function normalizePlaylistItem(item: any) {
-  return { ...item, subtitle: `${item.trackCount || 0} 首` };
+  const resolvedCover = resolveUserPlaylistCover(item);
+  return {
+    ...item,
+    coverImgUrl: resolvedCover,
+    picUrl: item.picUrl || resolvedCover,
+    subtitle: `${item.trackCount || 0} 首`,
+  };
+}
+
+function resolveUserPlaylistCover(item: any) {
+  const fallbackCover = item?.coverImgUrl || item?.picUrl || item?.coverUrl || '';
+  if (!isLikedSongsPlaylist(item)) return fallbackCover;
+
+  const trackCover = item?.tracks?.[0]?.al?.picUrl || item?.tracks?.[0]?.album?.picUrl || item?.trackCover || item?.trackNumberUpdateTimeCover;
+  return trackCover || fallbackCover;
+}
+
+function isLikedSongsPlaylist(item: any) {
+  const name = String(item?.name || '').trim();
+  return Boolean(item?.specialType === 5 || item?.specialType === '5' || name.endsWith('喜欢的音乐') || name === '我喜欢的音乐');
+}
+
+function logUserPanelDebug(event: string, payload?: Record<string, unknown>) {
+  // eslint-disable-next-line no-console
+  console.debug('[user-panel-debug]', event, payload || {});
+}
+
+function normalizeCreatedCollectedPayload(payload: any): any[] {
+  const candidates = [payload?.data?.playlist, payload?.data?.data?.playlist, payload?.data?.list, payload?.data?.data?.list, payload?.playlist, payload?.list];
+  for (const candidate of candidates) if (Array.isArray(candidate)) return candidate;
+  return [];
+}
+
+function normalizeAlbumItems(payload: any) {
+  const albumList = payload?.data?.data || payload?.data?.albums || payload?.data?.weekData || payload?.data || [];
+  return Array.isArray(albumList)
+    ? albumList.map((item: any) => ({
+        ...item,
+        name: item.name || item.albumName || item.title || '收藏专辑',
+        subtitle: `${item.songCount ?? item.trackCount ?? item.size ?? item.subCount ?? item.albumSize ?? 0} 首`,
+        coverImgUrl: item.picUrl || item.coverImgUrl || item.coverUrl || item.blurPicUrl || '',
+        type: 'album',
+        source: 'album',
+      }))
+    : [];
 }
 
 async function loadUserData() {
@@ -260,41 +339,112 @@ async function loadUserData() {
   loading.value = true;
   try {
     const uid = userStore.profile.userId;
-    const [detailRes, createdRes, collectedRes, albumRes, cloudRes] = await Promise.all([
-      getUserDetail(uid),
-      getUserCreatedPlaylist(uid, 100, 0),
-      getUserCollectedPlaylist(uid, 100, 0),
-      getAlbumSublist({ limit: 25, offset: 0 }),
-      getCloudStorage({ limit: 30, offset: 0 }),
-    ]);
-
+    const detailRes = await getUserDetail(uid);
+    const authCookie = userStore.loginMode === 'uid' ? '' : userStore.loginCookie || '';
+    logUserPanelDebug('loadUserData:start', {
+      uid,
+      loginMode: userStore.loginMode,
+      hasCookie: Boolean(authCookie),
+      cookiePreview: authCookie ? `${authCookie.slice(0, 16)}...${authCookie.slice(-12)}` : '',
+      activeTab: activeTab.value,
+      playlistSubTab: playlistSubTab.value,
+    });
     detail.value = detailRes.data || detailRes;
-    createdPlaylists.value = normalizePlaylistArray(createdRes);
-    collectedPlaylists.value = normalizePlaylistArray(collectedRes);
 
-    const albumList = albumRes.data?.data || albumRes.data?.albums || albumRes.data?.weekData || albumRes.data || [];
-    albumItems.value = Array.isArray(albumList)
-      ? albumList.map((item: any) => ({
-          ...item,
-          name: item.name || item.albumName || item.title || '收藏专辑',
-          subtitle: `${item.songCount ?? item.trackCount ?? item.size ?? item.subCount ?? item.albumSize ?? 0} 首`,
-          coverImgUrl: item.picUrl || item.coverImgUrl || item.coverUrl || item.blurPicUrl || '',
-          type: 'album',
-          source: 'album',
-        }))
-      : [];
+    if (isPublicUserMode.value) {
+      const playlistRes = await getUserPlaylist(uid);
+      const publicPlaylists = normalizePlaylistArray(playlistRes);
+      createdPlaylists.value = publicPlaylists
+        .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) === uid)
+        .map(normalizePlaylistItem);
+      collectedPlaylists.value = publicPlaylists
+        .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) !== uid)
+        .map(normalizePlaylistItem);
+      logUserPanelDebug('loadUserData:publicModePlaylists', {
+        playlistCount: publicPlaylists.length,
+        createdCount: createdPlaylists.value.length,
+        collectedCount: collectedPlaylists.value.length,
+      });
+      albumItems.value = [];
+      djSublist.value = [];
+      cloudPlaylists.value = [];
+      cloudDetailItems.value = [];
+      activeTab.value = 'playlists';
+      if (playlistSubTab.value === 'albums' || playlistSubTab.value === 'podcast') playlistSubTab.value = 'created';
+    } else {
+      const [playlistRes, albumRes, cloudRes, djRes] = await Promise.allSettled([
+        getUserPlaylist(uid),
+        getAlbumSublist({ limit: 25, offset: 0, cookie: authCookie }),
+        getCloudStorage({ limit: 1000, offset: 0, cookie: authCookie }),
+        getDjSublist(authCookie),
+      ]);
 
-    if (activeTab.value === 'cloud') {
-      await loadCloudData();
+      logUserPanelDebug('loadUserData:cookieModeResponses', {
+        playlistStatus: playlistRes.status,
+        albumStatus: albumRes.status,
+        cloudStatus: cloudRes.status,
+        albumCode: albumRes.status === 'fulfilled' ? albumRes.value?.data?.code ?? null : null,
+        cloudCode: cloudRes.status === 'fulfilled' ? cloudRes.value?.data?.code ?? null : null,
+        albumKeys: albumRes.status === 'fulfilled' ? Object.keys(albumRes.value?.data || {}) : [],
+        cloudKeys: cloudRes.status === 'fulfilled' ? Object.keys(cloudRes.value?.data || {}) : [],
+      });
+
+      const allPlaylists = playlistRes.status === 'fulfilled' ? normalizePlaylistArray(playlistRes.value) : [];
+      createdPlaylists.value = allPlaylists
+        .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) === uid)
+        .map(normalizePlaylistItem);
+      collectedPlaylists.value = allPlaylists
+        .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) !== uid)
+        .map(normalizePlaylistItem);
+
+      if (!createdPlaylists.value.length || !collectedPlaylists.value.length) {
+        const [createdRes, collectedRes] = await Promise.allSettled([
+          getUserCreatedPlaylist(uid, 100, 0),
+          getUserCollectedPlaylist(uid, 100, 0),
+        ]);
+
+        if (!createdPlaylists.value.length && createdRes.status === 'fulfilled') {
+          createdPlaylists.value = normalizeCreatedCollectedPayload(createdRes.value).map(normalizePlaylistItem);
+        }
+        if (!collectedPlaylists.value.length && collectedRes.status === 'fulfilled') {
+          collectedPlaylists.value = normalizeCreatedCollectedPayload(collectedRes.value).map(normalizePlaylistItem);
+        }
+      }
+
+      albumItems.value = albumRes.status === 'fulfilled' ? normalizeAlbumItems(albumRes.value) : [];
+
+      const djData = djRes.status === 'fulfilled'
+        ? djRes.value?.data?.djRadios || djRes.value?.data?.data?.djRadios || djRes.value?.djRadios || []
+        : [];
+      djSublist.value = Array.isArray(djData) ? djData : [];
+
+      const cloudList = cloudRes.status === 'fulfilled'
+        ? cloudRes.value.data?.data || cloudRes.value.data?.list || cloudRes.value.data?.songs || cloudRes.value.data || []
+        : [];
+      const normalizedCloud = Array.isArray(cloudList) ? cloudList.map(normalizeCloudItem) : [];
+      cloudDetailItems.value = normalizedCloud;
+      cloudPlaylists.value = await enrichCloudUrls(normalizedCloud);
+
+      logUserPanelDebug('loadUserData:cookieModeParsed', {
+        createdCount: createdPlaylists.value.length,
+        collectedCount: collectedPlaylists.value.length,
+        albumCount: albumItems.value.length,
+        djCount: djSublist.value.length,
+        cloudCount: cloudPlaylists.value.length,
+        firstAlbum: albumItems.value[0]?.name || null,
+        firstCloud: cloudPlaylists.value[0]?.name || null,
+      });
     }
 
     if (activeTab.value === 'playlists' && playlistSubTab.value === 'albums' && currentPlaylistItems.value.length) {
       selectedItem.value = currentPlaylistItems.value[0];
       await loadAlbumSongs(Number(selectedItem.value.id));
-    } else if (activeTab.value === 'playlists' && currentPlaylistItems.value.length && !selectedItem.value) {
-      selectedItem.value = currentPlaylistItems.value[0];
+    } else if (activeTab.value === 'playlists' && playlistSubTab.value === 'podcast') {
+      selectedItem.value = currentDjItems.value[0] || null;
+    } else if (activeTab.value === 'playlists') {
+      selectedItem.value = currentPlaylistItems.value[0] || null;
     } else if (activeTab.value === 'cloud' && cloudPlaylists.value.length) {
-      selectedItem.value = cloudPlaylists.value[0];
+      selectedItem.value = cloudPseudoPlaylist.value;
     }
   } finally {
     loading.value = false;
@@ -307,14 +457,24 @@ async function loadCloudData() {
   if (!uid) return;
   cloudLoading.value = true;
   try {
-    const cloudRes = await getCloudStorage({ limit: 1000, offset: 0 });
+    const authCookie = userStore.loginMode === 'uid' ? '' : userStore.loginCookie || '';
+    logUserPanelDebug('loadCloudData:start', {
+      uid,
+      loginMode: userStore.loginMode,
+      hasCookie: Boolean(authCookie),
+    });
+    const cloudRes = await getCloudStorage({ limit: 1000, offset: 0, cookie: authCookie });
+    logUserPanelDebug('loadCloudData:response', {
+      code: cloudRes.data?.code ?? null,
+      keys: Object.keys(cloudRes.data || {}),
+    });
     const cloudList = cloudRes.data?.data || cloudRes.data?.list || cloudRes.data?.songs || cloudRes.data || [];
     const normalizedCloud = Array.isArray(cloudList) ? cloudList.map(normalizeCloudItem) : [];
     const ids = normalizedCloud.map((item: any) => item.id).filter(Boolean);
     let detailed = normalizedCloud;
     if (ids.length) {
       try {
-        const cloudDetailRes = await getCloudStorageDetail(ids);
+        const cloudDetailRes = await getCloudStorageDetail(ids, authCookie);
         const cloudDetailList = cloudDetailRes.data?.data || cloudDetailRes.data?.songs || cloudDetailRes.data || [];
         const detailItems = Array.isArray(cloudDetailList) ? cloudDetailList.map(normalizeCloudItem) : [];
         const detailMap = new Map(detailItems.map((item: any) => [String(item.id), item]));
@@ -325,6 +485,12 @@ async function loadCloudData() {
     }
     cloudDetailItems.value = detailed;
     cloudPlaylists.value = await enrichCloudUrls(detailed);
+    logUserPanelDebug('loadCloudData:parsed', {
+      rawCount: Array.isArray(cloudList) ? cloudList.length : 0,
+      detailedCount: detailed.length,
+      finalCount: cloudPlaylists.value.length,
+      firstCloud: cloudPlaylists.value[0]?.name || null,
+    });
     if (activeTab.value === 'cloud' && cloudPlaylists.value.length) {
       selectedItem.value = cloudPseudoPlaylist.value;
     }
@@ -372,10 +538,34 @@ async function loadAlbumSongs(albumId: number) {
   }
 }
 
+async function loadDjDetail(rid: number) {
+  if (!rid) return;
+  djDetailLoading.value = true;
+  djDetailItems.value = [];
+  try {
+    const [detailRes, programRes] = await Promise.all([
+      getDjDetail(rid),
+      getDjProgram({ rid, limit: 100, offset: 0, asc: true }),
+    ]);
+    const detailData = detailRes.data?.data || detailRes.data || null;
+    djDetail.value = detailData;
+    const programs = programRes.data?.programs || programRes.data?.data?.programs || programRes.data?.data || [];
+    djDetailItems.value = Array.isArray(programs) ? programs : [];
+  } catch {
+    djDetail.value = null;
+    djDetailItems.value = [];
+  } finally {
+    djDetailLoading.value = false;
+  }
+}
+
 function handleSelectItem(item: any) {
   selectedItem.value = item;
   if (activeTab.value === 'playlists' && playlistSubTab.value === 'albums') {
     void loadAlbumSongs(Number(item.id));
+  }
+  if (activeTab.value === 'playlists' && playlistSubTab.value === 'podcast') {
+    void loadDjDetail(Number(item.id));
   }
 }
 
@@ -388,64 +578,52 @@ function openPlaylist(playlistId: number) {
 onMounted(loadUserData);
 
 watch(
+  () => userStore.profile?.userId,
+  () => {
+    selectedItem.value = null;
+    void loadUserData();
+  },
+);
+
+watch(
+  isPublicUserMode,
+  (enabled) => {
+    selectedItem.value = null;
+    cloudPlaylists.value = [];
+    cloudDetailItems.value = [];
+    djSublist.value = enabled ? [] : djSublist.value;
+    albumItems.value = enabled ? [] : albumItems.value;
+    djDetail.value = null;
+    djDetailItems.value = [];
+
+    if (enabled) {
+      activeTab.value = 'playlists';
+      if (playlistSubTab.value === 'albums' || playlistSubTab.value === 'podcast') playlistSubTab.value = 'created';
+    }
+
+    void loadUserData();
+  },
+);
+
+watch(
   () => selectedItem.value?.id,
   (id) => {
     if (activeTab.value === 'playlists' && playlistSubTab.value === 'albums' && id) {
       void loadAlbumSongs(Number(id));
+    }
+    if (activeTab.value === 'playlists' && playlistSubTab.value === 'podcast' && id) {
+      void loadDjDetail(Number(id));
     }
   },
 );
 </script>
 
 <style scoped>
+@import '../styles/detail-page.css';
+
 .user-page { display: grid; gap: var(--space-4); color: var(--text-main); height: 100%; min-height: 0; overflow: hidden; }
 .user-page--fixed { max-height: 100%; }
-.page-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
-.title { margin: 0; font-size: 24px; font-weight: 800; }
-.subtitle { margin: var(--space-1) 0 0; color: var(--text-sub); }
-.refresh-btn { height: 38px; padding: 0 var(--space-3); border-radius: 999px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text-main); }
-.empty-state { min-height: 320px; display: grid; place-items: center; }
-.empty-card { width: min(480px, 100%); padding: var(--space-6); border: 1px dashed var(--border); border-radius: 18px; background: var(--bg-surface); text-align: center; }
-.empty-card h3 { margin: 0 0 var(--space-2); }
-.empty-card p { margin: 0; color: var(--text-sub); }
-.detail-inside { display: grid; gap: var(--space-3); }
-.detail-hero { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3); border-radius: 18px; background: var(--bg-muted); }
-.detail-cover { width: 84px; height: 84px; border-radius: 18px; object-fit: cover; flex: 0 0 auto; }
-.detail-meta { display: grid; gap: var(--space-1); }
-.detail-title { margin: 0; font-size: 22px; }
-.detail-subtitle { margin: 0; color: var(--text-sub); line-height: 1.6; }
-.lyric-panel { display: grid; gap: var(--space-2); padding: var(--space-4); border-radius: 18px; background: var(--bg-muted); }
-.cloud-panel { display: grid; gap: var(--space-3); min-height: 0; height: 100%; grid-template-rows: auto 1fr; }
-.cloud-hero-header {
-  display: grid;
-  grid-template-columns: 308px 1fr;
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
-  border-radius: 18px;
-  background: var(--bg-muted);
-}
-.cloud-hero-media { display: flex; align-items: center; justify-content: center; }
-.cloud-hero-cover { width: 308px; height: 308px; border-radius: 18px; object-fit: cover; }
-.cloud-hero-content { display: grid; gap: var(--space-3); }
-.cloud-hero-title { margin: 0; font-size: 34px; line-height: 1.1; color: var(--text-main); }
-.cloud-hero-subrow { display: flex; align-items: center; gap: var(--space-2); }
-.cloud-hero-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
-.cloud-hero-sub { margin: 0; font-size: 13px; color: #4b5563; }
-.cloud-hero-actions { display: flex; align-items: center; gap: var(--space-2); }
-.cloud-state { min-height: 240px; display: grid; place-items: center; color: var(--text-sub); }
-.cloud-list-wrap { min-height: 0; height: 100%; overflow: auto; padding-right: var(--space-1); }
-.cloud-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); min-height: 0; }
-.cloud-item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: 16px; background: var(--bg-muted); cursor: pointer; }
-.cloud-item.active { outline: none; }
-.cloud-idx { width: 24px; text-align: center; color: var(--text-sub); font-size: 13px; }
-.cloud-cover { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; flex: 0 0 auto; }
-.cloud-meta { display: grid; gap: var(--space-1); min-width: 0; flex: 1; }
-.cloud-meta strong, .cloud-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cloud-meta strong { font-size: 14px; }
-.cloud-meta span { font-size: 12px; color: var(--text-sub); }
-.cloud-play { margin-left: auto; height: 30px; padding: 0 var(--space-2); font-size: 12px; }
-.cloud-play-all { height: 36px; padding: 0 var(--space-3); font-size: 14px; }
+.empty-state { min-height: 0; height: 100%; display: grid; align-content: start; overflow: auto; padding-right: var(--space-1); }
 .user-page--fixed :deep(.split-stage) {
   min-height: 0;
   height: calc(100vh - 220px);

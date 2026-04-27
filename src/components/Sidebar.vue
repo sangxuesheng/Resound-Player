@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { Clapperboard, Compass, History, Home, ListMusic, Search, Settings, Trophy, User } from 'lucide-vue-next';
+import { BookAudio, Clapperboard, Compass, History, Home, ListMusic, Search, Settings, Trophy, User } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 withDefaults(
@@ -52,6 +52,7 @@ const items = [
   { key: 'playlist', label: '歌单', icon: ListMusic },
   { key: 'rank', label: '排行榜', icon: Trophy },
   { key: 'mv', label: 'MV', icon: Clapperboard },
+  { key: 'podcast-list', label: '播客有声书', icon: BookAudio },
   { key: 'history', label: '收藏历史', icon: History },
   { key: 'user', label: '用户', icon: User },
   { key: 'settings', label: '设置', icon: Settings },

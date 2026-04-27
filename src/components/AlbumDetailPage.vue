@@ -1,6 +1,6 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']">
-    <div v-if="!isSticky" class="playlist-detail-back">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
+    <div v-if="!isSticky && !embedded" class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
@@ -13,7 +13,7 @@
       loading-text="专辑加载中…"
     >
       <template #media>
-        <AnimatedAppear tag="img" variant="media" rhythm="body" class-name="cover" :src="album.picUrl" :alt="album.name" />
+        <HeroCoverMedia :src="album.picUrl" :alt="album.name" />
       </template>
       <template #title>
         <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">{{ album.name }}</AnimatedAppear>
@@ -97,10 +97,12 @@
 </template>
 
 <script setup lang="ts">
+import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getAlbumDetail } from '../api/music';
 import { playerStore } from '../stores/player';
+import { recordLocalHistoryEntry } from '../utils/localHistory';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 
@@ -133,6 +135,10 @@ const songs = computed<any[]>(() => album.value?.songs || []);
 const albumDescription = computed(() => album.value?.description?.trim() || '');
 const shouldShowDescriptionToggle = computed(() => albumDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const isUserDetail = computed(() => props.backLabel === '返回用户中心');
+const shellStyle = computed<Record<string, string>>(() => {
+  const coverUrl = album.value?.picUrl?.trim();
+  return coverUrl ? { '--cover-bg': `url("${coverUrl}")` } : {};
+});
 const detailPageClassName = computed(() => {
   const classNames: string[] = [];
   if (isUserDetail.value) classNames.push('user-detail-panel');
@@ -237,8 +243,38 @@ function isCurrentTrack(song: any) {
   return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
 }
 
+function buildLocalAlbumHistoryEntry() {
+  const current = album.value;
+  const albumId = Number(props.albumId || current?.id || 0);
+  return {
+    key: `album-${albumId || current?.name || 'current'}`,
+    title: current?.name || '未命名专辑',
+    subtitle: `${songs.value.length || current?.size || 0} 首 · ${current?.artist?.name || '未知歌手'}`,
+    source: 'local_play_history',
+    sourceTip: '当前设备本地播放记录',
+    summary: current?.description || '当前设备播放过的专辑。',
+    typeLabel: '专辑历史',
+    countLabel: '0',
+    updatedAt: String(Date.now()),
+    playableLabel: '专辑播放',
+    playActionTip: '从本地历史恢复专辑详情。',
+    coverUrl: current?.picUrl || current?.blurPicUrl || '',
+    playableItem: { ...current, id: albumId || current?.id },
+    manageType: 'album' as const,
+    canUnlike: false,
+    canOpenDetail: Boolean(albumId),
+    sortKey: Date.now(),
+  };
+}
+
+function recordAlbumLocalHistory() {
+  if (!album.value) return;
+  recordLocalHistoryEntry(buildLocalAlbumHistoryEntry());
+}
+
 async function playAll() {
   if (!songs.value.length) return;
+  recordAlbumLocalHistory();
   playerStore.setPlaylist(songs.value, 0);
   await playerStore.playByIndex(0);
 }
@@ -251,6 +287,7 @@ function onSongItemDblClick(event: MouseEvent, index: number) {
 
 async function playOne(index: number) {
   if (!songs.value.length) return;
+  recordAlbumLocalHistory();
   playerStore.setPlaylist(songs.value, index);
   await playerStore.playByIndex(index);
 }
@@ -283,29 +320,6 @@ watch(() => props.albumId, (id) => {
 
 .song-item--playing .song-cover {
   box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.18));
-}
-
-.user-detail-panel {
-  border: 0;
-  box-shadow: none;
-  background:
-    radial-gradient(1100px 520px at 50% 0%, rgba(254, 205, 56, 0.18) 0%, rgba(254, 205, 56, 0.08) 28%, rgba(254, 205, 56, 0) 62%),
-    linear-gradient(180deg, rgba(255, 251, 242, 0.98) 0%, rgba(250, 247, 239, 0.96) 18%, rgba(245, 247, 250, 0.94) 52%, rgba(239, 242, 247, 0.92) 100%);
-}
-
-.user-detail-panel::before {
-  opacity: 1;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(255, 224, 138, 0.48) 0%, rgba(255, 224, 138, 0.18) 25%, rgba(255, 224, 138, 0) 58%),
-    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 30%),
-    radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0) 26%);
-  background-position: center top;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.user-detail-panel::after {
-  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.16) 20%, rgba(255,255,255,0.28) 42%, rgba(255,255,255,0.42) 68%, rgba(255,255,255,0) 100%);
 }
 
 .playlist-detail-page--embedded {

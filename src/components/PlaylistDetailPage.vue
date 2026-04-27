@@ -13,7 +13,7 @@
       loading-text="歌单加载中…"
     >
       <template #media>
-        <AnimatedAppear tag="img" variant="media" rhythm="body" class-name="cover" :src="playlist.coverImgUrl" :alt="playlist.name" />
+        <HeroCoverMedia :src="playlist.coverImgUrl" :alt="playlist.name" />
       </template>
       <template #title>
         <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">{{ playlist.name }}</AnimatedAppear>
@@ -115,11 +115,13 @@
 </template>
 
 <script setup lang="ts">
+import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
+import { recordLocalHistoryEntry } from '../utils/localHistory';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
@@ -187,6 +189,17 @@ const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = playlist.value?.coverImgUrl?.trim();
   return coverUrl ? { '--cover-bg': `url("${coverUrl}")` } : {};
 });
+
+function resolvePlaylistCover(playlistLike: any) {
+  const firstTrack = Array.isArray(playlistLike?.tracks) ? playlistLike.tracks[0] : null;
+  const firstTrackCover = firstTrack?.al?.picUrl || firstTrack?.album?.picUrl || '';
+
+  if (playlistLike?.name === '私人雷达') {
+    return firstTrackCover || '';
+  }
+
+  return playlistLike?.coverImgUrl || playlistLike?.coverUrl || firstTrackCover || '';
+}
 
 const isSticky = ref(false);
 let stickyRAF = 0;
@@ -277,6 +290,7 @@ async function fetchDetail(id: number) {
     // 先把已有数据渲染出来，避免用户长时间看到空白
     playlist.value = {
       ...detail,
+      coverImgUrl: resolvePlaylistCover(detail),
       tracks: rawTracks,
     };
     detailLoading.value = false;
@@ -297,6 +311,7 @@ async function fetchDetail(id: number) {
       if (allSongs.length) {
         playlist.value = {
           ...detail,
+          coverImgUrl: resolvePlaylistCover({ ...detail, tracks: allSongs }),
           tracks: allSongs,
         };
         return;
@@ -312,6 +327,7 @@ async function fetchDetail(id: number) {
         if (mergedTracks.length) {
           playlist.value = {
             ...detail,
+            coverImgUrl: resolvePlaylistCover({ ...detail, tracks: mergedTracks }),
             tracks: mergedTracks,
           };
         }
@@ -394,10 +410,15 @@ async function loadTodayRecommendTracks() {
           ? data.data
           : [];
     const normalized = list.map((song: any) => normalizeRecommendSong(song)).filter(Boolean);
+    const nextTracks = normalized.length ? normalized : Array.isArray(injectedPlaylist.value?.tracks) ? injectedPlaylist.value?.tracks : [];
     playlist.value = {
       ...playlist.value,
+      coverImgUrl: resolvePlaylistCover({
+        ...playlist.value,
+        tracks: nextTracks,
+      }),
       trackCount: normalized.length || injectedPlaylist.value?.trackCount || 0,
-      tracks: normalized.length ? normalized : Array.isArray(injectedPlaylist.value?.tracks) ? injectedPlaylist.value?.tracks : [],
+      tracks: nextTracks,
     };
   } catch {
     error.value = '历史日推加载失败';
@@ -476,8 +497,38 @@ function isCurrentTrack(song: any) {
   return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
 }
 
+function buildLocalPlaylistHistoryEntry() {
+  const current = playlist.value;
+  const playlistId = Number(props.playlistId || current?.id || 0);
+  return {
+    key: `playlist-${playlistId || current?.name || 'current'}`,
+    title: current?.name || '未命名歌单',
+    subtitle: `${current?.trackCount || tracks.value.length || 0} 首 · ${current?.creator?.nickname || '歌单'}`,
+    source: 'local_play_history',
+    sourceTip: '当前设备本地播放记录',
+    summary: current?.description || '当前设备播放过的歌单。',
+    typeLabel: '歌单历史',
+    countLabel: '0',
+    updatedAt: String(Date.now()),
+    playableLabel: '歌单播放',
+    playActionTip: '从本地历史恢复歌单详情。',
+    coverUrl: current?.coverImgUrl || '',
+    playableItem: { ...current, id: playlistId || current?.id },
+    manageType: 'playlist' as const,
+    canUnlike: false,
+    canOpenDetail: Boolean(playlistId),
+    sortKey: Date.now(),
+  };
+}
+
+function recordPlaylistLocalHistory() {
+  if (!playlist.value) return;
+  recordLocalHistoryEntry(buildLocalPlaylistHistoryEntry());
+}
+
 async function playAll() {
   if (!tracks.value.length) return;
+  recordPlaylistLocalHistory();
   playerStore.setPlaylist(tracks.value, 0);
   await playerStore.playByIndex(0);
 }
@@ -490,6 +541,7 @@ function onSongItemDblClick(event: MouseEvent, index: number) {
 
 async function playOne(index: number) {
   if (!tracks.value.length) return;
+  recordPlaylistLocalHistory();
   playerStore.setPlaylist(tracks.value, index);
   await playerStore.playByIndex(index);
 }
@@ -644,44 +696,7 @@ watch(
   box-shadow: none;
 }
 
-.rank-detail-panel::before {
-  opacity: 0.9;
-  background-position: center 18%;
-}
 
-.rank-detail-panel::after {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.01) 0%,
-    rgba(255, 255, 255, 0.1) 24%,
-    rgba(255, 255, 255, 0.3) 50%,
-    rgba(255, 255, 255, 0.58) 72%,
-    rgba(255, 255, 255, 0) 100%
-  );
-}
-
-.user-detail-panel {
-  border: 0;
-  box-shadow: none;
-  background:
-    radial-gradient(1100px 520px at 50% 0%, rgba(254, 205, 56, 0.18) 0%, rgba(254, 205, 56, 0.08) 28%, rgba(254, 205, 56, 0) 62%),
-    linear-gradient(180deg, rgba(255, 251, 242, 0.98) 0%, rgba(250, 247, 239, 0.96) 18%, rgba(245, 247, 250, 0.94) 52%, rgba(239, 242, 247, 0.92) 100%);
-}
-
-.user-detail-panel::before {
-  opacity: 1;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(255, 224, 138, 0.48) 0%, rgba(255, 224, 138, 0.18) 25%, rgba(255, 224, 138, 0) 58%),
-    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 30%),
-    radial-gradient(circle at 82% 16%, rgba(255, 255, 255, 0.38) 0%, rgba(255, 255, 255, 0) 26%);
-  background-position: center top;
-  background-repeat: no-repeat;
-  background-size: cover;
-}
-
-.user-detail-panel::after {
-  background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.16) 20%, rgba(255,255,255,0.28) 42%, rgba(255,255,255,0.42) 68%, rgba(255,255,255,0) 100%);
-}
 
 .playlist-detail-header {
   --hero-media-width: 308px;

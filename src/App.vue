@@ -80,12 +80,54 @@
           <UserPanel
             v-else-if="activePage === 'user'"
             class="user-page-host"
-            @open-podcast-list="openPodcastList"
+            @open-podcast-list="() => openPodcastList('user')"
             @open-playlist="(playlistId) => openPlaylistDetail(playlistId, undefined, 'user')"
           />
-          <HistoryPanel v-else-if="activePage === 'history'" class="history-page-host" />
-          <PodcastListPage v-else-if="activePage === 'podcast-list'" :items="podcastItems" :loading="podcastLoading" @back="backToUser" @open-detail="openPodcastDetail" />
-          <PodcastDetailPage v-else-if="activePage === 'podcast-detail'" :title="activePodcastTitle" :items="podcastDetailItems" :loading="podcastDetailLoading" @back="backToPodcastList" />
+          <HistoryPanel
+            v-else-if="activePage === 'history'"
+            class="history-page-host"
+            @open-podcast-list="() => openPodcastList('history')"
+            @open-podcast-detail="(item) => openPodcastDetail(item, 'history')"
+            @open-playlist-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, 'history')"
+            @open-album-detail="(albumId) => openAlbumDetail(albumId, 'history')"
+          />
+          <PodcastListPage
+            v-else-if="activePage === 'podcast-list'"
+            :items="podcastItems"
+            :recent-items="podcastRecentItems"
+            :subscribed-items="podcastSubscribedItems"
+            :category-options="podcastCategoryOptions"
+            :active-category="activePodcastCategory"
+            :loading="podcastLoading"
+            @back="backToPodcastSource"
+            @open-detail="(item) => openPodcastDetail(item, activePodcastSourcePage)"
+            @change-category="openPodcastCategory"
+            @open-category="openPodcastCategoryPage"
+            @open-curated-page="openPodcastCategoryPage"
+            @open-subscribed-page="openPodcastSubscribedPage"
+          />
+          <PodcastSubscribedPage
+            v-else-if="activePage === 'podcast-subscribed'"
+            :items="podcastSubscribedItems"
+            @back="backToPodcastSubscribedSource"
+            @open-detail="(item) => openPodcastDetail(item, podcastSubscribedPageSource)"
+          />
+          <PodcastCategoryPage
+            v-else-if="activePage === 'podcast-category' && activePodcastCategoryInfo"
+            :category="activePodcastCategoryInfo"
+            @back="backToPodcastCategorySource"
+            @open-detail="(item) => openPodcastDetail(item, 'podcast-list')"
+          />
+          <PodcastDetailPage
+            v-else-if="activePage === 'podcast-detail'"
+            :title="activePodcastTitle"
+            :detail="podcastDetailInfo"
+            :items="podcastDetailItems"
+            :loading="podcastDetailLoading"
+            @back="backToPodcastDetailSource"
+            @play-item="playPodcastItem"
+            @play-all="playPodcastAll"
+          />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
@@ -93,7 +135,7 @@
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
-    <PlayerExpanded />
+    <PlayerExpanded @open-artist="openArtistFromPlayer" />
     <MvPlayerModal :mv="activeMvItem" @close="activeMvItem = null" />
   </div>
 </template>
@@ -115,16 +157,19 @@ import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
 import MvPlayerModal from './components/MvPlayerModal.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
+import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
 import PodcastDetailPage from './components/PodcastDetailPage.vue';
+import PodcastSubscribedPage from './components/PodcastSubscribedPage.vue';
 import UserPanel from './components/UserPanel.vue';
 import HistoryPanel from './components/HistoryPanel.vue';
 import Sidebar from './components/Sidebar.vue';
 import TopBar from './components/TopBar.vue';
 import { waitForApiReady } from './api/client';
-import { getRecentDj, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
+import { getDjCategoryRecommend, getDjDetail, getDjProgram, getDjRecommend, getDjRecommendType, getDjSublist, getRecentDj, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
 import { playerStore } from './stores/player';
 import { uiStore } from './stores/ui';
 import { userStore } from './stores/user';
+import { recordLocalHistoryEntry } from './utils/localHistory';
 
 const SIDEBAR_COLLAPSED_KEY = 'tm_sidebar_collapsed';
 
@@ -139,10 +184,20 @@ const activePlaylistReturnPage = ref('playlist');
 const activeAlbumReturnPage = ref('home');
 const activeArtistReturnPage = ref('search');
 const podcastItems = ref<any[]>([]);
+const podcastRecentItems = ref<any[]>([]);
+const podcastSubscribedItems = ref<any[]>([]);
+const podcastCategoryOptions = ref<any[]>([]);
+const activePodcastCategory = ref<number | null>(null);
+const activePodcastCategoryInfo = ref<{ id: number; name: string } | null>(null);
+const podcastSubscribedPageSource = ref<'user' | 'history' | 'podcast-list'>('podcast-list');
+const podcastDetailInfo = ref<any>(null);
 const podcastDetailItems = ref<any[]>([]);
 const podcastLoading = ref(false);
 const podcastDetailLoading = ref(false);
 const activePodcastTitle = ref('');
+const activePodcastSourcePage = ref<'user' | 'history' | 'podcast-list'>('podcast-list');
+const activePodcastCategorySourcePage = ref<'user' | 'history' | 'podcast-list'>('podcast-list');
+const activePodcastDetailSourcePage = ref<'user' | 'history' | 'podcast-list'>('podcast-list');
 const playlistInitialCategory = ref('');
 const dailyListSongs = ref<any[]>([]);
 const dailyInjectedPlaylist = ref<any>(null);
@@ -170,6 +225,7 @@ const layoutVars = computed<Record<string, string>>(() => {
 const sidebarActiveKey = computed(() => {
   if (activePage.value === 'playlist-detail') return 'playlist';
   if (activePage.value === 'rank-detail') return 'rank';
+  if (['podcast-category', 'podcast-detail', 'podcast-subscribed'].includes(activePage.value)) return 'podcast-list';
   return activePage.value;
 });
 
@@ -192,6 +248,9 @@ function onSelectMenu(key: string) {
   activePage.value = key;
   if (key === 'playlist') {
     playlistInitialCategory.value = '';
+  }
+  if (key === 'podcast-list' && !podcastItems.value.length) {
+    void loadPodcastCenter();
   }
 }
 
@@ -220,13 +279,14 @@ const playlistBackLabel = computed(() => {
   if (activePlaylistReturnPage.value === 'search') return '返回搜索结果';
   if (activePlaylistReturnPage.value === 'home') return '返回首页';
   if (activePlaylistReturnPage.value === 'user') return '返回用户中心';
-  if (activePlaylistReturnPage.value === 'user-detail') return '返回用户详情';
+  if (activePlaylistReturnPage.value === 'history') return '返回收藏历史';
   return '返回歌单分类';
 });
 
 const albumBackLabel = computed(() => {
   if (activeAlbumReturnPage.value === 'search') return '返回搜索结果';
   if (activeAlbumReturnPage.value === 'artist-detail') return '返回歌手详情';
+  if (activeAlbumReturnPage.value === 'history') return '返回收藏历史';
   return '返回首页';
 });
 
@@ -265,6 +325,10 @@ function backToAlbum() {
     activePage.value = 'artist-detail';
     return;
   }
+  if (activeAlbumReturnPage.value === 'history') {
+    activePage.value = 'history';
+    return;
+  }
   activePage.value = 'home';
 }
 
@@ -281,15 +345,118 @@ function backToUser() {
   activePage.value = 'user';
 }
 
-function openPodcastList() {
+function openPodcastList(sourcePage: 'user' | 'history' | 'podcast-list' = 'podcast-list') {
+  activePodcastSourcePage.value = sourcePage;
   podcastLoading.value = true;
   activePage.value = 'podcast-list';
-  // 先进入列表页，再异步加载数据，避免空白感
-  void loadPodcastList();
+  void loadPodcastCenter();
+}
+
+function backToPodcastSource() {
+  activePage.value = activePodcastSourcePage.value || 'podcast-list';
+}
+
+function backToPodcastDetailSource() {
+  activePage.value = activePodcastDetailSourcePage.value || 'podcast-list';
+}
+
+function backToPodcastCategorySource() {
+  activePage.value = activePodcastCategorySourcePage.value || 'podcast-list';
+}
+
+function openPodcastSubscribedPage() {
+  podcastSubscribedPageSource.value = activePodcastSourcePage.value;
+  activePage.value = 'podcast-subscribed';
+}
+
+function backToPodcastSubscribedSource() {
+  activePage.value = podcastSubscribedPageSource.value || 'podcast-list';
 }
 
 function backToPodcastList() {
   activePage.value = 'podcast-list';
+}
+
+function openPodcastCategoryPage(category: { id: number; name: string }) {
+  if (!category?.id) return;
+  activePodcastCategorySourcePage.value = activePodcastSourcePage.value;
+  activePodcastCategory.value = category.id;
+  activePodcastCategoryInfo.value = { id: Number(category.id), name: category.name || '分类内容' };
+  activePage.value = 'podcast-category';
+}
+
+function resolvePodcastRid(item: any) {
+  return Number(item?.radio?.id || item?.program?.radio?.id || item?.dj?.id || podcastDetailInfo.value?.id || podcastDetailInfo.value?.radio?.id || 0);
+}
+
+function normalizePodcastPlayableTrack(item: any) {
+  const mainTrackId = Number(item?.mainTrackId || item?.mainSong?.id || item?.song?.id || item?.program?.mainTrackId || item?.program?.mainSong?.id || 0);
+  const rid = resolvePodcastRid(item);
+  if (!mainTrackId) return null;
+
+  return {
+    id: mainTrackId,
+    name: item?.name || item?.programName || item?.title || item?.mainSong?.name || '播客节目',
+    ar: [{ name: item?.radio?.name || item?.program?.radio?.name || activePodcastTitle.value || '播客' }],
+    al: {
+      name: item?.radio?.name || item?.program?.radio?.name || activePodcastTitle.value || '播客',
+      picUrl: item?.coverUrl || item?.picUrl || item?.imgUrl || item?.program?.coverUrl || item?.program?.blurCoverUrl || item?.radio?.picUrl || '',
+    },
+    source: 'podcast',
+    podcast: rid > 0 ? { rid } : undefined,
+  };
+}
+
+function buildLocalPodcastHistoryEntry() {
+  const detail = podcastDetailInfo.value || {};
+  const firstItem = podcastDetailItems.value[0] || {};
+  const radio = detail?.radio || firstItem?.radio || firstItem?.program?.radio || {};
+  const id = Number(detail?.id || detail?.voiceListId || radio?.id || firstItem?.voiceListId || firstItem?.program?.radio?.id || firstItem?.radio?.id || 0);
+  const title = activePodcastTitle.value || detail?.name || radio?.name || '当前播客';
+  const coverUrl = detail?.picUrl || detail?.coverUrl || detail?.imgUrl || detail?.imageUrl || detail?.blurCoverUrl || detail?.intervenePicUrl || radio?.picUrl || firstItem?.coverUrl || firstItem?.picUrl || firstItem?.program?.coverUrl || '';
+  return {
+    key: `podcast-${id || title}`,
+    title,
+    subtitle: `${podcastDetailItems.value.length || 0} 条声音 · ${detail?.category || radio?.category || '播客'}`,
+    source: 'local_play_history',
+    sourceTip: '当前设备本地播放记录',
+    summary: detail?.description || detail?.desc || radio?.desc || '当前设备播放过的播客。',
+    typeLabel: '播客历史',
+    countLabel: '0',
+    updatedAt: String(Date.now()),
+    playableLabel: '播客播放',
+    playActionTip: '从本地历史恢复播客详情。',
+    coverUrl,
+    playableItem: { ...detail, id, name: title, coverUrl, items: podcastDetailItems.value },
+    manageType: 'podcast' as const,
+    canUnlike: false,
+    canOpenDetail: true,
+    sortKey: Date.now(),
+  };
+}
+
+function recordPodcastLocalHistory() {
+  if (!podcastDetailItems.value.length && !podcastDetailInfo.value) return;
+  recordLocalHistoryEntry(buildLocalPodcastHistoryEntry());
+}
+
+async function playPodcastItem(payload: { item: any; index: number }) {
+  const playableTracks = podcastDetailItems.value.map(normalizePodcastPlayableTrack).filter(Boolean);
+  if (!playableTracks.length) return;
+
+  const targetTrackId = Number(payload?.item?.mainTrackId || payload?.item?.mainSong?.id || payload?.item?.song?.id || payload?.item?.program?.mainTrackId || payload?.item?.program?.mainSong?.id || 0);
+  const startIndex = Math.max(0, playableTracks.findIndex((track: any) => Number(track?.id || 0) === targetTrackId));
+  recordPodcastLocalHistory();
+  playerStore.setPlaylist(playableTracks, startIndex >= 0 ? startIndex : 0);
+  await playerStore.playByIndex(startIndex >= 0 ? startIndex : 0);
+}
+
+async function playPodcastAll(items: any[]) {
+  const playableTracks = (items || []).map(normalizePodcastPlayableTrack).filter(Boolean);
+  if (!playableTracks.length) return;
+  recordPodcastLocalHistory();
+  playerStore.setPlaylist(playableTracks, 0);
+  await playerStore.playByIndex(0);
 }
 
 function extractVoiceDetailItems(payload: any): any[] {
@@ -298,8 +465,12 @@ function extractVoiceDetailItems(payload: any): any[] {
     payload?.result,
     payload?.list,
     payload?.voiceList,
+    payload?.programs,
+    payload?.djPrograms,
     payload?.data?.list,
     payload?.data?.voiceList,
+    payload?.data?.programs,
+    payload?.data?.djPrograms,
     payload?.data?.result?.list,
     payload?.data?.result?.voiceList,
     payload?.data?.data,
@@ -311,66 +482,211 @@ function extractVoiceDetailItems(payload: any): any[] {
   return [];
 }
 
-async function openPodcastDetail(item: any) {
-  const id = item?.id || item?.voiceListId || item?.program?.radio?.id;
-  activePodcastTitle.value = item?.name || item?.program?.radio?.name || '播客';
-  if (!id) {
-    podcastDetailItems.value = [];
-    activePage.value = 'podcast-detail';
+async function openPodcastDetail(item: any, sourcePage: 'user' | 'history' | 'podcast-list' = activePodcastSourcePage.value) {
+  activePodcastDetailSourcePage.value = sourcePage;
+  const matchedCategory = podcastCategoryOptions.value.find((category: any) => Number(category?.id || 0) === Number(item?.categoryId || item?.radio?.categoryId || item?.program?.radio?.categoryId || 0));
+  if (matchedCategory) {
+    activePodcastCategoryInfo.value = { id: Number(matchedCategory.id), name: matchedCategory.name || '分类内容' };
+  }
+  const djRid = item?.radio?.id || item?.program?.radio?.id || item?.dj?.id || item?.id;
+  const voiceListId = item?.voiceListId || item?.voiceList?.id || item?.detail?.id;
+  const isDjItem = Boolean(item?.radio || item?.program || item?.dj || item?.djPrograms || item?.programCount || item?.subCount || item?.categoryId);
+
+  activePodcastTitle.value = item?.name || item?.program?.radio?.name || item?.radio?.name || '播客';
+  podcastDetailInfo.value = null;
+  podcastDetailItems.value = [];
+  activePage.value = 'podcast-detail';
+
+  if (!djRid && !voiceListId) {
     return;
   }
+
   podcastDetailLoading.value = true;
-  activePage.value = 'podcast-detail';
   try {
-    const [detailRes, listRes] = await Promise.all([
-      getVoiceListDetail(Number(id)),
-      getVoiceListItems({ voiceListId: Number(id), limit: 200, offset: 0 }),
-    ]);
-    const detailPayload = detailRes.data || detailRes;
-    const detailItems = extractVoiceDetailItems(detailPayload);
-    podcastDetailItems.value = detailItems.length ? detailItems : extractVoiceDetailItems(listRes);
-    const detailTitle = detailPayload?.name || detailPayload?.voiceList?.name || detailPayload?.data?.name;
-    if (detailTitle) activePodcastTitle.value = detailTitle;
+    if (isDjItem && djRid) {
+      const [detailRes, programRes] = await Promise.all([
+        getDjDetail(Number(djRid)),
+        getDjProgram({ rid: Number(djRid), limit: 200, offset: 0 }),
+      ]);
+      const detailPayload = detailRes.data || detailRes;
+      const programPayload = programRes.data || programRes;
+      podcastDetailInfo.value = detailPayload?.data || detailPayload?.djRadio || detailPayload?.radio || detailPayload || item;
+      podcastDetailItems.value = extractVoiceDetailItems(programPayload);
+      const detailTitle = detailPayload?.data?.name || detailPayload?.djRadio?.name || detailPayload?.radio?.name || item?.name;
+      if (detailTitle) activePodcastTitle.value = detailTitle;
+      return;
+    }
+
+    if (voiceListId) {
+      const [detailRes, listRes] = await Promise.all([
+        getVoiceListDetail(Number(voiceListId)),
+        getVoiceListItems({ voiceListId: Number(voiceListId), limit: 200, offset: 0 }),
+      ]);
+      const detailPayload = detailRes.data || detailRes;
+      const detailItems = extractVoiceDetailItems(detailPayload);
+      podcastDetailInfo.value = detailPayload?.data?.voiceList || detailPayload?.data || detailPayload?.voiceList || detailPayload?.result || detailPayload || item;
+      podcastDetailItems.value = detailItems.length ? detailItems : extractVoiceDetailItems(listRes);
+      const detailTitle = detailPayload?.data?.voiceList?.name || detailPayload?.name || detailPayload?.voiceList?.name || detailPayload?.data?.name;
+      if (detailTitle) activePodcastTitle.value = detailTitle;
+    }
   } finally {
     podcastDetailLoading.value = false;
   }
 }
 
 function extractVoiceListItems(payload: any): any[] {
+  const root = payload?.data || payload || {};
+  const nested = root?.data || {};
   const candidates = [
     payload?.data,
     payload?.result,
     payload?.list,
     payload?.voiceList,
+    payload?.programs,
+    payload?.djRadios,
     payload?.data?.list,
-    payload?.data?.voiceList,
-    payload?.data?.result?.list,
-    payload?.data?.result?.voiceList,
+    payload?.data?.records,
+    payload?.data?.programs,
+    payload?.data?.djRadios,
+    payload?.data?.history,
+    payload?.data?.radios,
     payload?.data?.data,
+    payload?.data?.data?.list,
+    payload?.data?.data?.records,
+    payload?.data?.data?.programs,
+    payload?.data?.data?.djRadios,
+    payload?.data?.data?.history,
+    payload?.data?.data?.radios,
+    root?.list,
+    root?.voiceList,
+    root?.records,
+    root?.programs,
+    root?.djRadios,
+    root?.weekData,
+    root?.items,
+    root?.history,
+    root?.radios,
+    nested,
+    nested?.list,
+    nested?.records,
+    nested?.programs,
+    nested?.djRadios,
+    nested?.weekData,
+    nested?.items,
+    nested?.history,
+    nested?.radios,
   ];
 
   for (const candidate of candidates) {
     if (Array.isArray(candidate)) return candidate;
   }
+
+  const objectCandidates = [payload, payload?.data, payload?.result, root, nested, payload?.data?.data];
+  for (const candidate of objectCandidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+    for (const value of Object.values(candidate)) {
+      if (Array.isArray(value) && value.length) return value;
+      if (value && typeof value === 'object') {
+        for (const nestedValue of Object.values(value)) {
+          if (Array.isArray(nestedValue) && nestedValue.length) return nestedValue;
+        }
+      }
+    }
+  }
+
   return [];
 }
 
-async function loadPodcastList() {
+function normalizeRecentDjItems(items: any[]): any[] {
+  return items
+    .map((item) => {
+      const radio = item?.radio || item?.program?.radio || item?.data?.radio || item?.resource?.radio || item?.resourceExtInfo?.radio || null;
+      const program = item?.program || item?.data?.program || item?.resource?.program || item?.resourceExtInfo?.program || item?.data || null;
+      const source = radio || program || item;
+      const id = source?.id || radio?.id || program?.id || item?.id || item?.resourceId || item?.rid || item?.programId || 0;
+      const name = source?.name || program?.name || radio?.name || item?.name || item?.title || item?.data?.name || '';
+      if (!id && !name) return null;
+      return {
+        ...item,
+        ...source,
+        id,
+        name: name || '播客节目',
+        coverUrl: source?.picUrl || source?.coverUrl || source?.blurCoverUrl || source?.intervenePicUrl || radio?.picUrl || radio?.coverUrl || radio?.intervenePicUrl || program?.coverUrl || program?.blurCoverUrl || program?.radio?.picUrl || item?.coverUrl || item?.picUrl || item?.imgUrl || item?.data?.coverUrl || item?.data?.radio?.picUrl || item?.program?.coverUrl || item?.program?.blurCoverUrl || item?.program?.radio?.picUrl || item?.program?.mainSong?.al?.picUrl || item?.mainSong?.al?.picUrl || '',
+        description: source?.desc || source?.description || program?.description || radio?.desc || item?.description || item?.reason || item?.data?.description || '',
+        category: source?.category || source?.rcmdtext || item?.category || item?.data?.category || '',
+        program,
+        radio,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeRecentPlayDjItems(items: any[]): any[] {
+  return items
+    .map((item) => {
+      const program = item?.data || item?.program || item?.resource?.program || item?.resourceExtInfo?.program || item;
+      const radio = program?.radio || item?.radio || item?.resource?.radio || item?.resourceExtInfo?.radio || null;
+      const id = program?.id || item?.id || item?.resourceId || item?.programId || radio?.id || 0;
+      const name = program?.name || radio?.name || item?.name || item?.title || '';
+      if (!id && !name) return null;
+      return {
+        ...item,
+        ...program,
+        id,
+        name: name || '播客节目',
+        coverUrl: program?.coverUrl || program?.blurCoverUrl || radio?.picUrl || radio?.coverUrl || item?.coverUrl || item?.picUrl || item?.imgUrl || '',
+        description: program?.description || radio?.desc || item?.description || item?.reason || '',
+        category: radio?.category || item?.category || '',
+        program,
+        radio,
+      };
+    })
+    .filter(Boolean);
+}
+
+async function loadPodcastCenter() {
+  podcastLoading.value = true;
+  podcastSubscribedItems.value = [];
+  podcastCategoryOptions.value = [];
+  activePodcastCategory.value = null;
+
+  try {
+    const tasks: Promise<any>[] = [];
+    tasks.push(getRecentDj(100));
+    tasks.push(getDjSublist());
+    tasks.push(getDjRecommend());
+    tasks.push(getDjCategoryRecommend());
+
+    const isFullLogin = userStore.loginMode === 'cookie' || userStore.loginMode === 'qr';
+    const [recentRes, sublistRes, recommendRes, categoryRes] = await Promise.all(tasks);
+
+    podcastRecentItems.value = normalizeRecentPlayDjItems(extractVoiceListItems(recentRes));
+    podcastSubscribedItems.value = isFullLogin ? normalizeRecentDjItems(extractVoiceListItems(sublistRes)) : [];
+    podcastItems.value = normalizeRecentDjItems(extractVoiceListItems(recommendRes));
+    const categoryItems = extractVoiceListItems(categoryRes);
+    podcastCategoryOptions.value = categoryItems.map((item: any) => ({ id: Number(item?.id || item?.categoryId || item?.type || 0), name: item?.name || item?.categoryName || item?.title || '分类' })).filter((item: any) => item.id > 0 && item.name);
+    activePodcastCategory.value = podcastCategoryOptions.value[0]?.id || null;
+
+    if (!podcastItems.value.length) {
+      const [podcastRes, bookRes] = await Promise.all([
+        getVoiceListSearch({ keyword: '播客', limit: 8, offset: 0 }),
+        getVoiceListSearch({ keyword: '有声书', limit: 8, offset: 0 }),
+      ]);
+
+      podcastItems.value = [...extractVoiceListItems(podcastRes), ...extractVoiceListItems(bookRes)];
+    }
+  } finally {
+    podcastLoading.value = false;
+  }
+}
+
+async function openPodcastCategory(categoryId: number) {
+  if (!categoryId) return;
+  activePodcastCategory.value = categoryId;
   podcastLoading.value = true;
   try {
-    const recent = await getRecentDj(100);
-    let list: any[] = extractVoiceListItems(recent);
-
-    if (!list.length) {
-      const keywords = [userStore.profile?.nickname, '播客'].filter(Boolean) as string[];
-      for (const keyword of keywords) {
-        const res = await getVoiceListSearch({ keyword, limit: 10, offset: 0 });
-        list = extractVoiceListItems(res);
-        if (list.length) break;
-      }
-    }
-
-    podcastItems.value = list;
+    const { data } = await getDjRecommendType(categoryId);
+    podcastItems.value = normalizeRecentDjItems(extractVoiceListItems(data || { data }));
   } finally {
     podcastLoading.value = false;
   }
@@ -413,6 +729,11 @@ function openArtistFromSearch(artist: any) {
 
 function openArtistFromHome(artist: any) {
   openArtistDetail(artist, 'home');
+}
+
+function openArtistFromPlayer(artist: any) {
+  playerStore.closeExpanded();
+  openArtistDetail(artist, activePage.value);
 }
 
 function openUserFromHome(userId: number) {
@@ -498,10 +819,11 @@ onBeforeUnmount(() => {
   --layout-gap: 8px;
   --sidebar-width: 220px;
   --topbar-height: 74px;
+  --player-bar-height: 84px;
   --content-max-width: 100%;
   --content-padding: 16px;
 
-  --main-height: calc(100vh - (var(--layout-top) * 2));
+  --main-height: calc(100vh - (var(--layout-top) * 2) - var(--player-bar-height));
   --sidebar-height: var(--main-height);
   --main-width: calc(100% - (var(--layout-left) * 2) - var(--sidebar-width) - var(--layout-gap));
   --content-height: calc(var(--main-height) - var(--topbar-height));
@@ -531,7 +853,7 @@ onBeforeUnmount(() => {
   height: var(--content-height);
   min-height: 0;
   padding: var(--content-padding);
-  padding-bottom: 112px;
+  padding-bottom: var(--content-padding);
   overflow-y: auto;
   overflow-x: hidden;
   background: var(--bg-app);

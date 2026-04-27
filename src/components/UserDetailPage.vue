@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-detail-page">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-detail-page" :style="shellStyle">
     <div v-if="!isSticky" class="user-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
@@ -12,14 +12,7 @@
       loading-text="用户详情加载中…"
     >
       <template #media>
-        <AnimatedAppear
-          tag="img"
-          variant="media"
-          rhythm="body"
-          class-name="cover"
-          :src="avatarUrl"
-          :alt="displayName"
-        />
+        <HeroCoverMedia :src="avatarUrl" :alt="displayName" />
       </template>
       <template #title>
         <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">{{ displayName }}</AnimatedAppear>
@@ -88,6 +81,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import HeroCoverMedia from './HeroCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserDetail } from '../api/auth';
@@ -122,6 +116,10 @@ const tabs = [
 
 const displayName = computed(() => userDetail.value?.profile?.nickname || userDetail.value?.nickname || '未命名用户');
 const avatarUrl = computed(() => normalizeImageUrl(userDetail.value?.profile?.avatarUrl || userDetail.value?.avatarUrl || ''));
+const shellStyle = computed<Record<string, string>>(() => {
+  const coverUrl = avatarUrl.value?.trim();
+  return coverUrl ? { '--cover-bg': `url("${coverUrl}")` } : {};
+});
 const userSignature = computed(() => userDetail.value?.profile?.signature || userDetail.value?.signature || '这个用户还没有留下签名。');
 const playlistList = computed(() => activeTab.value === 'created' ? createdPlaylists.value : collectedPlaylists.value);
 

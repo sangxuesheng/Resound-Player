@@ -62,9 +62,13 @@ export function getUserRecord(uid: number, type: 0 | 1 = 0) {
   });
 }
 
-export function getUserPlaylist(uid: number) {
+export function getUserPlaylist(uid: number, cookie?: string) {
   return apiClient.get('/user/playlist', {
-    params: { uid, timestamp: Date.now() },
+    params: {
+      uid,
+      ...(cookie ? { cookie } : {}),
+      timestamp: Date.now(),
+    },
   });
 }
 
@@ -74,23 +78,25 @@ export function getUserLikeList(uid: number) {
   });
 }
 
-export function getUserCreatedPlaylist(uid: number, limit = 100, offset = 0) {
+export function getUserCreatedPlaylist(uid: number, limit = 100, offset = 0, cookie?: string) {
   return apiClient.get('/user/playlist/create', {
     params: {
       uid,
       limit,
       offset,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export function getUserCollectedPlaylist(uid: number, limit = 100, offset = 0) {
+export function getUserCollectedPlaylist(uid: number, limit = 100, offset = 0, cookie?: string) {
   return apiClient.get('/user/playlist/collect', {
     params: {
       uid,
       limit,
       offset,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });

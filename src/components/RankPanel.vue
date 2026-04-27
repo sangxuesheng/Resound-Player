@@ -7,9 +7,8 @@
         <AnimatedAppear v-if="featuredList.length" tag="section" variant="content" rhythm="body" class-name="section featured">
           <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="section-head">
             <AnimatedAppear tag="h3" variant="title" rhythm="title">推荐榜</AnimatedAppear>
-            <AnimatedAppear tag="span" variant="text" rhythm="body" class-name="section-sub">热门榜单快捷入口</AnimatedAppear>
           </AnimatedAppear>
-          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="featured-scroll">
+          <AnimatedAppear tag="div" variant="content" rhythm="list" class-name="featured-scroll ui-safe-rail">
             <AnimatedAppear
               v-for="(item, idx) in featuredList"
               :key="item.id"
@@ -17,11 +16,18 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="featured-card hover-play-button-trigger"
+              class-name="featured-card hover-play-button-trigger interactive-media-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="featured-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <InteractiveCoverMedia
+                :src="item.coverImgUrl"
+                :alt="item.name"
+                :index="idx"
+                shell-class="featured-media-shell"
+                motion-class="featured-cover-motion-shell"
+                image-class="featured-cover"
+              />
               <HoverPlayButton class="rank-hover-play hover-play-button--lg" />
             </AnimatedAppear>
           </AnimatedAppear>
@@ -39,12 +45,20 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="curated-card hover-play-button-trigger"
+              class-name="curated-card hover-play-button-trigger interactive-media-trigger"
               :class="`palette-${(idx % 5) + 1}`"
               :style="{ '--curated-cover': `url(${item.coverImgUrl})` }"
               type="button"
               @click="openDetail(item.id)"
             >
+              <InteractiveCoverMedia
+                :src="item.coverImgUrl"
+                :alt="item.name"
+                :index="idx"
+                shell-class="curated-media-shell"
+                motion-class="curated-cover-motion-shell"
+                image-class="curated-cover"
+              />
               <HoverPlayButton class="rank-hover-play hover-play-button--lg" />
             </AnimatedAppear>
           </AnimatedAppear>
@@ -63,12 +77,19 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="rank-card"
+              class-name="rank-card interactive-media-trigger"
               :style="rankCardStyle(item.coverImgUrl)"
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="rank-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <InteractiveCoverMedia
+                :src="item.coverImgUrl"
+                :alt="item.name"
+                :index="idx"
+                shell-class="rank-media-shell"
+                motion-class="rank-cover-motion-shell"
+                image-class="rank-cover"
+              />
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-main">
                 <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="rank-top">
                   <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="rank-name">{{ item.name }}</AnimatedAppear>
@@ -120,12 +141,19 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="global-card"
+              class-name="global-card interactive-media-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-cover-wrap">
-                <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="global-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+                <InteractiveCoverMedia
+                  :src="item.coverImgUrl"
+                  :alt="item.name"
+                  :index="idx"
+                  shell-class="global-media-shell"
+                  motion-class="global-cover-motion-shell"
+                  image-class="global-cover"
+                />
               </AnimatedAppear>
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-info">
                 <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-block">
@@ -181,7 +209,11 @@
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-cover" :src="item.coverImgUrl" :alt="formatLanguageTitle(item.name)" loading="lazy" />
+              <div class="language-media-shell">
+                <AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" class-name="language-cover-motion-shell">
+                  <img class="language-cover" :src="item.coverImgUrl" :alt="formatLanguageTitle(item.name)" loading="lazy" />
+                </AnimatedAppear>
+              </div>
               <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="language-flag" :src="getLanguageFlag(item.id)" :alt="`${formatLanguageTitle(item.name)} 国旗`" loading="lazy" />
               <HoverPlayButton class="rank-hover-play hover-play-button--md" />
             </AnimatedAppear>
@@ -205,7 +237,11 @@
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="genre-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <div class="genre-media-shell">
+                <AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" class-name="genre-cover-motion-shell">
+                  <img class="genre-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+                </AnimatedAppear>
+              </div>
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="genre-meta">
                 <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="genre-name">{{ item.name }}</AnimatedAppear>
                 <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="genre-update">{{ normalizeUpdateFrequency(item.updateFrequency) }}</AnimatedAppear>
@@ -232,7 +268,11 @@
               type="button"
               @click="openDetail(item.id)"
             >
-              <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="car-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+              <div class="car-media-shell">
+                <AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" class-name="car-cover-motion-shell">
+                  <img class="car-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+                </AnimatedAppear>
+              </div>
               <HoverPlayButton class="rank-hover-play" />
             </AnimatedAppear>
           </AnimatedAppear>
@@ -251,12 +291,19 @@
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="global-card"
+              class-name="global-card interactive-media-trigger"
               type="button"
               @click="openDetail(item.id)"
             >
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-cover-wrap">
-                <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="global-cover" :src="item.coverImgUrl" :alt="item.name" loading="lazy" />
+                <InteractiveCoverMedia
+                  :src="item.coverImgUrl"
+                  :alt="item.name"
+                  :index="idx"
+                  shell-class="global-media-shell"
+                  motion-class="global-cover-motion-shell"
+                  image-class="global-cover"
+                />
               </AnimatedAppear>
               <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-info">
                 <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="global-title-block">
@@ -305,10 +352,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { getPlaylistTrackAll, getToplistDetail } from '../api/music';
+import InteractiveCoverMedia from './InteractiveCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
 import PageLayoutShell from './PageLayoutShell.vue';
 
+type StyleValue = Record<string, string | number>;
 type ToplistTrack = { first?: string; second?: string };
 type ArtistBrief = { id?: number; name?: string };
 type PlaylistTrack = { id: number; name?: string; ar?: ArtistBrief[] };
@@ -413,7 +462,7 @@ const otherList = computed(() => {
 
 function rankCardStyle(coverUrl?: string) {
   if (!coverUrl) return {};
-  return { '--cover-bg': `url(${coverUrl})`, '--detail-head-fade-height': '102px', '--detail-head-fade-soft': '72px' } as Record<string, string>;
+  return { '--cover-bg': `url(${coverUrl})`, '--detail-head-fade-height': '102px', '--detail-head-fade-soft': '72px' } as StyleValue;
 }
 
 function formatCuratedName(name: string) {
@@ -592,31 +641,68 @@ onMounted(() => {
   overflow: hidden;
   aspect-ratio: 1 / 1;
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 14px;
   padding: 10px;
   text-align: left;
   cursor: pointer;
-  background: var(--bg-surface);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent);
   transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
+}
+.curated-media-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+  transform: translateZ(0);
+}
+.curated-cover-motion-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
 }
 .curated-card::before {
   content: '';
   position: absolute;
   inset: 10px;
   border-radius: 10px;
-  background-image: var(--curated-cover);
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: var(--bg-surface);
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.2) 28%,
+    rgba(255, 255, 255, 0.52) 62%,
+    rgba(255, 255, 255, 0.92) 100%
+  );
+}
+.curated-cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bg-surface);
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
 }
 .curated-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
+@media (hover: hover) and (pointer: fine) {
+  .curated-card:hover .curated-cover,
+  .curated-card:focus-visible .curated-cover {
+    transform: scale(var(--image-hover-scale, 1.04));
+    filter: saturate(var(--image-hover-saturate, 1.04));
+  }
+}
 
 .language-section { gap: var(--space-2); }
 .language-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 14px; }
-.language-card { position: relative; border: 1px solid color-mix(in srgb, var(--border) 66%, transparent); border-radius: 14px; min-height: 128px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 8%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.language-card { position: relative; min-height: 128px; padding: 10px; cursor: pointer; display: grid; gap: 8px; text-align: left; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
 .language-card { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; }
 .language-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 12%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .language-cover { width: 100%; aspect-ratio: 1 / 1; border-radius: 10px; object-fit: cover; display: block; }
@@ -624,7 +710,7 @@ onMounted(() => {
 
 .genre-section { gap: var(--space-2); }
 .genre-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-2); }
-.genre-card { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: grid; gap: 8px; text-align: left; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.genre-card { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; padding: 10px; cursor: pointer; display: grid; gap: 8px; text-align: left; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
 .genre-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .genre-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
 .genre-meta { min-width: 0; display: grid; gap: 4px; }
@@ -634,15 +720,12 @@ onMounted(() => {
 
 .car-section { gap: var(--space-2); }
 .car-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--space-2); }
-.car-card { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; border: 1px solid var(--border); border-radius: 14px; padding: 10px; background: var(--bg-surface); cursor: pointer; display: block; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.car-card { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; padding: 10px; cursor: pointer; display: block; transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
 .car-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
 .car-cover { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 10px; display: block; }
 
 .global-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
 .global-card {
-  border: 1px solid color-mix(in srgb, var(--border) 88%, transparent);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--bg-surface) 94%, var(--bg-muted) 6%);
   padding: var(--space-2);
   display: grid;
   grid-template-columns: 142px 1fr;
@@ -650,7 +733,6 @@ onMounted(() => {
   align-items: start;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--text-main) 7%, transparent);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 .global-card:hover {
@@ -663,21 +745,103 @@ onMounted(() => {
 .global-title-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: flex-start; gap: var(--space-1); }
 .global-name { min-width: 0; margin: 0; font-size: 22px; line-height: 1.15; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .global-update { justify-self: end; font-size: 11px; color: var(--text-soft); }
+.rank-media-shell,
+.global-media-shell,
+.featured-media-shell,
+.language-media-shell,
+.genre-media-shell,
+.car-media-shell { position: relative; overflow: hidden; border-radius: 10px; transform: translateZ(0); }
+.rank-cover-motion-shell,
+.global-cover-motion-shell,
+.featured-cover-motion-shell,
+.language-cover-motion-shell,
+.genre-cover-motion-shell,
+.car-cover-motion-shell { display: block; line-height: 0; transform-origin: center center; }
 .global-cover-wrap { position: relative; width: 142px; height: 142px; border-radius: 14px; overflow: hidden; }
-.global-cover { width: 142px; height: 142px; border-radius: 14px; object-fit: cover; display: block; box-shadow: none; }
+.global-cover,
+.rank-cover,
+.featured-cover,
+.language-cover,
+.genre-cover,
+.car-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
+}
+.global-cover { width: 142px; height: 142px; border-radius: 14px; box-shadow: none; }
+.featured-media-shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+:deep(.featured-cover-motion-shell) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
+}
+:deep(.featured-cover) {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+  object-position: center center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .rank-card:hover .rank-cover,
+  .rank-card:focus-visible .rank-cover,
+  .global-card:hover .global-cover,
+  .global-card:focus-visible .global-cover,
+  .featured-card:hover :deep(.featured-cover),
+  .featured-card:focus-visible :deep(.featured-cover),
+  .language-card:hover .language-cover,
+  .language-card:focus-visible .language-cover,
+  .genre-card:hover .genre-cover,
+  .genre-card:focus-visible .genre-cover,
+  .car-card:hover .car-cover,
+  .car-card:focus-visible .car-cover {
+    transform: scale(var(--image-hover-scale, 1.04));
+    filter: saturate(var(--image-hover-saturate, 1.04));
+  }
+}
 .global-track-list { align-self: end; margin: 0; padding: 0 0 2px; list-style: none; display: grid; gap: 5px; color: var(--text-sub); font-size: 12px; }
 .global-track-list li { display: grid; grid-template-columns: 18px 1fr; align-items: center; gap: 6px; min-width: 0; }
 .global-track-no { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 6px; font-size: 11px; line-height: 1; font-weight: 700; color: var(--text-sub); background: var(--bg-muted); }
 .global-track-text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; line-height: 1.2; color: var(--text-sub); }
-.featured-card { position: relative; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; padding: 10px; text-align: left; cursor: pointer; background: var(--bg-surface); aspect-ratio: 2.35 / 1; min-height: 96px; box-shadow: 0 8px 20px color-mix(in srgb, var(--text-main) 7%, transparent); transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.featured-card {
+  --featured-cover-focus-y: 50%;
+  position: relative;
+  overflow: hidden;
+  display: block;
+  aspect-ratio: 2.65 / 1;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
 .featured-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px color-mix(in srgb, var(--text-main) 10%, transparent); border-color: color-mix(in srgb, var(--accent) 22%, var(--border)); }
-.featured-cover { display: block; width: 100%; height: 100%; border-radius: 10px; object-fit: cover; }
+.featured-meta { min-width: 0; display: grid; gap: var(--space-1); align-content: center; padding-right: 44px; }
+.featured-name { margin: 0; color: var(--text-main); font-size: 14px; line-height: 1.3; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.featured-update { color: var(--text-soft); font-size: 12px; }
+.language-flag { position: absolute; top: 14px; right: 14px; width: 32px; height: 23px; border-radius: 5px; object-fit: cover; display: block; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.22); }
 .trend { height: 20px; min-width: 20px; border-radius: 999px; padding: 0 var(--space-1); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
 .trend.rise { color: #b91c1c; background: #fee2e2; border-color: #fecaca; }
 .trend.new { color: #92400e; background: #fef3c7; border-color: #fde68a; }
 .trend.steady { color: #065f46; background: #d1fae5; border-color: #a7f3d0; }
 .grid-wrap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-2); }
-.rank-card { position: relative; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); display: grid; grid-template-columns: 96px 1fr; padding: var(--space-2); gap: var(--space-2); text-align: left; cursor: pointer; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.rank-card { position: relative; display: grid; grid-template-columns: 96px 1fr; padding: var(--space-2); gap: var(--space-2); text-align: left; cursor: pointer; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
 .rank-card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 16%, rgba(15, 23, 42, 0.1)); }
 .rank-cover { width: 96px; height: 96px; border-radius: 10px; object-fit: cover; }
 .rank-main { min-width: 0; display: grid; gap: var(--space-1); }
@@ -705,5 +869,5 @@ onMounted(() => {
 .rank-content { display: grid; gap: var(--space-3); }
 @media (max-width: 1280px) { .featured-scroll { grid-template-columns: repeat(3, minmax(0, 1fr)); } .curated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .language-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .genre-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } .global-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 980px) { .featured-scroll { grid-template-columns: repeat(2, minmax(0, 1fr)); } .curated-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .language-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .genre-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(1, minmax(0, 1fr)); } .global-card { grid-template-columns: 104px 1fr; padding: var(--space-2); gap: var(--space-2); } .global-name { font-size: 20px; } .global-cover-wrap, .global-cover { width: 104px; height: 104px; } }
-@media (max-width: 767px) { .rank-page-header { align-items: flex-start; flex-direction: column; } .featured-scroll { display: flex; overflow-x: auto; padding-bottom: var(--space-0); } .featured-card { flex: 0 0 196px; } .curated-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .curated-card { min-height: 112px; padding: 8px; border-radius: 12px; } .curated-card::before { inset: 8px; border-radius: 8px; } .language-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .language-card { min-height: 110px; border-radius: 12px; } .genre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rank-card { grid-template-columns: 80px 1fr; } .rank-cover { width: 80px; height: 80px; } .rank-tags { flex-wrap: wrap; justify-content: flex-end; } .global-card { grid-template-columns: 1fr; } .global-cover-wrap { width: 112px; height: 112px; } .global-cover { width: 112px; height: 112px; } .global-track-list { gap: 10px; } .global-track-no { font-size: 20px; } .global-track-text { font-size: 14px; } }
+@media (max-width: 767px) { .rank-page-header { align-items: flex-start; flex-direction: column; } .featured-scroll { display: flex; padding-bottom: var(--space-0); } .featured-card { flex: 0 0 196px; } .curated-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .curated-card { min-height: 112px; padding: 8px; border-radius: 12px; } .curated-card::before { inset: 8px; border-radius: 8px; } .language-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .language-card { min-height: 110px; border-radius: 12px; } .genre-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rank-card { grid-template-columns: 80px 1fr; } .rank-cover { width: 80px; height: 80px; } .rank-tags { flex-wrap: wrap; justify-content: flex-end; } .global-card { grid-template-columns: 1fr; } .global-cover-wrap { width: 112px; height: 112px; } .global-cover { width: 112px; height: 112px; } .global-track-list { gap: 10px; } .global-track-no { font-size: 20px; } .global-track-text { font-size: 14px; } }
 </style>

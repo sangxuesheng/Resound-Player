@@ -502,10 +502,7 @@ onBeforeUnmount(() => {
   right: 0;
   top: calc(100% + var(--space-2));
   z-index: 40;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--bg-surface);
-  box-shadow: var(--glass-shadow);
+  border-radius: 18px;
   padding: var(--space-3);
   display: flex;
   flex-direction: column;
@@ -645,12 +642,7 @@ onBeforeUnmount(() => {
   z-index: 300;
   width: 286px;
   padding: var(--space-3);
-  border: 1px solid var(--border);
   border-radius: 18px;
-  background: var(--bg-solid);
-  box-shadow: var(--glass-shadow);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   display: grid;
   gap: var(--space-3);
 }

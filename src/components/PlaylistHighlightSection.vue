@@ -9,10 +9,18 @@
         variant="text"
         rhythm="list"
         :index="idx"
-        class-name="hq-item"
+        class-name="hq-item interactive-media-trigger"
         @click="emit('open-detail', item.id)"
       >
-        <AnimatedAppear tag="img" variant="media" rhythm="media" :index="idx" :src="resolveCover(item)" :alt="item.name" loading="lazy" />
+        <InteractiveCoverMedia
+          :src="resolveCover(item)"
+          :alt="item.name"
+          rhythm="media"
+          :index="idx"
+          shell-class="hq-media-shell"
+          motion-class="hq-cover-motion-shell"
+          image-class="hq-cover"
+        />
         <div class="meta">
           <p class="name">{{ item.name }}</p>
           <p class="sub">{{ item.copywriter || item.creator?.nickname || fallbackSub }}</p>
@@ -24,6 +32,7 @@
 
 <script setup lang="ts">
 import AnimatedAppear from './AnimatedAppear.vue';
+import InteractiveCoverMedia from './InteractiveCoverMedia.vue';
 import { resolvePlaylistCoverUrl } from '../utils/image';
 
 defineProps<{
@@ -52,11 +61,11 @@ function resolveCover(item: { coverImgUrl?: string; picUrl?: string }) {
 .hq-section h3 { margin: 0 0 8px; font-size: 16px; }
 .hq-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .hq-item { border: 1px solid #edf2f7; border-radius: 12px; overflow: hidden; background: #f8fafc; cursor: pointer; }
-.hq-item img {
-  width: 100%;
+.hq-media-shell { }
+.hq-cover-motion-shell { }
+.hq-cover {
   aspect-ratio: 1 / 1;
   object-fit: contain;
-  display: block;
   background: color-mix(in srgb, var(--bg-surface, #fff) 70%, #000);
 }
 .hq-item .meta { padding: 8px; }

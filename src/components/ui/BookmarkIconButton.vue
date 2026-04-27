@@ -46,19 +46,27 @@ const isLoading = ref(false);
 const burstSeed = ref(0);
 
 watch(
-  () => props.liked,
-  (value) => {
-    if (value !== undefined) {
-      isSaved.value = value;
-    } else if (typeof props.songId === 'number') {
-      isSaved.value = userStore.likedSongIds.includes(props.songId);
+  () => [props.liked, props.songId, userStore.likedSongIds.length, userStore.likedSongIds.join(',')] as const,
+  ([liked, songId]) => {
+    if (liked !== undefined) {
+      isSaved.value = liked;
+      return;
     }
+
+    const normalizedSongId = Number(songId || 0);
+    isSaved.value = normalizedSongId > 0 && userStore.likedSongIds.includes(normalizedSongId);
   },
   { immediate: true },
 );
 
 const sparkles = computed(() => {
-  const colors = ['rgba(244,63,94,0.95)', 'rgba(251,113,133,0.9)', 'rgba(253,164,175,0.88)', 'rgba(244,114,182,0.9)', 'rgba(255,255,255,0.9)'];
+  const colors = [
+    'color-mix(in srgb, var(--bookmark-accent) 92%, white)',
+    'color-mix(in srgb, var(--bookmark-accent) 78%, white)',
+    'color-mix(in srgb, var(--bookmark-accent) 62%, white)',
+    'color-mix(in srgb, var(--bookmark-accent) 86%, var(--accent-purple))',
+    'rgba(255,255,255,0.9)',
+  ];
   return Array.from({ length: 6 }, (_, index) => {
     const angle = (index / 6) * Math.PI * 2;
     const distance = 16 + (index % 3) * 7;
@@ -88,6 +96,7 @@ async function toggleSaved() {
       id: props.songId,
       like: nextState,
       uid: userStore.profile?.userId,
+      cookie: userStore.loginCookie || undefined,
     });
     const code = response?.data?.code ?? response?.data?.data?.code;
     if (typeof code === 'number' && code !== 200) {
@@ -111,6 +120,7 @@ async function toggleSaved() {
 
 <style scoped>
 .bookmark-icon-button {
+  --bookmark-accent: var(--bookmark-heart-fill);
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -118,19 +128,16 @@ async function toggleSaved() {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid color-mix(in srgb, var(--bookmark-accent) 18%, var(--button-surface-border));
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.18) 100%);
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  background: var(--button-surface-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   color: var(--text-main);
   cursor: pointer;
   overflow: hidden;
-  transition: transform 180ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease, box-shadow 220ms ease;
-  box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.16);
+  transition: transform 180ms ease, border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+  box-shadow: var(--button-surface-shadow), 0 10px 24px color-mix(in srgb, var(--bookmark-accent) 8%, rgba(15, 23, 42, 0.14));
 }
 
 .bookmark-icon-button::before {
@@ -154,11 +161,8 @@ async function toggleSaved() {
 
 .bookmark-icon-button:hover {
   transform: translateY(-1px) scale(1.02);
-  border-color: rgba(251, 113, 133, 0.28);
-  box-shadow:
-    0 14px 28px rgba(244, 63, 94, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.62),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+  border-color: color-mix(in srgb, var(--bookmark-accent) 34%, var(--button-surface-hover-border));
+  box-shadow: var(--button-surface-hover-shadow), 0 14px 28px color-mix(in srgb, var(--bookmark-accent) 16%, transparent);
 }
 
 .bookmark-icon-button.loading {
@@ -167,14 +171,14 @@ async function toggleSaved() {
 }
 
 .bookmark-icon-button:focus-visible {
-  outline: 2px solid rgba(251, 113, 133, 0.62);
+  outline: 2px solid color-mix(in srgb, var(--bookmark-accent) 60%, white);
   outline-offset: 2px;
 }
 
 .bookmark-icon-button.saved {
-  border-color: rgba(251, 113, 133, 0.34);
-  background: linear-gradient(180deg, rgba(255, 228, 230, 0.52), rgba(255, 255, 255, 0.2));
-  color: #fb7185;
+  border-color: color-mix(in srgb, var(--bookmark-accent) 42%, var(--button-surface-hover-border));
+  background: var(--glass-reflection), color-mix(in srgb, var(--bookmark-accent) 16%, var(--bg-surface));
+  color: var(--bookmark-accent);
 }
 
 .button-core {
@@ -205,7 +209,7 @@ async function toggleSaved() {
 .outline-heart {
   color: var(--bookmark-heart-outline);
   opacity: 0.96;
-  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.12));
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--bookmark-accent) 10%, rgba(15, 23, 42, 0.12)));
 }
 
 .fill-heart {
@@ -213,7 +217,7 @@ async function toggleSaved() {
   fill: currentColor;
   opacity: 0;
   transform: scale(0.4);
-  filter: drop-shadow(0 4px 10px rgba(251, 113, 133, 0.28));
+  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--bookmark-accent) 30%, transparent));
 }
 
 .bookmark-icon-button.saved .outline-heart {
@@ -235,7 +239,7 @@ async function toggleSaved() {
 }
 
 .glow {
-  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.34) 0%, rgba(251, 113, 133, 0.1) 42%, rgba(251, 113, 133, 0) 70%);
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.34) 0%, color-mix(in srgb, var(--bookmark-accent) 24%, transparent) 42%, color-mix(in srgb, var(--bookmark-accent) 0%, transparent) 70%);
   opacity: 0;
   transform: scale(0.7);
   transition: opacity 220ms ease, transform 260ms ease;
@@ -248,7 +252,7 @@ async function toggleSaved() {
 
 .pulse {
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.34);
+  border: 1px solid color-mix(in srgb, var(--bookmark-accent) 22%, rgba(255, 255, 255, 0.34));
   opacity: 0;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }

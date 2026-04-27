@@ -1,6 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import './styles/animations.css';
+import './styles/interactive-media.css';
 import './styles/theme.css';
 
 const allowNativeSelection = (target: EventTarget | null) =>
@@ -26,7 +27,7 @@ const blockShortcutCopyActions = (event: KeyboardEvent) => {
   if (isModifierPressed && ['a', 'c', 'x'].includes(key)) {
     event.preventDefault();
   }
-}
+};
 
 document.addEventListener('copy', blockGlobalCopyActions);
 document.addEventListener('cut', blockGlobalCopyActions);

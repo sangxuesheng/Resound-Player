@@ -12,7 +12,7 @@
       loading-text="歌手详情加载中…"
     >
       <template #media>
-        <AnimatedAppear tag="img" variant="media" rhythm="body" class-name="cover artist-cover" :src="coverUrl" :alt="artist?.name || '歌手封面'" />
+        <HeroCoverMedia :src="coverUrl" :alt="artist?.name || '歌手封面'" image-class="artist-cover" />
       </template>
       <template #title>
         <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="title">{{ artist?.name || '未命名歌手' }}</AnimatedAppear>
@@ -165,6 +165,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
+import HeroCoverMedia from './HeroCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import MvHoverPoster from './MvHoverPoster.vue';

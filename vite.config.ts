@@ -6,12 +6,16 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:38761';
 
   return {
+    base: './',
     plugins: [vue()],
     server: {
       host: '0.0.0.0',
       port: 5173,
       strictPort: true,
       allowedHosts: ['192.168.2.2'],
+      watch: {
+        ignored: ['**/播放页相关/**'],
+      },
       proxy: {
         '/api': {
           target: proxyTarget,
@@ -20,6 +24,9 @@ export default defineConfig(({ mode }) => {
           rewrite: (p) => p.replace(/^\/api/, ''),
         },
       },
+    },
+    optimizeDeps: {
+      entries: ['index.html'],
     },
   };
 });

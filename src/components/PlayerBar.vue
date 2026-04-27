@@ -37,11 +37,16 @@
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="right">
       <AnimatedAppear tag="div" variant="control" rhythm="actions" class-name="vol">
-        <Volume2 :size="16" />
-        <input type="range" min="0" max="100" :value="Math.round(playerStore.volume * 100)" @input="onVolume" />
+        <button class="vol-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()">
+          <VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="16" />
+          <Volume v-else-if="playerStore.volume < 0.33" :size="16" />
+          <Volume1 v-else-if="playerStore.volume < 0.66" :size="16" />
+          <Volume2 v-else :size="16" />
+        </button>
+        <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
       </AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="icon" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !currentTrackId" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" aria-label="设置"><Settings :size="14" /></AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" aria-label="切换播放模式" @click="playerStore.cyclePlayMode()">
         <Repeat v-if="playerStore.playMode === 'loop'" :size="14" />
@@ -67,19 +72,32 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  Volume,
+  Volume1,
   Volume2,
+  VolumeX,
 } from 'lucide-vue-next';
 import { playerStore } from '../stores/player';
-import { toggleSongLike } from '../api/music';
+import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
-const currentTrackId = computed(() => playerStore.currentTrack?.id);
-const isCurrentLiked = computed(() => (currentTrackId.value ? userStore.likedSongIds.includes(currentTrackId.value) : false));
+const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
+const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
+const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
+const canToggleCurrentLike = computed(() => (isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0));
+const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
+const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
+const isCurrentLiked = computed(() => {
+  void likedSongSignature.value;
+  void subscribedDjSignature.value;
+  if (isCurrentPodcast.value) return userStore.subscribedDjIds.includes(currentPodcastRid.value);
+  return currentTrackId.value > 0 ? userStore.likedSongIds.includes(currentTrackId.value) : false;
+});
 const likeLoading = ref(false);
 
 watch(
-  currentTrackId,
+  () => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`,
   () => {
     likeLoading.value = false;
   },
@@ -109,23 +127,34 @@ function onSeek(e: Event) {
 }
 
 async function toggleCurrentLike() {
-  const id = currentTrackId.value;
-  if (!id || likeLoading.value) return;
+  if (likeLoading.value || !canToggleCurrentLike.value) return;
 
   const next = !isCurrentLiked.value;
   likeLoading.value = true;
 
   try {
-    const response = await toggleSongLike({
-      id,
-      like: next,
-      uid: userStore.profile?.userId,
-    });
+    const response = isCurrentPodcast.value
+      ? await toggleDjSubscribe({ rid: currentPodcastRid.value, subscribe: next, cookie: userStore.loginCookie || undefined })
+      : await toggleSongLike({
+        id: currentTrackId.value,
+        like: next,
+        uid: userStore.profile?.userId,
+        cookie: userStore.loginCookie || undefined,
+      });
     const code = response?.data?.code ?? response?.data?.data?.code;
     if (typeof code === 'number' && code !== 200) {
       throw new Error(`收藏失败，接口返回 ${code}`);
     }
 
+    if (isCurrentPodcast.value) {
+      const rid = currentPodcastRid.value;
+      const exists = userStore.subscribedDjIds.includes(rid);
+      if (next && !exists) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
+      if (!next && exists) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
+      return;
+    }
+
+    const id = currentTrackId.value;
     if (next) {
       if (!userStore.likedSongIds.includes(id)) {
         userStore.likedSongIds = [...userStore.likedSongIds, id];
@@ -217,7 +246,9 @@ function formatTime(sec: number) {
 }
 
 .controls-row {
+  height: 42px;
   display: flex;
+  align-items: center;
   gap: var(--space-2);
 }
 
@@ -249,6 +280,7 @@ function formatTime(sec: number) {
   cursor: pointer;
   display: grid;
   place-items: center;
+  line-height: 1;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35);
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease;
 }
@@ -296,6 +328,26 @@ function formatTime(sec: number) {
 
 .vol input {
   width: 88px;
+}
+.vol-icon-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 5px;
+  transition: color 0.16s ease, background 0.16s ease;
+  flex-shrink: 0;
+}
+.vol-icon-btn:hover {
+  color: #111827;
+  background: rgba(0,0,0,0.06);
+}
+.vol-icon-btn:active {
+  color: #6b7280;
 }
 
 .icon {

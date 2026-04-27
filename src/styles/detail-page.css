@@ -113,14 +113,59 @@
   padding: var(--space-3);
 }
 
+.hero-media-shell {
+  position: relative;
+  width: fit-content;
+  border-radius: 16px;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.hero-cover-trigger {
+  --hero-cover-scale: var(--image-hover-scale, 1.04);
+  --hero-cover-saturate: var(--image-hover-saturate, 1.04);
+}
+
 .cover {
   width: 269px;
   height: 269px;
   border-radius: 16px;
   object-fit: cover;
   box-shadow: none;
-  will-change: transform, box-shadow, filter;
-  transform-origin: center;
+  will-change: transform;
+  transform: translateZ(0) scale(1);
+  transform-origin: center center;
+  backface-visibility: hidden;
+  transition: transform 0.32s ease-out;
+}
+
+.hero-cover-image {
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-cover-trigger:hover .hero-cover-image,
+  .hero-cover-trigger:focus-visible .hero-cover-image,
+  .hero-cover-trigger:focus-within .hero-cover-image {
+    transform: translateZ(0) scale(var(--hero-cover-scale));
+    filter: saturate(var(--hero-cover-saturate));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cover,
+  .hero-cover-image {
+    transition: none;
+  }
+
+  .hero-cover-trigger:hover .hero-cover-image,
+  .hero-cover-trigger:focus-visible .hero-cover-image,
+  .hero-cover-trigger:focus-within .hero-cover-image {
+    transform: translateZ(0) scale(1);
+    filter: none;
+  }
 }
 
 .title {
@@ -283,4 +328,96 @@
   .title {
     font-size: 26px;
   }
+}
+
+/*
+ * user-detail-panel：用户中心详情页沿用公共详情基线。
+ * 不再覆盖暖黄色背景，避免和其他详情页视觉不一致。
+ */
+.user-detail-panel {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+/*
+ * rank-detail-panel：排行榜详情页的白色渐变变体
+ */
+.rank-detail-panel::before {
+  opacity: 0.9;
+  background-position: center 18%;
+}
+
+.rank-detail-panel::after {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.01) 0%,
+    rgba(255, 255, 255, 0.1) 24%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.58) 72%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/*
+ * detail-panel 内嵌背景渐变
+ * UserSplitView 分屏布局中为 embedded 模式详情页提供 accent 背景。
+ * 与 .panel::before/::after 是两套独立体系：
+ *   .panel       → 完整详情页的封面模糊（独立浏览）
+ *   .detail-panel → 内嵌详情页的 accent 渐变（分屏场景）
+ * 依赖 --panel-accent、--detail-cover 两个 CSS 变量。
+ */
+.detail-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 15, 30, 0.06) 0%, rgba(8, 15, 30, 0) 100%),
+    radial-gradient(520px 220px at 50% 0%, color-mix(in srgb, var(--panel-accent, var(--accent)) 38%, transparent) 0%, rgba(255, 255, 255, 0) 72%);
+  background-repeat: no-repeat;
+  background-size: 100% 220px, 100% 200px;
+  background-position: top left, top center;
+  opacity: 1;
+  pointer-events: none;
+  z-index: -2;
+}
+
+.detail-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--panel-accent, var(--accent)) 20%, transparent) 0%, transparent 66%),
+    var(--detail-cover) center top / cover no-repeat;
+  background-repeat: no-repeat;
+  background-size: 100% 220px, 100% 180px, cover;
+  background-position: top left, top center, center top;
+  opacity: 0.16;
+  filter: saturate(1.12) blur(14px);
+  transform: scale(1.02);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/*
+ * user-mini-profile-card：用户中心个人卡片暖色渐变背景
+ * 依赖 --avatar-cover，应在共同祖先（.split-stage）上设置。
+ */
+.user-mini-profile-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 94%, transparent) 100%),
+    var(--avatar-cover) center / cover no-repeat;
+}
+
+.user-mini-profile-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%);
+  pointer-events: none;
 }

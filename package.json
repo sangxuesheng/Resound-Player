@@ -15,6 +15,17 @@
     "dev": "npm run dev:desktop",
     "build:web": "vite build",
     "build:renderer": "vite build",
+    "clean:desktop": "node scripts/clean-desktop.mjs",
+    "pack:desktop": "node scripts/build-desktop-dir.mjs",
+    "build:desktop": "node scripts/build-linux.mjs AppImage",
+    "dist:linux": "node scripts/build-linux.mjs AppImage",
+    "dist:linux:deb": "node scripts/build-linux.mjs deb",
+    "prepare:win-icon": "node scripts/prepare-win-icon.mjs",
+    "dist:win": "node scripts/build-win.mjs nsis",
+    "pack:win": "node scripts/build-win.mjs dir",
+    "prepare:mac-icon": "node scripts/prepare-mac-icon.mjs",
+    "dist:mac": "node scripts/build-mac.mjs dmg",
+    "pack:mac": "node scripts/build-mac.mjs dir",
     "check:animated-rhythm": "node scripts/check-animated-rhythm.mjs",
     "fix:animated-rhythm": "node scripts/check-animated-rhythm.mjs --fix",
     "start": "electron ."
@@ -29,8 +40,55 @@
     "@vitejs/plugin-vue": "^5.2.3",
     "concurrently": "^9.1.2",
     "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
     "typescript": "^5.8.2",
     "vite": "^6.2.0",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.gemini.music",
+    "productName": "GeminiMusic",
+    "directories": {
+      "output": "dist-build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "!**/.vscode/**",
+      "!**/.github/**",
+      "!**/test/**",
+      "!**/tests/**"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@neteasecloudmusicapienhanced/**/*"
+    ],
+    "npmRebuild": false,
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo;Audio;Player"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.music",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    }
   }
 }

@@ -135,12 +135,17 @@
     <section class="top-artists-section">
       <p v-if="topArtistsLoading" class="custom-tip">热门歌手加载中…</p>
       <p v-else-if="topArtistsError" class="custom-tip">{{ topArtistsError }}</p>
-      <div v-else class="top-artists-row">
+      <HorizontalScrollRail
+        v-else
+        aria-label="热门歌手"
+        content-class="top-artists-row"
+        content-layout="flex"
+      >
         <button v-for="artist in topArtists" :key="artist.id" class="artist-chip" @click="openArtistDetail(artist)">
           <span class="artist-avatar" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
           <span class="artist-name">{{ artist.name }}</span>
         </button>
-      </div>
+      </HorizontalScrollRail>
     </section>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid" :style="gridStyle">
@@ -230,7 +235,8 @@
               :style="{ '--album-cover': `url(${item.pic || ''})` }"
               @click="openAlbumDetail(item.id)"
             >
-              <div class="album-cover" :style="{ backgroundImage: `url(${item.pic})` }">
+              <div class="album-media-shell album-cover" :style="{ backgroundImage: `url(${item.pic})` }">
+                <div class="album-cover-motion-shell"></div>
                 <HoverPlayButton class="hover-play-button--sm" />
               </div>
               <div class="album-name">{{ item.name }}</div>
@@ -256,7 +262,16 @@
           <AnimatedAppear tag="h3" variant="title" rhythm="head">新歌速递</AnimatedAppear>
           <p v-if="latestMusicLoading" class="custom-tip">最新音乐加载中…</p>
           <p v-else-if="latestMusicError" class="custom-tip">{{ latestMusicError }}</p>
-          <div v-else class="latest-scroll" :ref="setLatestScrollRef" @scroll.passive="onLatestScroll" @wheel.passive="onLatestWheel">
+          <HorizontalScrollRail
+            v-else
+            ref="latestScrollRailRef"
+            aria-label="新歌速递"
+            content-class="latest-scroll"
+            content-layout="block"
+            :min-scroll="320"
+            @rail-scroll="onLatestScroll"
+            @rail-wheel="onLatestWheel"
+          >
             <div class="latest-track">
               <div v-for="(band, bandIdx) in latestBands" :key="`band-${bandIdx}`" class="latest-band">
                 <div v-for="(col, colIdx) in band" :key="`band-${bandIdx}-col-${colIdx}`" class="latest-column">
@@ -290,7 +305,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </HorizontalScrollRail>
         </template>
 
         <template v-else-if="widget.id === 'search-hot'">
@@ -359,6 +374,7 @@ import HoverPlayButton from './HoverPlayButton.vue';
 import GridLayoutEditor from './GridLayoutEditor.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
+import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
 import type { GridItem } from './GridLayoutEditor.vue';
 
 const emit = defineEmits<{
@@ -503,7 +519,7 @@ const latestSongsLimit = 12;
 const latestSongsOffset = ref(0);
 const latestSongsHasMore = ref(true);
 const latestLoadingMore = ref(false);
-const latestScrollRef = ref<HTMLElement | null>(null);
+const latestScrollRailRef = ref<InstanceType<typeof HorizontalScrollRail> | null>(null);
 const latestSongSource = ref<any[]>([]);
 const latestArtistNameCache = new Map<number, string>();
 const topArtistsSentinel = ref<HTMLElement | null>(null);
@@ -520,7 +536,6 @@ const latestBands = computed(() => {
   return result;
 });
 let latestScrollRaf = 0;
-let latestPrefetchRaf = 0;
 let latestWheelRaf = 0;
 let latestWheelDelta = 0;
 
@@ -942,10 +957,6 @@ async function loadMoreLatestSongs() {
   }
 }
 
-function setLatestScrollRef(el: any) {
-  latestScrollRef.value = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
-}
-
 function setTopArtistsSentinelRef(el: any) {
   topArtistsSentinel.value = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
 }
@@ -958,21 +969,16 @@ function prefetchLatestIfNeeded(root: HTMLElement) {
   }
 }
 
-function onLatestScroll() {
+function onLatestScroll(_event: Event, root: HTMLElement) {
   if (latestScrollRaf) return;
 
   latestScrollRaf = requestAnimationFrame(() => {
     latestScrollRaf = 0;
-    const root = latestScrollRef.value;
-    if (!root) return;
     prefetchLatestIfNeeded(root);
   });
 }
 
-function onLatestWheel(e: WheelEvent) {
-  const root = latestScrollRef.value;
-  if (!root) return;
-
+function onLatestWheel(e: WheelEvent, root: HTMLElement) {
   latestWheelDelta += Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
 
   if (latestWheelRaf) return;
@@ -1008,9 +1014,7 @@ async function fetchLatestMusic() {
     }
 
     nextTick(() => {
-      if (latestScrollRef.value) {
-        latestScrollRef.value.scrollLeft = 0;
-      }
+      latestScrollRailRef.value?.scrollToStart();
     });
   } catch (e: any) {
     latestSongs.value = [];
@@ -1144,10 +1148,6 @@ onBeforeUnmount(() => {
   if (latestWheelRaf) {
     cancelAnimationFrame(latestWheelRaf);
     latestWheelRaf = 0;
-  }
-  if (latestPrefetchRaf) {
-    cancelAnimationFrame(latestPrefetchRaf);
-    latestPrefetchRaf = 0;
   }
 });
 
@@ -1345,14 +1345,14 @@ async function playLatestSong(index: number) {
 .home-page { display: grid; gap: var(--space-3); min-width: 0; overflow-x: clip; }
 .home-actions { display: flex; justify-content: flex-end; }
 .top-artists-section { display: grid; gap: var(--space-2); padding: 0; }
-.top-artists-row { display: flex; gap: var(--space-5); overflow-x: auto; padding: var(--space-1) 0 0; scrollbar-width: none; }
-.top-artists-row::-webkit-scrollbar { width: 0; height: 0; }
+:deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-5); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); }
+:deep(.top-artists-row) > * { flex: 0 0 auto; }
 .artist-chip {
   flex: 0 0 auto;
   display: grid;
   justify-items: center;
   gap: var(--space-2);
-  border: 0;
+  border: none !important;
   background: transparent !important;
   padding: 0;
   margin: 0;
@@ -1379,17 +1379,10 @@ async function playLatestSong(index: number) {
   background: transparent !important;
   outline: none !important;
   box-shadow: none !important;
-  border-color: transparent !important;
+  border: none !important;
 }
 .artist-avatar { width: 92px; height: 92px; border-radius: 999px; background: center/cover no-repeat; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
 .artist-name { color: var(--text-main); font-size: 14px; font-weight: 600; max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.artist-inline-btn,
-.creator-inline-btn { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-.artist-inline-btn:hover,
-.artist-inline-btn:focus-visible,
-.creator-inline-btn:hover,
-.creator-inline-btn:focus-visible { color: var(--accent); text-decoration: underline; }
-.artist-inline-btn + .artist-inline-btn::before { content: '/'; margin: 0 2px; color: rgba(255, 255, 255, 0.82); }
 .artist-inline-btn + .artist-inline-btn.latest-splitter::before { color: var(--text-soft); }
 .creator-inline-btn {
   margin-top: 10px;
@@ -1404,7 +1397,7 @@ async function playLatestSong(index: number) {
 .edit-btn:active { transform: translateY(0) scale(0.99); }
 .edit-btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .home-top-reco { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
-.top-mini-card { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); padding: var(--space-3); display: grid; gap: var(--space-2); }
+.top-mini-card { padding: var(--space-3); display: grid; gap: var(--space-2); }
 .mini-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .mini-head h3 { margin: 0; color: var(--text-main); font-size: 16px; }
 .mini-tip { font-size: 12px; color: var(--text-soft); }
@@ -1588,19 +1581,47 @@ async function playLatestSong(index: number) {
   z-index: 2;
 }
 .album-cover { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; position: relative; overflow: hidden; width: 100%; aspect-ratio: 1; border-radius: 12px; background: var(--bg-soft) center/cover no-repeat; }
-.album-name { margin-top: 6px; color: var(--text-main); font-size: 13px; font-weight: 600; }
-.album-artist { color: var(--text-soft); font-size: 12px; }
-.latest-scroll {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  cursor: grab;
+.album-media-shell {
+  transform: translateZ(0);
 }
-.latest-scroll:active { cursor: grabbing; }
-.latest-scroll::-webkit-scrollbar { width: 0; height: 0; }
+.album-cover-motion-shell {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: inherit;
+  background-size: cover;
+  background-position: center;
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
+}
+@media (hover: hover) and (pointer: fine) {
+  .album-media-shell:hover .album-cover-motion-shell,
+  .album-media-shell:focus-within .album-cover-motion-shell {
+    transform: scale(var(--image-hover-scale, 1.04));
+    filter: saturate(var(--image-hover-saturate, 1.04));
+  }
+}
+.album-name {
+  margin: 8px var(--space-2) 0;
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.42;
+}
+.album-artist {
+  margin: 2px var(--space-2) var(--space-2);
+  color: var(--text-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+:deep(.latest-scroll) {
+  --horizontal-scroll-gap: 0;
+  --horizontal-scroll-padding-bottom: 0;
+}
 .latest-track {
   display: flex;
   gap: var(--space-4);
@@ -1688,14 +1709,14 @@ async function playLatestSong(index: number) {
 .close-btn { height: 32px; padding: 0 var(--space-3); border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-main); cursor: pointer; }
 @media (max-width: 980px) {
   .home-top-reco { grid-template-columns: 1fr; }
-  .top-artists-row { gap: 16px; }
+  :deep(.top-artists-row) { --horizontal-scroll-gap: 16px; }
   .artist-avatar { width: 78px; height: 78px; }
   .latest-column { width: 280px; flex-basis: 280px; }
 }
 
 @media (max-width: 767px) {
   .home-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-  .top-artists-row { gap: 14px; }
+  :deep(.top-artists-row) { --horizontal-scroll-gap: 14px; }
   .artist-avatar { width: 72px; height: 72px; }
   .card { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .latest-column { width: 260px; flex-basis: 260px; }

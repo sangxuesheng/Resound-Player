@@ -158,10 +158,7 @@ async function playSong(index: number) {
 
 <style scoped>
 .panel {
-  border: 1px solid var(--border);
-  border-radius: 18px;
   padding: 16px;
-  background: var(--bg-surface);
   color: var(--text-main);
   display: grid;
   gap: 14px;
@@ -224,10 +221,7 @@ async function playSong(index: number) {
   gap: 8px;
 }
 .chip {
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--accent) 10%, var(--bg-muted));
   color: var(--text-main);
-  border-radius: 999px;
   padding: 6px 10px;
   cursor: pointer;
 }
@@ -246,8 +240,6 @@ async function playSong(index: number) {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  border-radius: 14px;
-  background: var(--bg-muted);
   margin-bottom: 8px;
 }
 .name {

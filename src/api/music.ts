@@ -49,6 +49,12 @@ export async function getSongUrl(id: number) {
   });
 }
 
+export async function getSongUrlV1(id: number, level = 'standard') {
+  return apiClient.get('/song/url/v1', {
+    params: { id, level, timestamp: Date.now() },
+  });
+}
+
 export async function getSongDetail(id: number) {
   return apiClient.get('/song/detail', {
     params: { ids: id, timestamp: Date.now() },
@@ -176,11 +182,12 @@ export async function getHistoryRecommendSongDetail(date: string, cookie?: strin
   });
 }
 
-export async function getPlaylistDetail(id: number, s = 8) {
+export async function getPlaylistDetail(id: number, s = 8, cookie?: string) {
   return apiClient.get('/playlist/detail', {
     params: {
       id,
       s,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -189,6 +196,72 @@ export async function getPlaylistDetail(id: number, s = 8) {
 export async function getDjRecommend() {
   return apiClient.get('/dj/recommend', {
     params: {
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjDetail(rid: number) {
+  return apiClient.get('/dj/detail', {
+    params: {
+      rid,
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjProgram(params: { rid: number; limit?: number; offset?: number; asc?: boolean }) {
+  return apiClient.get('/dj/program', {
+    params: {
+      rid: params.rid,
+      limit: params.limit ?? 200,
+      offset: params.offset ?? 0,
+      asc: params.asc ?? false,
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjSublist(cookie?: string) {
+  return apiClient.get('/dj/sublist', {
+    params: {
+      ...(cookie ? { cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjCatelist() {
+  return apiClient.get('/dj/catelist', {
+    params: {
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjCategoryRecommend() {
+  return apiClient.get('/dj/category/recommend', {
+    params: {
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjRecommendType(type: number) {
+  return apiClient.get('/dj/recommend/type', {
+    params: {
+      type,
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getDjRadioHot(params: { cateId: number; limit?: number; offset?: number }) {
+  return apiClient.get('/dj/radio/hot', {
+    params: {
+      cateId: params.cateId,
+      limit: params.limit ?? 30,
+      offset: params.offset ?? 0,
       timestamp: Date.now(),
     },
   });
@@ -300,12 +373,13 @@ export async function getTopAlbums(params?: {
   });
 }
 
-export async function getPlaylistTrackAll(params: { id: number; limit?: number; offset?: number }) {
+export async function getPlaylistTrackAll(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
   return apiClient.get('/playlist/track/all', {
     params: {
       id: params.id,
       ...(typeof params.limit === 'number' ? { limit: params.limit } : {}),
       ...(typeof params.offset === 'number' ? { offset: params.offset } : {}),
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -432,10 +506,11 @@ export async function getVoiceListSearchItems(params: {
   });
 }
 
-export async function getVoiceDetail(id: number) {
+export async function getVoiceDetail(id: number, cookie?: string) {
   return apiClient.get('/voice/detail', {
     params: {
       id,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -463,37 +538,51 @@ export async function getCloudStorageDetail(ids: string | number | Array<string 
   });
 }
 
-export async function getRecentSongs(limit = 100) {
+export async function getRecentSongs(limit = 100, cookie?: string) {
   return apiClient.get('/record/recent/song', {
     params: {
       limit,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export async function getRecentPlaylists(limit = 100) {
+export async function getRecentPlaylists(limit = 100, cookie?: string) {
   return apiClient.get('/record/recent/playlist', {
     params: {
       limit,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export async function getRecentAlbums(limit = 100) {
+export async function getRecentAlbums(limit = 100, cookie?: string) {
   return apiClient.get('/record/recent/album', {
     params: {
       limit,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export async function getRecentDj(limit = 100) {
+export async function getRecentDj(limit = 100, cookie?: string) {
   return apiClient.get('/record/recent/dj', {
     params: {
       limit,
+      ...(cookie ? { cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getRecentVoices(limit = 100, cookie?: string) {
+  return apiClient.get('/record/recent/voice', {
+    params: {
+      limit,
+      ...(cookie ? { cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -554,12 +643,46 @@ export async function deleteMvComment(params: { id: number; commentId: number })
   });
 }
 
-export async function toggleSongLike(params: { id: number; like: boolean; uid?: number }) {
-  return apiClient.get('/song/like', {
+export async function toggleSongLike(params: { id: number; like: boolean; uid?: number; cookie?: string }) {
+  return apiClient.get('/like', {
     params: {
       id: params.id,
-      like: params.like,
+      like: params.like ? 'true' : 'false',
       ...(typeof params.uid === 'number' ? { uid: params.uid } : {}),
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function togglePlaylistSubscribe(params: { id: number; subscribe: boolean; cookie?: string }) {
+  return apiClient.get('/playlist/subscribe', {
+    params: {
+      id: params.id,
+      t: params.subscribe ? 1 : 2,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function toggleAlbumSubscribe(params: { id: number; subscribe: boolean; cookie?: string }) {
+  return apiClient.get('/album/sub', {
+    params: {
+      id: params.id,
+      t: params.subscribe ? 1 : 0,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function toggleDjSubscribe(params: { rid: number; subscribe: boolean; cookie?: string }) {
+  return apiClient.get('/dj/sub', {
+    params: {
+      rid: params.rid,
+      t: params.subscribe ? 1 : 0,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });

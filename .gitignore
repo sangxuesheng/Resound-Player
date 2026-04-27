@@ -3,6 +3,14 @@ node_modules/
 
 # build output
 dist/
+release/
+desktop-release/
+desktop-dist/
+
+# package caches
+.npm-cache/
+.electron-cache/
+.electron-builder-cache/
 
 # local env
 .env

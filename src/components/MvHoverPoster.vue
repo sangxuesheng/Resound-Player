@@ -1,14 +1,21 @@
 <template>
-  <div class="mv-hover-poster" :class="{ 'is-interactive': interactive, 'hover-play-button-trigger': interactive }">
-    <AnimatedAppear
-      v-if="imageSrc"
-      tag="img"
-      variant="media"
-      :rhythm="rhythm"
-      :index="index"
-      class-name="mv-hover-poster__image"
-      :attrs="imageAttrs"
-    />
+  <div class="mv-hover-poster interactive-media-trigger" :class="{ 'is-interactive': interactive, 'hover-play-button-trigger': interactive }">
+    <div v-if="imageSrc" class="mv-hover-poster__media-shell interactive-media-shell">
+      <AnimatedAppear
+        tag="div"
+        variant="media"
+        :rhythm="rhythm"
+        :index="index"
+        class-name="mv-hover-poster__motion-shell interactive-media-motion"
+      >
+        <img
+          :src="imageSrc"
+          :alt="alt"
+          loading="lazy"
+          :class="['mv-hover-poster__image', 'interactive-media-image', imageClass]"
+        />
+      </AnimatedAppear>
+    </div>
     <AnimatedAppear
       v-else
       tag="div"
@@ -72,12 +79,6 @@ const imageSrc = computed(() => String(props.src || '').trim());
 
 const countLabel = computed(() => formatPlayCount(props.count));
 
-const imageAttrs = computed(() => ({
-  src: imageSrc.value,
-  alt: props.alt,
-  loading: 'lazy',
-}));
-
 const fallbackAttrs = computed(() => ({
   class: props.fallbackClass,
 }));
@@ -99,6 +100,17 @@ function formatPlayCount(count?: number | string) {
   border-radius: 14px;
   overflow: hidden;
   background: var(--bg-muted);
+}
+
+.mv-hover-poster__media-shell {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.mv-hover-poster__motion-shell {
+  width: 100%;
+  height: 100%;
 }
 
 .mv-hover-poster__image,

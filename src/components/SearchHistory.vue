@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isEmpty" class="search-history" :style="historyStyle">
+  <div v-if="!isEmpty" class="search-history ui-safe-rail" :style="historyStyle">
     <div class="history-top">
       <div class="history-heading">
         <h4 class="history-title">搜索记录</h4>
@@ -69,6 +69,12 @@ function formatTime(time: number) {
 </script>
 
 <style scoped>
+.search-history {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+}
+
 .history-top {
   display: flex;
   align-items: center;
@@ -122,10 +128,7 @@ function formatTime(time: number) {
   width: fit-content;
   min-width: 0;
   max-width: min(100%, 320px);
-  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
-  background: var(--bg-muted);
   color: var(--text-main);
-  border-radius: 14px;
   padding: 12px 14px;
   cursor: pointer;
   transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;

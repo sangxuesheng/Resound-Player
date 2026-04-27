@@ -52,6 +52,25 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -1px 0 rgba(255, 255, 255, 0.16);
   --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.2) 22%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.02) 100%);
 
+  --button-surface-bg: var(--glass-reflection), var(--bg-muted);
+  --button-surface-border: color-mix(in srgb, var(--border) 88%, transparent);
+  --button-surface-shadow: var(--glass-highlight);
+  --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+  --button-surface-hover-border: color-mix(in srgb, var(--accent) 32%, var(--border));
+  --button-surface-hover-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 10%, transparent), var(--glass-highlight);
+  --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 18%, var(--bg-surface));
+  --button-surface-active-border: color-mix(in srgb, var(--accent) 42%, var(--border));
+
+  --button-danger-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 10%, var(--bg-surface));
+  --button-danger-border: color-mix(in srgb, var(--danger, #ef4444) 28%, var(--border));
+  --button-danger-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 16%, var(--bg-surface));
+  --button-danger-hover-border: color-mix(in srgb, var(--danger, #ef4444) 40%, var(--border));
+
+  --button-height-md: 34px;
+  --button-height-lg: 40px;
+  --button-radius-pill: 999px;
+  --button-radius-md: 10px;
+
   --radius-xl: 16px;
   --radius-lg: 14px;
   --radius-md: 12px;
@@ -129,6 +148,25 @@
   --glass-shadow: 0 16px 38px rgba(2, 6, 23, 0.45), 0 3px 14px rgba(2, 6, 23, 0.3);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 22%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0) 100%);
+
+  --button-surface-bg: var(--glass-reflection), var(--bg-muted);
+  --button-surface-border: color-mix(in srgb, var(--border) 90%, transparent);
+  --button-surface-shadow: var(--glass-highlight);
+  --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  --button-surface-hover-border: color-mix(in srgb, var(--accent) 34%, var(--border));
+  --button-surface-hover-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 12%, transparent), var(--glass-highlight);
+  --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 20%, var(--bg-surface));
+  --button-surface-active-border: color-mix(in srgb, var(--accent) 44%, var(--border));
+
+  --button-danger-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 12%, var(--bg-surface));
+  --button-danger-border: color-mix(in srgb, var(--danger, #ef4444) 30%, var(--border));
+  --button-danger-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 18%, var(--bg-surface));
+  --button-danger-hover-border: color-mix(in srgb, var(--danger, #ef4444) 42%, var(--border));
+
+  --button-height-md: 34px;
+  --button-height-lg: 40px;
+  --button-radius-pill: 999px;
+  --button-radius-md: 10px;
 }
 
 :root[data-accent='green'] {
@@ -221,7 +259,63 @@ textarea,
   gap: var(--layout-inline-gap);
 }
 
+/* Horizontal interactive rails: allow hover lift/shadow without clipping */
+.ui-safe-rail {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ui-safe-rail::-webkit-scrollbar {
+  display: none;
+}
+
+/* Compact interactive groups: keep inner buttons from clipping on hover */
+.ui-safe-group {
+  overflow: visible;
+  padding-top: 2px;
+}
+
+/* Inline artist / creator name buttons */
+.artist-inline-btn,
+.creator-inline-btn {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.artist-inline-btn:hover,
+.artist-inline-btn:focus-visible,
+.creator-inline-btn:hover,
+.creator-inline-btn:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.artist-inline-btn + .artist-inline-btn::before {
+  content: '/';
+  margin: 0 2px;
+  color: rgba(255, 255, 255, 0.82);
+}
+.artist-inline-btn + .artist-inline-btn.latest-splitter::before {
+  color: var(--text-soft);
+}
+
 /* Surface fallback when glass is disabled */
+:root[data-glass='off'] {
+  --glass-blur: 0px;
+  --glass-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --glass-reflection: none;
+}
+
+:root[data-theme='dark'][data-glass='off'] {
+  --glass-shadow: 0 12px 28px rgba(2, 6, 23, 0.28);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
 
 /* Surfaces and glass system */
 .card,
@@ -240,7 +334,34 @@ textarea,
 .editor-wrap,
 .editor-modal,
 .grid-canvas,
-.grid-item {
+.grid-item,
+.top-mini-card,
+.recent-panel,
+.user-menu,
+.empty-card,
+.main-card,
+.content-card,
+.genre-card,
+.dd-menu,
+.entity-card,
+.cat-header,
+.featured-card,
+.curated-card,
+.rank-card,
+.global-card,
+.language-card,
+.car-card,
+.mixed-section,
+.mixed-feature,
+.type-tabs,
+.sidebar-card,
+.history-detail,
+.detail-card,
+.history-item,
+.podcast-preview-item,
+.panel,
+.chip,
+.item {
   border-radius: var(--radius-lg) !important;
   background: var(--glass-reflection), var(--bg-surface) !important;
   border: 1px solid var(--border) !important;
@@ -251,6 +372,42 @@ textarea,
 
 .sidebar {
   background: var(--glass-reflection), var(--bg-soft) !important;
+}
+
+:root[data-glass='off'] .sidebar,
+:root[data-glass='off'] .top-mini-card,
+:root[data-glass='off'] .recent-panel,
+:root[data-glass='off'] .user-menu,
+:root[data-glass='off'] .empty-card,
+:root[data-glass='off'] .search-wrap,
+:root[data-glass='off'] .topbar,
+:root[data-glass='off'] .main-card,
+:root[data-glass='off'] .content-card,
+:root[data-glass='off'] .genre-card,
+:root[data-glass='off'] .dd-menu,
+:root[data-glass='off'] .entity-card,
+:root[data-glass='off'] .cat-header,
+:root[data-glass='off'] .featured-card,
+:root[data-glass='off'] .curated-card,
+:root[data-glass='off'] .rank-card,
+:root[data-glass='off'] .global-card,
+:root[data-glass='off'] .language-card,
+:root[data-glass='off'] .car-card,
+:root[data-glass='off'] .mixed-section,
+:root[data-glass='off'] .mixed-feature,
+:root[data-glass='off'] .type-tabs,
+:root[data-glass='off'] .sidebar-card,
+:root[data-glass='off'] .history-detail,
+:root[data-glass='off'] .detail-card,
+:root[data-glass='off'] .history-item,
+:root[data-glass='off'] .podcast-preview-item,
+:root[data-glass='off'] .panel,
+:root[data-glass='off'] .chip,
+:root[data-glass='off'] .item {
+  background: var(--bg-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 /* Player footer bar should stay solid */
@@ -374,6 +531,49 @@ button,
     background-color 220ms var(--an-ease),
     color 220ms var(--an-ease),
     opacity 220ms var(--an-ease);
+}
+
+.button-surface,
+.play-btn,
+.search-btn,
+.clear,
+.refresh-btn,
+.load-more,
+.close-btn,
+.ctrl,
+.ghost,
+.comment-submit,
+.reply-submit,
+.comment-more,
+.mixed-more,
+.back-btn,
+.play-all,
+.stat-chip,
+.artist-chip,
+.recent-clear,
+.welcome-close,
+.chip,
+.dd-trigger,
+.menu-item,
+.tag,
+.board-tab,
+.type-tab,
+.section-switch__item,
+.category-tabs__item,
+.tab,
+.sub-tab {
+  background: var(--button-surface-bg) !important;
+  border: 1px solid var(--button-surface-border) !important;
+  box-shadow: var(--button-surface-shadow) !important;
+}
+
+.button-surface--danger,
+.action-btn,
+.remove-btn,
+.btn-danger {
+  background: var(--button-danger-bg) !important;
+  border: 1px solid var(--button-danger-border) !important;
+  box-shadow: var(--button-surface-shadow) !important;
 }
 
 /* Icon-only play/pause button (SVG uses currentColor) */
@@ -576,6 +776,49 @@ a,
   .cloud-item:hover {
     box-shadow: 0 14px 30px color-mix(in srgb, var(--accent) 12%, rgba(15, 23, 42, 0.14));
   }
+
+  .button-surface:hover,
+  .play-btn:hover,
+  .search-btn:hover,
+  .clear:hover,
+  .refresh-btn:hover,
+  .load-more:hover,
+  .close-btn:hover,
+  .ctrl:hover,
+  .ghost:hover,
+  .comment-submit:hover,
+  .reply-submit:hover,
+  .comment-more:hover,
+  .mixed-more:hover,
+  .back-btn:hover,
+  .play-all:hover,
+  .stat-chip:hover,
+  .artist-chip:hover,
+  .recent-clear:hover,
+  .welcome-close:hover,
+  .chip:hover,
+  .dd-trigger:hover,
+  .menu-item:hover,
+  .tag:hover,
+  .board-tab:hover,
+  .type-tab:hover,
+  .section-switch__item:hover,
+  .category-tabs__item:hover,
+  .tab:hover,
+  .sub-tab:hover {
+    background: var(--button-surface-hover-bg) !important;
+    border-color: var(--button-surface-hover-border) !important;
+    box-shadow: var(--button-surface-hover-shadow) !important;
+  }
+
+  .button-surface--danger:hover,
+  .action-btn:hover,
+  .remove-btn:hover,
+  .btn-danger:hover {
+    background: var(--button-danger-hover-bg) !important;
+    border-color: var(--button-danger-hover-border) !important;
+    box-shadow: var(--button-surface-hover-shadow) !important;
+  }
 }
 
 button:active,
@@ -616,6 +859,39 @@ button:active,
 .row:active,
 .cloud-item:active {
   transform: translateY(0) scale(0.99);
+}
+
+.button-surface:active,
+.play-btn:active,
+.search-btn:active,
+.clear:active,
+.refresh-btn:active,
+.load-more:active,
+.close-btn:active,
+.ctrl:active,
+.ghost:active,
+.comment-submit:active,
+.reply-submit:active,
+.comment-more:active,
+.mixed-more:active,
+.back-btn:active,
+.play-all:active,
+.stat-chip:active,
+.artist-chip:active,
+.recent-clear:active,
+.welcome-close:active,
+.chip:active,
+.dd-trigger:active,
+.menu-item:active,
+.tag:active,
+.board-tab:active,
+.type-tab:active,
+.section-switch__item:active,
+.category-tabs__item:active,
+.tab:active,
+.sub-tab:active {
+  background: var(--button-surface-active-bg) !important;
+  border-color: var(--button-surface-active-border) !important;
 }
 
 button,

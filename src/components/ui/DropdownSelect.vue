@@ -128,10 +128,8 @@ onBeforeUnmount(() => {
 
 .dd-trigger {
   width: 100%;
-  height: 34px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--glass-reflection), var(--bg-muted);
+  height: var(--button-height-md);
+  border-radius: var(--button-radius-md);
   color: var(--text-main);
   padding: 0 var(--space-2);
   display: flex;
@@ -176,10 +174,7 @@ onBeforeUnmount(() => {
   z-index: 10000;
   max-height: min(260px, calc(100vh - 120px));
   overflow-y: auto;
-  border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg-surface);
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(255, 255, 255, 0.55) inset;
   padding: var(--space-1);
   box-sizing: border-box;
   isolation: isolate;

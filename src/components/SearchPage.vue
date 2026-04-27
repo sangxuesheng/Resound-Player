@@ -44,7 +44,7 @@
         </div>
         <div
           v-if="keywords.trim() || hasRenderedResults || loading"
-          class="type-tabs"
+          class="type-tabs ui-safe-group"
           :class="{ disabled: disabled || loading }"
           role="tablist"
           aria-label="搜索类型"
@@ -79,7 +79,7 @@
                 <div>
                   <h4 class="panel-title">{{ activeBoardMeta.title }}</h4>
                 </div>
-                <div class="board-tabs" role="tablist" aria-label="榜单切换">
+                <div class="board-tabs ui-safe-group" role="tablist" aria-label="榜单切换">
                   <button
                     v-for="board in boardTabs"
                     :key="board.key"
@@ -330,8 +330,12 @@
                 </ul>
 
                 <div v-else-if="activeSearchType === 10" class="entity-grid album-grid">
-                  <AnimatedAppear v-for="(item, idx) in songs" :key="item.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card clickable album-card" @click="openResult(item)">
-                    <img v-if="item.picUrl || item.blurPicUrl" class="entity-cover cover-image" :src="normalizeImageUrl(item.picUrl || item.blurPicUrl)" :alt="item.name || '专辑封面'" loading="lazy" />
+                  <AnimatedAppear v-for="(item, idx) in songs" :key="item.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card clickable album-card interactive-media-trigger" @click="openResult(item)">
+                    <div v-if="item.picUrl || item.blurPicUrl" class="entity-media-shell interactive-media-shell">
+                      <div class="entity-cover-motion-shell interactive-media-motion">
+                        <img class="entity-cover cover-image interactive-media-image" :src="normalizeImageUrl(item.picUrl || item.blurPicUrl)" :alt="item.name || '专辑封面'" loading="lazy" />
+                      </div>
+                    </div>
                     <div v-else class="entity-cover album-cover">AL</div>
                     <div class="entity-main">
                       <div class="name">{{ item.name }}</div>
@@ -343,7 +347,11 @@
 
                 <div v-else-if="activeSearchType === 100" class="entity-grid singer-grid">
                   <AnimatedAppear v-for="(item, idx) in songs" :key="item.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card clickable singer-card" @click="openResult(item)">
-                    <img v-if="resolveArtistAvatar(item)" class="user-avatar featured-avatar" :src="resolveArtistAvatar(item)" :alt="item.name || '歌手头像'" loading="lazy" />
+                    <div v-if="resolveArtistAvatar(item)" class="entity-media-shell entity-media-shell--avatar interactive-media-shell">
+                      <div class="entity-cover-motion-shell interactive-media-motion">
+                        <img class="user-avatar featured-avatar interactive-media-image" :src="resolveArtistAvatar(item)" :alt="item.name || '歌手头像'" loading="lazy" />
+                      </div>
+                    </div>
                     <div v-else class="entity-cover artist-cover">AR</div>
                     <div class="entity-main">
                       <div class="entity-topline">
@@ -357,7 +365,11 @@
 
                 <div v-else-if="activeSearchType === 1000" class="entity-grid playlist-list">
                   <AnimatedAppear v-for="(item, idx) in songs" :key="item.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card clickable playlist-card" @click="openResult(item)">
-                    <img v-if="item.coverImgUrl || item.picUrl" class="entity-cover cover-image" :src="normalizeImageUrl(item.coverImgUrl || item.picUrl)" :alt="item.name || '歌单封面'" loading="lazy" />
+                    <div v-if="item.coverImgUrl || item.picUrl" class="entity-media-shell interactive-media-shell">
+                      <div class="entity-cover-motion-shell interactive-media-motion">
+                        <img class="entity-cover cover-image interactive-media-image" :src="normalizeImageUrl(item.coverImgUrl || item.picUrl)" :alt="item.name || '歌单封面'" loading="lazy" />
+                      </div>
+                    </div>
                     <div v-else class="entity-cover playlist-cover">PL</div>
                     <div class="entity-main">
                       <div class="entity-topline">
@@ -371,7 +383,11 @@
 
                 <div v-else-if="activeSearchType === 1002" class="entity-grid user-grid">
                   <AnimatedAppear v-for="(item, idx) in results.users.length ? results.users : songs" :key="item.userId || item.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card clickable user-card" @click="openResult(item)">
-                    <img v-if="resolveUserAvatar(item)" class="user-avatar" :src="resolveUserAvatar(item)" :alt="item.nickname || item.userName || '用户头像'" />
+                    <div v-if="resolveUserAvatar(item)" class="entity-media-shell entity-media-shell--avatar interactive-media-shell">
+                      <div class="entity-cover-motion-shell interactive-media-motion">
+                        <img class="user-avatar interactive-media-image" :src="resolveUserAvatar(item)" :alt="item.nickname || item.userName || '用户头像'" />
+                      </div>
+                    </div>
                     <div v-else class="entity-cover user-cover">{{ (item.nickname || item.userName || 'U').slice(0, 1) }}</div>
                     <div class="entity-main">
                       <div class="entity-topline">
@@ -938,6 +954,17 @@ watch(
 );
 
 watch(
+  () => uiStore.searchKeyword,
+  (next) => {
+    const normalized = String(next || '');
+    if (normalized === keywords.value) return;
+    keywords.value = normalized;
+    if (!normalized.trim()) return;
+    void onSearch();
+  },
+);
+
+watch(
   () => keywords.value,
   (next) => {
     if (next.trim()) return;
@@ -1008,9 +1035,6 @@ onBeforeUnmount(() => {
 }
 
 .card {
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  background: var(--bg-surface);
   padding: var(--layout-card-padding);
   min-width: 0;
 }
@@ -1068,35 +1092,37 @@ h3,
 .type-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-4);
-  padding: var(--space-0) 0 var(--space-1);
+  gap: var(--space-2);
+  padding: var(--space-2);
 }
 
 .type-tab {
   position: relative;
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-sub);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  padding: var(--space-1) 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
   cursor: pointer;
+  transition: transform .18s ease, background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.type-tab:hover {
+  color: var(--text-main);
+  transform: translateY(-1px);
 }
 
 .type-tab.active {
-  color: var(--text-main);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--border));
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .type-tab.active::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--accent);
+  display: none;
 }
 
 .search-stage {
@@ -1106,11 +1132,21 @@ h3,
 
 .stage-panel {
   min-width: 0;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .hot-panel {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .hot-head {
@@ -1125,14 +1161,16 @@ h3,
   align-items: center;
   gap: 6px;
   padding: 4px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-muted) 84%, var(--bg-surface));
-  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   flex-wrap: wrap;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .board-tab {
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-sub);
   border-radius: 999px;
@@ -1140,7 +1178,7 @@ h3,
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease;
+  transition: background .18s ease, color .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 
 .board-tab:hover {
@@ -1155,7 +1193,7 @@ h3,
 
 .hot-list {
   margin: 0;
-  padding: 0;
+  padding: var(--space-1) 0 0;
   list-style: none;
 }
 
@@ -1519,13 +1557,38 @@ h3,
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: var(--bg-muted);
   text-align: left;
   width: 100%;
   min-width: 0;
   overflow: hidden;
+}
+
+.entity-media-shell {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 14px;
+  transform: translateZ(0);
+}
+
+.entity-media-shell--avatar {
+  border-radius: 14px;
+}
+
+.entity-cover-motion-shell {
+  display: block;
+  line-height: 0;
+  transform-origin: center center;
+}
+
+.cover-image,
+.featured-avatar,
+.user-avatar {
+  transition:
+    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
+    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform;
 }
 
 .entity-card.clickable {
@@ -1535,6 +1598,18 @@ h3,
 .entity-card.clickable:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .entity-card.clickable:hover .cover-image,
+  .entity-card.clickable:focus-visible .cover-image,
+  .entity-card.clickable:hover .featured-avatar,
+  .entity-card.clickable:focus-visible .featured-avatar,
+  .entity-card.clickable:hover .user-avatar,
+  .entity-card.clickable:focus-visible .user-avatar {
+    transform: scale(var(--image-hover-scale, 1.04));
+    filter: saturate(var(--image-hover-saturate, 1.04));
+  }
 }
 
 .mv-card:hover .mv-play-count,
@@ -1631,6 +1706,7 @@ h3,
 .mixed-section {
   display: grid;
   gap: var(--space-3);
+  padding: var(--space-3);
 }
 
 .mixed-head {

@@ -2,7 +2,7 @@
   <AnimatedAppear tag="div" variant="content" rhythm="shell" class-name="daily-recommend-root" @click.self="closeHistoryMenu">
     <PageLayoutShell :shell-class="embedded ? '' : 'panel daily-detail-panel'" :header-class="['daily-detail-header', isSticky && 'is-sticky-header']" body-class="daily-detail-body">
     <template #back v-if="!isSticky">
-      <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
+      <button class="back-btn button-surface" @click="emit('back')">← {{ props.backLabel }}</button>
     </template>
 
     <template #header>
@@ -33,7 +33,7 @@
             </div>
             <div class="hero-actions-shell">
               <AnimatedAppear tag="div" variant="content" rhythm="actions" class-name="ops">
-                <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" :disabled="!displayedSongs.length" @click="playAll">播放全部</AnimatedAppear>
+                <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all button-surface" :disabled="!displayedSongs.length" @click="playAll">播放全部</AnimatedAppear>
                 <DropdownSelect
                   class="history-dropdown"
                   :model-value="historySelectedLabel"
