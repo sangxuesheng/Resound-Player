@@ -49,9 +49,15 @@ export async function getSongUrl(id: number, cookie?: string) {
   });
 }
 
-export async function getSongUrlV1(id: number, level = 'standard') {
+export async function getSongUrlV1(id: number, level = 'exhigh', cookie?: string) {
   return apiClient.get('/song/url/v1', {
-    params: { id, level, timestamp: Date.now() },
+    params: {
+      id,
+      level,
+
+      timestamp: Date.now(),
+      ...(cookie ? { cookie } : {}),
+    },
   });
 }
 

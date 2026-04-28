@@ -499,7 +499,7 @@ watch(
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: var(--bg-surface);
+  background: var(--bg-solid);
   box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
 }
 
@@ -508,7 +508,7 @@ watch(
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: var(--bg-surface);
+  background: var(--bg-solid);
   color: var(--text-main);
   cursor: pointer;
   text-align: left;

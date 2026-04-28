@@ -363,7 +363,7 @@ textarea,
 .chip,
 .item {
   border-radius: var(--radius-lg) !important;
-  background: var(--glass-reflection), var(--bg-surface) !important;
+  background: var(--glass-reflection), var(--bg-solid) !important;
   border: 1px solid var(--border) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(145%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(145%);
@@ -405,7 +405,7 @@ textarea,
 :root[data-glass='off'] .chip,
 :root[data-glass='off'] .item,
 :root[data-glass='off'] .tag {
-  background: var(--bg-surface) !important;
+  background: var(--bg-solid) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: var(--glass-shadow) !important;
@@ -432,7 +432,7 @@ html body #app .layout footer.bar[data-v-efc867c7] {
 .hot-item:hover,
 .tab-btn:hover,
 .tag:hover {
-  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 16%, var(--bg-surface)) !important;
+  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 16%, var(--bg-solid)) !important;
 }
 
 .menu-item.active,
@@ -1056,7 +1056,7 @@ svg.icon,
 :root[data-glass='off'] .grid-canvas,
 :root[data-glass='off'] .grid-item,
 :root[data-glass='off'] .tag {
-  background: var(--bg-surface) !important;
+  background: var(--bg-solid) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;

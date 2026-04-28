@@ -188,7 +188,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
       title: '播放设置',
       items: [
         { key: 'autoplay', label: '自动播放下一首', desc: '当前歌曲结束后自动切换到下一首', type: 'switch' },
-        { key: 'quality', label: '默认音质', desc: '可按网络环境自动调整', type: 'select', options: ['标准', '较高', '极高'] },
+        { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'] },
         { key: 'playMode', label: '默认播放模式', desc: '循环/单曲/随机播放策略', type: 'select', options: ['列表循环', '单曲循环', '随机播放'] },
         { key: 'playbackRate', label: '播放速度', desc: '影响底部栏与全屏页播放速度', type: 'select', options: ['0.75x', '1.0x', '1.25x', '1.5x'] },
         { key: 'crossfade', label: '淡入淡出时长', desc: '控制切歌时过渡顺滑程度', type: 'range', min: 0, max: 12 },
@@ -273,6 +273,7 @@ const selectState = reactive<Record<string, string>>({
   theme: uiStore.themeMode,
   accent: uiStore.accentMode,
 });
+
 
 const accentCustomColor = ref(uiStore.accentCustomColor);
 
@@ -362,11 +363,23 @@ watch(
   },
 );
 
+// 从 playerStore 持久化数据同步到 selectState
+watch(() => playerStore.defaultQuality, (val) => {
+  selectState.quality = val;
+});
+
 watch(
   () => selectState.quality,
   (value) => {
-    if (value === '标准' || value === '较高' || value === '极高') {
+    const validQualities = ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'];
+    if (validQualities.includes(value)) {
       playerStore.setDefaultQuality(value);
+      console.log('[quality] 设置页切换为:', value, '| 歌曲:', playerStore.currentTrack?.name);
+      if (playerStore.currentTrack && playerStore.isPlaying) {
+        const ct = playerStore.currentTime;
+        console.log('[quality] 设置页触发重拉, 进度:', Math.floor(ct), 's');
+        void playerStore.playTrack(playerStore.currentTrack, ct);
+      }
     }
   },
 );
@@ -703,7 +716,7 @@ function onHomeLayoutSaved(payload: unknown) {
   padding: 10px 14px;
   border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
   border-radius: 12px;
-  background: color-mix(in srgb, var(--bg-surface) 86%, rgba(15, 23, 42, 0.08));
+  background: var(--bg-solid);
   color: var(--text-main);
   box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
   backdrop-filter: blur(12px);

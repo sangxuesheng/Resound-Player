@@ -1,6 +1,6 @@
 <template>
   <span v-if="count != null" class="hover-play-button-count">{{ formattedCount }}</span>
-  <span class="hover-play-button" :class="sizeClass" aria-hidden="true">
+  <span class="hover-play-button" :class="[sizeClass, $attrs.class]" aria-hidden="true">
     <span class="hover-play-button__icon" />
   </span>
 </template>
@@ -8,6 +8,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import '../styles/hover-play-button.css';
+
+defineOptions({ inheritAttrs: false });
 
 const props = withDefaults(
   defineProps<{
