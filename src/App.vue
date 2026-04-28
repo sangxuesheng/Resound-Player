@@ -865,6 +865,38 @@ onBeforeUnmount(() => {
   padding-top: 0;
 }
 
+.content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -20px;
+  right: -20px;
+  height: 360px;
+  z-index: 0;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(17, 24, 39, 0.56) 0%,
+      rgba(17, 24, 39, 0.34) 28%,
+      rgba(17, 24, 39, 0.14) 56%,
+      rgba(17, 24, 39, 0.04) 80%,
+      transparent 100%
+    ),
+    var(--cover-bg-url, none);
+  background-size: cover, cover;
+  background-position: center, var(--detail-head-bg-position, center);
+  transform: scale(1.1);
+  transform-origin: top center;
+  filter: blur(24px) saturate(155%) contrast(1.08);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.content.content--hero-sticky::before {
+  opacity: 1;
+}
+
 .content.content--user-page,
 .content:has(.history-page-host) {
   overflow: hidden;

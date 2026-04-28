@@ -3,6 +3,8 @@ node_modules/
 
 # build output
 dist/
+dist-build/
+test-build/
 release/
 desktop-release/
 desktop-dist/
@@ -20,6 +22,11 @@ desktop-dist/
 # editor / local tooling
 .cursor/
 .lingma/
+.claude/
+.codex
+
+# OS files
+.DS_Store
 
 # reference materials not for repository
 播放页相关/

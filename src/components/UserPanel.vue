@@ -264,10 +264,12 @@ function normalizeCloudItem(item: any) {
 async function enrichCloudUrls(items: any[]) {
   const validIds = items.map((item) => item.id).filter(Boolean);
   if (!validIds.length) return items;
+  const cookie = userStore.loginCookie || undefined;
   const urlRes = await Promise.all(
     validIds.map(async (id) => {
       try {
-        const res = await getSongUrl(Number(id));
+        // 云盘歌曲需要 cookie 才能获取播放地址
+        const res = await getSongUrl(Number(id), cookie);
         const list = res.data?.data || res.data?.songs || res.data?.url || res.data || [];
         const target = Array.isArray(list) ? list[0] : list;
         return { id, url: target?.url || target?.data?.[0]?.url || '' };
@@ -277,7 +279,8 @@ async function enrichCloudUrls(items: any[]) {
     }),
   );
   const urlMap = new Map(urlRes.map((entry) => [String(entry.id), entry.url]));
-  return items.map((item) => ({ ...item, url: urlMap.get(String(item.id)) || item.url || '' }));
+  const result = items.map((item) => ({ ...item, url: urlMap.get(String(item.id)) || item.url || '' }));
+  return result;
 }
 
 function normalizePlaylistArray(payload: any): any[] {

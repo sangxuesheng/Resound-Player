@@ -43,7 +43,7 @@
         <p v-else class="mini-desc">{{ dailyRecommendLoading ? '每日推荐加载中…' : dailyRecommendError || '登录后可查看每日推荐' }}</p>
       </AnimatedAppear>
 
-      <AnimatedAppear v-if="showRecoCard" tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
+      <AnimatedAppear v-if="userStore.isLogin" tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
         <button v-if="topRecoCard" class="radar-hero poster" :title="topRecoCard.name" @click="openRecoDetail(topRecoCard.id)">
           <span class="radar-bg" :style="{ backgroundImage: `url(${topRecoCardCoverUrl})` }"></span>
           <span class="radar-poster-top">
@@ -145,7 +145,13 @@
           <span class="artist-avatar" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
           <span class="artist-name">{{ artist.name }}</span>
         </button>
+        <span
+          ref="topArtistsSentinel"
+          class="top-artists-sentinel"
+          aria-hidden="true"
+        ></span>
       </HorizontalScrollRail>
+      <p v-if="topArtistsLoading && topArtists.length" class="custom-tip artists-loading">加载更多歌手中…</p>
     </section>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid" :style="gridStyle">
@@ -416,6 +422,9 @@ const searchHistory = ref<string[]>(JSON.parse(localStorage.getItem('tm_search_h
 const topArtists = ref<any[]>([]);
 const topArtistsLoading = ref(false);
 const topArtistsError = ref('');
+const topArtistsOffset = ref(0);
+const topArtistsHasMore = ref(true);
+const ARTISTS_PAGE_SIZE = 24;
 const songs = ref<any[]>([]);
 const hotSongsLoading = ref(false);
 const hotSongsHasMore = ref(true);
@@ -463,7 +472,6 @@ const isUidLogin = computed(() => userStore.loginMode === 'uid');
 const publicRecoPlaylists = ref<Array<{ id: number; name: string; coverImgUrl?: string; picUrl?: string; creator?: any }>>([]);
 const publicRecoTracks = ref<any[]>([]);
 const publicRecoCoverUrl = ref('');
-const showRecoCard = computed(() => userStore.isLogin);
 const dailyRecoRadar = computed(() => privateRadar.value.find((item) => item.name.includes('私人雷达')) || null);
 const topRecoCard = computed(() => (isUidLogin.value ? publicRecoPlaylists.value[0] || null : dailyRecoRadar.value));
 const topRecoTracks = computed(() => (isUidLogin.value ? publicRecoTracks.value : radarTopTracks.value));
@@ -479,7 +487,7 @@ const topRecoCardCoverUrl = computed(() => (
 ));
 const topRecoLoading = computed(() => (isUidLogin.value ? publicRecoLoading.value : privateRadarLoading.value));
 const topRecoError = computed(() => (isUidLogin.value ? publicRecoError.value : privateRadarError.value));
-const topRecoEmptyText = computed(() => (isUidLogin.value ? '该用户暂未公开创建歌单' : '登录后可查看私人雷达'));
+const topRecoEmptyText = computed(() => (isUidLogin.value ? '该用户暂未公开创建歌单' : '暂无推荐内容'));
 const personalFmTracks = ref<any[]>([]);
 const personalFmLoading = ref(false);
 const personalFmError = ref('');
@@ -779,24 +787,6 @@ async function fetchPublicRecoPlaylists() {
 }
 
 async function fetchDailyRecommendPlaylists() {
-  if (!userStore.isLogin) {
-    privateRadar.value = [];
-    radarTopTracks.value = [];
-    radarCoverUrl.value = '';
-    privateRadarError.value = '';
-    privateRadarLoading.value = false;
-    return;
-  }
-
-  if (userStore.loginMode === 'uid') {
-    privateRadar.value = [];
-    radarTopTracks.value = [];
-    radarCoverUrl.value = '';
-    privateRadarError.value = '';
-    privateRadarLoading.value = false;
-    return;
-  }
-
   privateRadarLoading.value = true;
   privateRadarError.value = '';
 
@@ -815,13 +805,6 @@ async function fetchDailyRecommendPlaylists() {
 }
 
 async function fetchDailyRecommendSongs() {
-  if (!userStore.isLogin) {
-    dailyRecommendSongs.value = [];
-    dailyRecommendError.value = '';
-    dailyRecommendLoading.value = false;
-    return;
-  }
-
   dailyRecommendLoading.value = true;
   dailyRecommendError.value = '';
   try {
@@ -833,6 +816,7 @@ async function fetchDailyRecommendSongs() {
     const list = Array.isArray(data?.recommend) ? data.recommend : Array.isArray(data?.songs) ? data.songs : Array.isArray(data?.data) ? data.data : Array.isArray(data?.data?.dailySongs) ? data.data.dailySongs : Array.isArray(data?.data?.recommend) ? data.data.recommend : Array.isArray(data?.data?.songs) ? data.data.songs : Array.isArray(data?.result?.songs) ? data.result.songs : [];
     console.log('[HomePanel][recommend/songs] parsed list length', list.length, list[0]);
     dailyRecommendSongs.value = list;
+    playerStore.defaultPlaylist = list;
   } catch (e: any) {
     console.error('[HomePanel][recommend/songs] request failed', e);
     dailyRecommendSongs.value = [];
@@ -843,9 +827,26 @@ async function fetchDailyRecommendSongs() {
 }
 
 async function requestPersonalFmBatch() {
-  if (!userStore.isLogin) return [];
   const { data } = await getPersonalFm(userStore.loginCookie || undefined);
   return (data?.data || []) as any[];
+}
+
+let topArtistsObserver: IntersectionObserver | null = null;
+
+function setupTopArtistsObserver() {
+  if (topArtistsObserver) topArtistsObserver.disconnect();
+  const sentinel = topArtistsSentinel.value;
+  if (!(sentinel instanceof Element)) return;
+
+  topArtistsObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting && !topArtistsLoading.value && topArtistsHasMore.value) {
+        loadMoreTopArtists();
+      }
+    },
+    { root: sentinel.closest('.horizontal-scroll-rail__content'), threshold: 0.1 },
+  );
+  topArtistsObserver.observe(sentinel);
 }
 
 function syncPersonalFmViewFromPlayer() {
@@ -860,14 +861,6 @@ function syncPersonalFmViewFromPlayer() {
 }
 
 async function fetchPersonalFm() {
-  if (!userStore.isLogin) {
-    personalFmTracks.value = [];
-    personalFmError.value = '';
-    personalFmLoading.value = false;
-    playerStore.clearPersonalFmContext();
-    return;
-  }
-
   personalFmLoading.value = true;
   personalFmError.value = '';
 
@@ -958,7 +951,11 @@ async function loadMoreLatestSongs() {
 }
 
 function setTopArtistsSentinelRef(el: any) {
-  topArtistsSentinel.value = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
+  const element = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
+  topArtistsSentinel.value = element;
+  if (element) {
+    setupTopArtistsObserver();
+  }
 }
 
 function prefetchLatestIfNeeded(root: HTMLElement) {
@@ -1014,7 +1011,7 @@ async function fetchLatestMusic() {
     }
 
     nextTick(() => {
-      latestScrollRailRef.value?.scrollToStart();
+      if (typeof latestScrollRailRef.value?.scrollToStart === 'function') { latestScrollRailRef.value.scrollToStart(); }
     });
   } catch (e: any) {
     latestSongs.value = [];
@@ -1030,8 +1027,11 @@ async function fetchTopArtists() {
   topArtistsError.value = '';
 
   try {
-    const { data } = await getTopArtists({ limit: 24, offset: 0 });
-    topArtists.value = (data?.artists || data?.data?.artists || data?.list || []).slice(0, 24);
+    const { data } = await getTopArtists({ limit: ARTISTS_PAGE_SIZE, offset: 0 });
+    const list = (data?.artists || data?.data?.artists || data?.list || []);
+    topArtists.value = list;
+    topArtistsOffset.value = list.length;
+    topArtistsHasMore.value = list.length >= ARTISTS_PAGE_SIZE;
     if (!topArtists.value.length) {
       topArtistsError.value = '暂未获取到热门歌手';
     }
@@ -1040,6 +1040,35 @@ async function fetchTopArtists() {
     topArtistsError.value = e?.message || '热门歌手获取失败，请稍后重试';
   } finally {
     topArtistsLoading.value = false;
+  }
+  // 首屏加载完成后立即预加载下一页，确保滑动到末端时数据已就位
+  if (topArtistsHasMore.value) {
+    loadMoreTopArtists();
+  }
+}
+
+async function loadMoreTopArtists() {
+  if (topArtistsLoading.value || !topArtistsHasMore.value) return;
+  topArtistsLoading.value = true;
+  try {
+    const { data } = await getTopArtists({ limit: ARTISTS_PAGE_SIZE, offset: topArtistsOffset.value });
+    const list = (data?.artists || data?.data?.artists || data?.list || []);
+    if (!list.length) {
+      topArtistsHasMore.value = false;
+      return;
+    }
+    const existingIds = new Set(topArtists.value.map((a) => a.id));
+    const unique = list.filter((a) => !existingIds.has(a.id));
+    topArtists.value = [...topArtists.value, ...unique];
+    topArtistsOffset.value += list.length;
+    topArtistsHasMore.value = list.length >= ARTISTS_PAGE_SIZE;
+  } catch {
+    // 静默失败，保留已有数据
+  } finally {
+    topArtistsLoading.value = false;
+    if (topArtistsHasMore.value) {
+      requestAnimationFrame(() => setupTopArtistsObserver());
+    }
   }
 }
 
@@ -1141,6 +1170,10 @@ onBeforeUnmount(() => {
   if (latestScrollRaf) {
     cancelAnimationFrame(latestScrollRaf);
     latestScrollRaf = 0;
+  }
+  if (topArtistsObserver) {
+    topArtistsObserver.disconnect();
+    topArtistsObserver = null;
   }
   if (topArtistsSentinel.value) {
     topArtistsSentinel.value = null;
@@ -1345,7 +1378,7 @@ async function playLatestSong(index: number) {
 .home-page { display: grid; gap: var(--space-3); min-width: 0; overflow-x: clip; }
 .home-actions { display: flex; justify-content: flex-end; }
 .top-artists-section { display: grid; gap: var(--space-2); padding: 0; }
-:deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-5); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); }
+:deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-5); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); scroll-snap-type: none !important; }
 :deep(.top-artists-row) > * { flex: 0 0 auto; }
 .artist-chip {
   flex: 0 0 auto;
@@ -1396,8 +1429,8 @@ async function playLatestSong(index: number) {
 .edit-btn:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 34%, var(--border)); box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 10%, transparent); }
 .edit-btn:active { transform: translateY(0) scale(0.99); }
 .edit-btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.home-top-reco { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); }
-.top-mini-card { padding: var(--space-3); display: grid; gap: var(--space-2); }
+.home-top-reco { display: flex; gap: var(--space-3); }
+.top-mini-card { flex: 1; min-width: 0; padding: var(--space-3); display: grid; gap: var(--space-2); }
 .mini-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .mini-head h3 { margin: 0; color: var(--text-main); font-size: 16px; }
 .mini-tip { font-size: 12px; color: var(--text-soft); }
@@ -1458,7 +1491,7 @@ async function playLatestSong(index: number) {
 .fm-top-title { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .fm-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 12px; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
 .fm-poster-bottom { display: block; padding: 16px 18px 0; color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
-.fm-control-panel { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 4px 18px 18px; opacity: 0; max-height: 0; overflow: visible; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; }
+.fm-control-panel { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 4px 18px 18px; opacity: 0; max-height: 0; overflow: visible; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; will-change: transform, opacity; }
 .fm-control-btn {
   border: none;
   background: transparent;
@@ -1468,31 +1501,35 @@ async function playLatestSong(index: number) {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 180ms ease, filter 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+  transition: transform 180ms ease, filter 180ms ease;
   pointer-events: auto;
+  will-change: transform, filter;
 }
 .fm-control-btn--ghost {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: color-mix(in srgb, rgba(255, 255, 255, 0.18) 82%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
+  background: var(--glass-reflection), color-mix(in srgb, rgba(255, 255, 255, 0.18) 82%, transparent);
+  backdrop-filter: blur(var(--glass-blur, 10px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 10px));
+  box-shadow: var(--glass-highlight), 0 10px 24px rgba(15, 23, 42, 0.16);
 }
 .fm-control-btn--primary {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--theme-primary) 26%, rgba(255, 255, 255, 0.3));
-  box-shadow: 0 14px 32px color-mix(in srgb, var(--theme-primary) 24%, rgba(15, 23, 42, 0.28));
+  background: var(--glass-reflection), color-mix(in srgb, var(--theme-primary) 26%, rgba(255, 255, 255, 0.3));
+  backdrop-filter: blur(var(--glass-blur, 10px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 10px));
+  box-shadow: var(--glass-highlight), 0 14px 32px color-mix(in srgb, var(--theme-primary) 24%, rgba(15, 23, 42, 0.28));
 }
 :global(.dark) .fm-control-btn--ghost,
 :global([data-theme='dark']) .fm-control-btn--ghost {
-  background: color-mix(in srgb, rgba(15, 23, 42, 0.72) 86%, transparent);
+  background: var(--glass-reflection), color-mix(in srgb, rgba(15, 23, 42, 0.72) 86%, transparent);
 }
 :global(.dark) .fm-control-btn--primary,
 :global([data-theme='dark']) .fm-control-btn--primary {
-  background: color-mix(in srgb, var(--theme-primary) 34%, rgba(15, 23, 42, 0.44));
+  background: var(--glass-reflection), color-mix(in srgb, var(--theme-primary) 34%, rgba(15, 23, 42, 0.44));
 }
 .fm-control-btn:hover,
 .fm-control-btn:focus-visible {
@@ -1515,9 +1552,9 @@ async function playLatestSong(index: number) {
 .fm-bottom-zone:hover .fm-control-panel,
 .fm-bottom-zone:focus-within .fm-control-panel { opacity: 1; max-height: 140px; transform: translateY(0); pointer-events: auto; }
 .home-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-auto-rows: var(--row-h); gap: var(--gap); }
-.card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); overflow: hidden; }
+.card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); padding-top: calc(var(--layout-card-padding) + 10px); overflow: hidden; }
 .card.list,
-.card.albums { overflow-y: auto; overflow-x: hidden; }
+.card.albums { overflow-y: auto; overflow-x: hidden; padding: 10px 2px; margin: -10px -2px; }
 .card.list::-webkit-scrollbar,
 .card.albums::-webkit-scrollbar { width: 0; height: 0; }
 .card.list,
@@ -1537,7 +1574,7 @@ async function playLatestSong(index: number) {
 .artist { color: var(--text-soft); font-size: 12px; }
 .ops { display: flex; gap: 8px; }
 .icon-btn-wrap { display: inline-flex; align-items: center; }
-.album-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .album {
   border: none;
   background: transparent;
@@ -1708,7 +1745,7 @@ async function playLatestSong(index: number) {
 .editor-modal-head h3 { margin: 0; font-size: 16px; color: var(--text-main); }
 .close-btn { height: 32px; padding: 0 var(--space-3); border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-main); cursor: pointer; }
 @media (max-width: 980px) {
-  .home-top-reco { grid-template-columns: 1fr; }
+  .home-top-reco { flex-direction: column; }
   :deep(.top-artists-row) { --horizontal-scroll-gap: 16px; }
   .artist-avatar { width: 78px; height: 78px; }
   .latest-column { width: 280px; flex-basis: 280px; }

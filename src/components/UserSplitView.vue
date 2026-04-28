@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useDominantColor } from '../composables/useDominantColor';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 const props = defineProps<{
@@ -140,6 +141,15 @@ const detailPanelStyle = computed(() => {
   } as Record<string, string>;
 });
 
+const selectedCoverUrl = computed(() => 
+  props.selectedItem?.coverImgUrl || 
+  props.selectedItem?.picUrl || 
+  props.selectedItem?.coverUrl || 
+  props.profile?.avatarUrl || 
+  ''
+);
+useDominantColor(selectedCoverUrl);
+
 const splitStageStyle = computed(() => {
   const avatar = props.profile?.avatarUrl || '';
   return {
@@ -155,6 +165,7 @@ defineEmits<{
 </script>
 
 <style scoped>
+@import '../styles/detail-page.css';
 .user-split-view { display: grid; gap: 16px; height: 100%; min-height: 0; }
 .split-stage { display: grid; grid-template-columns: minmax(360px, 441px) minmax(0, 1fr); gap: 16px; align-items: start; min-height: 0; height: 100%; }
 .left-panel, .detail-panel { border: 1px solid var(--border); border-radius: 20px; background: var(--bg-surface); }
@@ -176,9 +187,13 @@ defineEmits<{
 .tab { font-size: 16px; flex: 1 1 0; }
 .sub-tab { font-size: 14px; flex: 0 0 auto; }
 .sub-tabs--fill .sub-tab { flex: 1 1 0; }
-.tab.active, .sub-tab.active { color: var(--text-main); }
+.tab.active, .sub-tab.active {
+  color: var(--text-main) !important;
+  background: var(--button-surface-active-bg) !important;
+  border-color: var(--button-surface-active-border) !important;
+}
 .left-content { display: grid; gap: 12px; min-height: 0; width: 100%; align-content: start; justify-items: stretch; grid-auto-rows: min-content; }
-.list-wrap { display: grid; gap: 10px; min-height: 0; overflow: auto; scrollbar-width: none; -ms-overflow-style: none; background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.list-wrap { display: grid; gap: 10px; min-height: 0; overflow: auto; padding: 8px 2px; margin: -8px -2px; scrollbar-width: none; -ms-overflow-style: none; background: transparent !important; border: 0 !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .playlist-row, .dj-card {
   display: flex;
   gap: 12px;
@@ -211,11 +226,42 @@ defineEmits<{
 .playlist-main, .dj-main { display: grid; gap: 4px; min-width: 0; flex: 1; }
 .playlist-main strong, .playlist-main span, .dj-main strong, .dj-main span, .dj-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-main span, .dj-main span, .dj-main small { color: var(--text-sub); font-size: 13px; }
-.detail-panel { padding: 18px; min-height: 0; max-height: 100%; position: relative; overflow: auto; isolation: isolate; scrollbar-width: none; -ms-overflow-style: none; }
+.detail-panel { padding: 18px; min-height: 0; max-height: 100%; position: relative; overflow-y: auto; overflow-x: hidden; isolation: isolate; scrollbar-width: none; -ms-overflow-style: none; }
 .detail-body-wrap { min-height: 320px; position: relative; z-index: 1; }
 .detail-empty { min-height: 320px; display: grid; place-items: center; gap: 14px; text-align: center; color: var(--text-sub); }
 .detail-empty h3 { margin: 0; color: var(--text-main); }
 .detail-empty p { margin: 0; max-width: 28ch; line-height: 1.6; }
 @media (max-width: 1180px) { .split-stage { grid-template-columns: 1fr; height: auto; } .left-panel, .detail-panel { max-height: none; } }
 @media (max-width: 767px) { .tab, .sub-tab { height: 44px; } .tab { font-size: 16px; } .sub-tab { font-size: 15px; } .stats-grid { grid-template-columns: 1fr; } .tab-row, .sub-tabs { width: 100%; } .playlist-row.active { padding: 9px 11px; } }
+/* 右侧详情面板顶部主色渐变 - 使用封面主色从顶部渐变到透明 */
+.detail-panel::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  height: 360px;
+  z-index: 0;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(17, 24, 39, 0.56) 0%,
+      rgba(17, 24, 39, 0.34) 28%,
+      rgba(17, 24, 39, 0.14) 56%,
+      rgba(17, 24, 39, 0.04) 80%,
+      transparent 100%
+    ),
+    var(--cover-bg-url, none);
+  background-size: cover, cover;
+  background-position: center, var(--detail-head-bg-position, center);
+  transform: scale(1.1);
+  transform-origin: top center;
+  filter: blur(24px) saturate(155%) contrast(1.08);
+  pointer-events: none;
+}
+
+/* 隐藏全局 detail-page.css 中 detail-panel::after 的模糊封面，避免透出 */
+.detail-panel::after {
+  display: none;
+}
 </style>

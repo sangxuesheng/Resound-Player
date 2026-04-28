@@ -403,7 +403,8 @@ textarea,
 :root[data-glass='off'] .podcast-preview-item,
 :root[data-glass='off'] .panel,
 :root[data-glass='off'] .chip,
-:root[data-glass='off'] .item {
+:root[data-glass='off'] .item,
+:root[data-glass='off'] .tag {
   background: var(--bg-surface) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -463,7 +464,7 @@ p,
 .desc,
 .artist,
 .muted,
-.count,
+
 .sub,
 .album-artist,
 .empty,
@@ -1053,7 +1054,8 @@ svg.icon,
 :root[data-glass='off'] .editor-wrap,
 :root[data-glass='off'] .editor-modal,
 :root[data-glass='off'] .grid-canvas,
-:root[data-glass='off'] .grid-item {
+:root[data-glass='off'] .grid-item,
+:root[data-glass='off'] .tag {
   background: var(--bg-surface) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;

@@ -43,9 +43,9 @@ export async function searchMusicDefault() {
   });
 }
 
-export async function getSongUrl(id: number) {
+export async function getSongUrl(id: number, cookie?: string) {
   return apiClient.get('/song/url', {
-    params: { id, timestamp: Date.now() },
+    params: { id, timestamp: Date.now(), ...(cookie ? { cookie } : {}) },
   });
 }
 

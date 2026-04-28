@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { getSongDetail, getSongUrl, trashPersonalFm } from '../api/music';
+import { userStore } from './user';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
@@ -49,6 +50,7 @@ export const playerStore = reactive({
   muted: false,
   volumeBeforeMute: 0.7,
   loading: false,
+  defaultPlaylist: [] as any[],
   expanded: false,
   themePrimary: 'var(--theme-primary)',
   themeMode: '跟随系统' as ThemeMode,
@@ -108,6 +110,7 @@ export const playerStore = reactive({
       isDarkMode: this.isDarkMode,
       personalFmTrackIds: this.personalFmTrackIds,
       personalFmHasMore: this.personalFmHasMore,
+      defaultPlaylist: this.defaultPlaylist,
     };
     localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(payload));
   },
@@ -136,6 +139,7 @@ export const playerStore = reactive({
       this.isDarkMode = typeof parsed.isDarkMode === 'boolean' ? parsed.isDarkMode : false;
       this.personalFmTrackIds = Array.isArray(parsed.personalFmTrackIds) ? parsed.personalFmTrackIds.map((id: unknown) => Number(id || 0)).filter((id: number) => id > 0) : [];
       this.personalFmHasMore = typeof parsed.personalFmHasMore === 'boolean' ? parsed.personalFmHasMore : true;
+      this.defaultPlaylist = Array.isArray(parsed.defaultPlaylist) ? parsed.defaultPlaylist : [];
       this.audio.playbackRate = this.playbackRate;
 
       if (this.currentIndex >= 0 && this.playlist[this.currentIndex]) {
@@ -262,7 +266,7 @@ export const playerStore = reactive({
     try {
       let playUrl = track.url || '';
       try {
-        const { data: urlRes } = await getSongUrl(track.id);
+        const { data: urlRes } = await getSongUrl(track.id, userStore.loginCookie || undefined);
         playUrl = urlRes?.data?.[0]?.url || playUrl;
       } catch {
         // ignore url fetch failures and fall back to cached/attached url
@@ -291,7 +295,7 @@ export const playerStore = reactive({
       this.currentTrack = merged;
       this.currentSongId = Number(merged?.id || 0);
       if (!playUrl) {
-        this.audio.removeAttribute('src');
+          this.audio.removeAttribute('src');
         this.audio.load();
         this.isPlaying = false;
         this.persist();
@@ -299,7 +303,13 @@ export const playerStore = reactive({
       }
 
       this.audio.src = playUrl;
-      await this.audio.play();
+      try {
+        await this.audio.play();
+      } catch {
+        this.isPlaying = false;
+        this.persist();
+        return false;
+      }
       this.isPlaying = true;
 
       if (this.currentIndex === -1) {
@@ -315,6 +325,11 @@ export const playerStore = reactive({
   },
 
   async togglePlay() {
+    if (!this.currentTrack && this.playlist.length === 0 && this.defaultPlaylist.length > 0) {
+      this.setPlaylist(this.defaultPlaylist, 0);
+      await this.playByIndex(0);
+      return;
+    }
     if (!this.currentTrack && this.playlist.length > 0) {
       await this.playByIndex(Math.max(0, this.currentIndex));
       return;

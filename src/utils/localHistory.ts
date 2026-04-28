@@ -36,12 +36,16 @@ function readPayload(): LocalHistoryPayload {
 }
 
 function writePayload(payload: LocalHistoryPayload) {
-  localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify({
+  try {
+    localStorage.setItem(LOCAL_HISTORY_KEY, JSON.stringify({
     song: Array.isArray(payload.song) ? payload.song.slice(0, 120) : [],
     playlist: Array.isArray(payload.playlist) ? payload.playlist.slice(0, 80) : [],
     album: Array.isArray(payload.album) ? payload.album.slice(0, 80) : [],
     podcast: Array.isArray(payload.podcast) ? payload.podcast.slice(0, 80) : [],
-  }));
+    }));
+  } catch {
+    // localStorage quota exceeded - silently fail, don't block playback
+  }
 }
 
 function getEntryId(entry: LocalHistoryEntry) {

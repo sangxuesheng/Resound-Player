@@ -164,6 +164,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useDominantColor } from '../composables/useDominantColor';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -211,6 +212,7 @@ const tabs = [
 ] as const;
 
 const coverUrl = computed(() => resolveArtistImageUrl(artist.value));
+useDominantColor(coverUrl);
 const shellStyle = computed<Record<string, string>>(() => {
   return coverUrl.value ? { '--cover-bg': `url("${coverUrl.value}")` } : {};
 });

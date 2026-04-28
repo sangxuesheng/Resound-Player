@@ -57,8 +57,7 @@
           <div class="playlist-card-cover-motion-shell">
             <img class="playlist-card-cover-image" :src="resolveCover(item)" :alt="item.name" loading="lazy" />
           </div>
-          <span class="count hover-play-button-count">{{ formatCount(item.playCount) }}</span>
-          <HoverPlayButton class="hover-play-button--md" />
+          <HoverPlayButton :count="item.playCount" size="md" />
         </div>
         <div class="info">
           <p class="name" :title="item.name">{{ item.name }}</p>
@@ -144,11 +143,6 @@ const allCatsFlat = computed(() => {
   return Array.from(set);
 });
 
-function formatCount(count = 0) {
-  if (count >= 100000000) return `${(count / 100000000).toFixed(1)}亿`;
-  if (count >= 10000) return `${(count / 10000).toFixed(1)}万`;
-  return String(count);
-}
 
 function resolveCover(item: PlaylistItem) {
   return resolvePlaylistCoverUrl(item.coverImgUrl || item.picUrl || '', 800);
@@ -563,7 +557,6 @@ watch(
     filter: saturate(var(--image-hover-saturate, 1.04));
   }
 }
-.count { position: absolute; right: var(--space-2); top: var(--space-2); font-size: 12px; color: #fff; background: rgba(0, 0, 0, 0.5); padding: 2px 6px; border-radius: 999px; z-index: 3; }
 .playlist-hover-play { right: 10px; bottom: 10px; z-index: 4; }
 .info { padding: var(--space-2); }
 .info .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

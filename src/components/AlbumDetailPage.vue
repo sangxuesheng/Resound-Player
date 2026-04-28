@@ -100,6 +100,7 @@
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useDominantColor } from '../composables/useDominantColor';
 import { getAlbumDetail } from '../api/music';
 import { playerStore } from '../stores/player';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
@@ -132,6 +133,8 @@ const error = ref('');
 const album = ref<any>(null);
 const isDescriptionExpanded = ref(false);
 const songs = computed<any[]>(() => album.value?.songs || []);
+const coverUrl = computed(() => album.value?.picUrl || '');
+useDominantColor(coverUrl);
 const albumDescription = computed(() => album.value?.description?.trim() || '');
 const shouldShowDescriptionToggle = computed(() => albumDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const isUserDetail = computed(() => props.backLabel === '返回用户中心');

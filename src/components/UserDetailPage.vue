@@ -82,6 +82,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
+import { useDominantColor } from '../composables/useDominantColor';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserDetail } from '../api/auth';
@@ -116,6 +117,7 @@ const tabs = [
 
 const displayName = computed(() => userDetail.value?.profile?.nickname || userDetail.value?.nickname || '未命名用户');
 const avatarUrl = computed(() => normalizeImageUrl(userDetail.value?.profile?.avatarUrl || userDetail.value?.avatarUrl || ''));
+useDominantColor(avatarUrl);
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = avatarUrl.value?.trim();
   return coverUrl ? { '--cover-bg': `url("${coverUrl}")` } : {};

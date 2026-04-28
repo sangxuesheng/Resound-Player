@@ -228,7 +228,7 @@
     color-mix(in srgb, var(--accent) 92%, #fff),
     color-mix(in srgb, var(--accent) 74%, #000)
   );
-  color: #fff;
+  color: var(--text-main);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 34%, transparent), var(--glass-highlight);
   cursor: pointer;
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
@@ -372,6 +372,7 @@
   position: absolute;
   inset: 0;
   background:
+    linear-gradient(180deg, rgba(var(--detail-hero-rgb, 8, 15, 30), 0.28) 0%, rgba(var(--detail-hero-rgb, 8, 15, 30), 0.12) 30%, rgba(var(--detail-hero-rgb, 8, 15, 30), 0.04) 55%, transparent 80%),
     linear-gradient(180deg, rgba(8, 15, 30, 0.06) 0%, rgba(8, 15, 30, 0) 100%),
     radial-gradient(520px 220px at 50% 0%, color-mix(in srgb, var(--panel-accent, var(--accent)) 38%, transparent) 0%, rgba(255, 255, 255, 0) 72%);
   background-repeat: no-repeat;
@@ -408,8 +409,7 @@
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 94%, transparent) 100%),
-    var(--avatar-cover) center / cover no-repeat;
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent) 0%, color-mix(in srgb, var(--bg-surface) 94%, transparent) 100%);
 }
 
 .user-mini-profile-card::before {

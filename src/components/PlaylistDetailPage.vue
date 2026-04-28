@@ -275,7 +275,7 @@ async function fetchDetail(id: number) {
   error.value = '';
 
   try {
-    const { data } = await getPlaylistDetail(id);
+    const { data } = await getPlaylistDetail(id, 30);
     if (currentToken !== fetchToken) return;
 
     const detail = data?.playlist || null;
@@ -303,33 +303,44 @@ async function fetchDetail(id: number) {
     trackEnriching.value = true;
 
     try {
-      const limit = trackIds.length;
-      const { data: allTrackRes } = await getPlaylistTrackAll({ id, limit, offset: 0 });
-      if (currentToken !== fetchToken) return;
+      const CHUNK_SIZE = 30;
+      let offset = rawTracks.length;
 
-      const allSongs = Array.isArray(allTrackRes?.songs) ? allTrackRes.songs : [];
-      if (allSongs.length) {
-        playlist.value = {
-          ...detail,
-          coverImgUrl: resolvePlaylistCover({ ...detail, tracks: allSongs }),
-          tracks: allSongs,
-        };
-        return;
+      while (offset < trackIds.length) {
+        if (currentToken !== fetchToken) return;
+
+        const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: CHUNK_SIZE, offset });
+        if (currentToken !== fetchToken) return;
+
+        const newSongs = Array.isArray(chunkRes?.songs) ? chunkRes.songs : [];
+        if (newSongs.length) {
+          playlist.value = {
+            ...playlist.value,
+            tracks: [...playlist.value.tracks, ...newSongs],
+          };
+          offset += newSongs.length;
+        } else {
+          break;
+        }
       }
 
-      const { data: songDetailRes } = await getSongDetailBatch(trackIds);
       if (currentToken !== fetchToken) return;
-
-      const songs = Array.isArray(songDetailRes?.songs) ? songDetailRes.songs : [];
-      if (songs.length) {
-        const songMap = new Map<number, any>(songs.map((song: any) => [song.id, song]));
-        const mergedTracks = trackIds.map((tid) => songMap.get(tid)).filter(Boolean);
-        if (mergedTracks.length) {
-          playlist.value = {
-            ...detail,
-            coverImgUrl: resolvePlaylistCover({ ...detail, tracks: mergedTracks }),
-            tracks: mergedTracks,
-          };
+      const remaining = trackIds.length - playlist.value.tracks.length;
+      if (remaining > 0) {
+        const remainingIds = trackIds.slice(-remaining);
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < remainingIds.length; i += BATCH_SIZE) {
+          if (currentToken !== fetchToken) return;
+          const batchIds = remainingIds.slice(i, i + BATCH_SIZE);
+          const { data: batchRes } = await getSongDetailBatch(batchIds);
+          if (currentToken !== fetchToken) return;
+          const batchSongs = Array.isArray(batchRes?.songs) ? batchRes.songs : [];
+          if (batchSongs.length) {
+            playlist.value = {
+              ...playlist.value,
+              tracks: [...playlist.value.tracks, ...batchSongs],
+            };
+          }
         }
       }
     } catch {
@@ -528,7 +539,7 @@ function recordPlaylistLocalHistory() {
 
 async function playAll() {
   if (!tracks.value.length) return;
-  recordPlaylistLocalHistory();
+  try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
   playerStore.setPlaylist(tracks.value, 0);
   await playerStore.playByIndex(0);
 }
@@ -541,7 +552,7 @@ function onSongItemDblClick(event: MouseEvent, index: number) {
 
 async function playOne(index: number) {
   if (!tracks.value.length) return;
-  recordPlaylistLocalHistory();
+  try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
   playerStore.setPlaylist(tracks.value, index);
   await playerStore.playByIndex(index);
 }

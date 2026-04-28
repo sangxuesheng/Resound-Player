@@ -1,7 +1,7 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="history-page history-page--userlike">
     <div class="collection-history-shell">
-      <section class="collection-panel collection-panel--favorites">
+      <AnimatedAppear tag="section" variant="content" rhythm="body" class-name="collection-panel collection-panel--favorites">
         <div class="collection-panel__header">
           <div>
             <h3>我的收藏</h3>
@@ -10,11 +10,14 @@
         </div>
 
         <div class="collection-list collection-list--favorites">
-          <button
+          <AnimatedAppear
             v-for="(item, idx) in favoriteSongs"
             :key="item.key"
-            type="button"
-            class="collection-row"
+            tag="button"
+            variant="text"
+            rhythm="list"
+            :index="idx"
+            class-name="collection-row"
             @click="playListItem(item, favoriteSongs, idx)"
           >
             <span class="collection-cover" :style="item.coverUrl ? undefined : item.coverStyle">
@@ -29,12 +32,12 @@
               @click.stop="recordLocalHistoryItem(item)"
               @play="playListItem(item, favoriteSongs, idx)"
             />
-          </button>
+          </AnimatedAppear>
           <div v-if="!favoriteSongs.length" class="collection-empty">暂无收藏歌曲，登录后会自动读取喜欢列表。</div>
         </div>
-      </section>
+      </AnimatedAppear>
 
-      <section class="collection-panel collection-panel--history">
+      <AnimatedAppear tag="section" variant="content" rhythm="body" class-name="collection-panel collection-panel--history">
         <div class="collection-panel__header collection-panel__header--history">
           <div>
             <h3>播放历史</h3>
@@ -61,11 +64,14 @@
         </div>
 
         <div class="collection-list collection-list--history">
-          <button
+          <AnimatedAppear
             v-for="(item, idx) in leftItems"
             :key="item.key"
-            type="button"
-            class="collection-row history-row"
+            tag="button"
+            variant="text"
+            rhythm="list"
+            :index="idx"
+            class-name="collection-row history-row"
             :class="{ active: selectedGroup === item.key }"
             @click="selectItem(item)"
             @dblclick="playListItem(item, leftItems, idx)"
@@ -87,10 +93,10 @@
               />
             </span>
             <span v-if="historySource === 'local'" class="history-count">{{ getHistoryCount(item) }}</span>
-          </button>
+          </AnimatedAppear>
           <div v-if="!leftItems.length" class="collection-empty">暂无播放历史</div>
         </div>
-      </section>
+      </AnimatedAppear>
     </div>
   </AnimatedAppear>
 </template>
@@ -1037,6 +1043,7 @@ watch(
 .collection-panel {
   min-height: 0;
   padding: var(--layout-card-padding);
+  padding-top: calc(var(--layout-card-padding) + 8px);
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--bg-surface);
@@ -1106,9 +1113,10 @@ watch(
 
 .history-chip.active,
 .source-chip.active {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  color: var(--text-main) !important;
+  background: var(--button-surface-active-bg, rgba(255, 255, 255, 0.9)) !important;
+  border-color: var(--button-surface-active-border, var(--accent)) !important;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08) !important;
 }
 
 .collection-list {
@@ -1118,7 +1126,7 @@ watch(
   grid-auto-rows: min-content;
   gap: var(--space-2);
   overflow: auto;
-  padding: var(--space-1) var(--space-1) var(--space-3) 0;
+  padding: var(--space-2) var(--space-1) var(--space-3) 0;
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.55) transparent;
 }

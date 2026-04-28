@@ -55,6 +55,31 @@
   --hover-play-button-offset: 10px;
 }
 
+/* 角标 - 默认隐藏，hover 时与播放按钮一同浮现 */
+.hover-play-button-count {
+  position: absolute;
+  top: var(--hover-play-button-offset);
+  right: var(--hover-play-button-offset);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.72), rgba(15, 23, 42, 0.44));
+  color: rgba(255, 255, 255, 0.96) !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.24s ease, transform 0.24s ease;
+  will-change: opacity, transform;
+  z-index: 3;
+}
+
 .hover-play-button-trigger:hover .hover-play-button,
 .hover-play-button-trigger:focus-within .hover-play-button,
 .hover-play-button-trigger:focus-visible .hover-play-button {
@@ -62,18 +87,17 @@
   transform: translateY(0) scale(1);
 }
 
-.hover-play-button-count,
-.hover-play-button-count-trigger {
-  transition: opacity 0.24s ease, transform 0.24s ease, filter 0.24s ease;
-  will-change: opacity, transform;
-}
-
 .hover-play-button-trigger:hover .hover-play-button-count,
 .hover-play-button-trigger:focus-within .hover-play-button-count,
-.hover-play-button-trigger:focus-visible .hover-play-button-count,
-.hover-play-button-count-trigger:hover,
-.hover-play-button-count-trigger:focus-within,
-.hover-play-button-count-trigger:focus-visible {
-  opacity: 0;
-  transform: translateY(-8px);
+.hover-play-button-trigger:focus-visible .hover-play-button-count {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+[data-glass="off"] .hover-play-button {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 var(--hover-play-button-shadow-y) var(--hover-play-button-shadow-blur) rgba(0, 0, 0, 0.3);
 }
