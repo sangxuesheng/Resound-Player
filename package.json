@@ -7,7 +7,7 @@
   "scripts": {
     "dev:web": "vite",
     "dev:api": "node node_modules/@neteasecloudmusicapienhanced/api/app.js",
-    "dev:web:full": "concurrently -k \"PORT=38761 npm run dev:api\" \"VITE_API_PROXY_TARGET=http://127.0.0.1:38761 npm run dev:web\"",
+    "dev:web:full": "concurrently -k \"PORT=38761 npm run dev:api\" \"npm run dev:unblock\" \"npm run dev:unblock-match\" \"VITE_API_PROXY_TARGET=http://127.0.0.1:38761 npm run dev:web\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && electron .",
     "dev:desktop": "concurrently -k \"npm run dev:renderer\" \"npm run dev:electron\"",
@@ -28,7 +28,9 @@
     "pack:mac": "node scripts/build-mac.mjs dir",
     "check:animated-rhythm": "node scripts/check-animated-rhythm.mjs",
     "fix:animated-rhythm": "node scripts/check-animated-rhythm.mjs --fix",
-    "start": "electron ."
+    "start": "electron .",
+    "dev:unblock": "ENABLE_FLAC=true node node_modules/@unblockneteasemusic/server/app.js -p 38762 -o kugou migu bilibili -s",
+    "dev:unblock-match": "node server/unblock-match-server.mjs"
   },
   "dependencies": {
     "@neteasecloudmusicapienhanced/api": "^4.31.0",

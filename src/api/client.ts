@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-const ncmProxy = import.meta.env.VITE_NCM_PROXY;
+const UNBLOCK_PROXY = import.meta.env.VITE_NCM_PROXY || 'http://127.0.0.1:38762';
+
+// 运行时由 uiStore.setUnblockEnabled() 设置，控制 apiClient 是否添加 proxy 参数
+let _unblockEnabled = true;
+export function setUnblockProxyEnabled(enabled: boolean) {
+  _unblockEnabled = enabled;
+}
+export function isUnblockProxyEnabled() {
+  return _unblockEnabled;
+}
 
 export function getResolvedApiBaseUrl() {
   // Electron: 优先使用 preload 注入的动态端口
@@ -16,16 +25,21 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
+const UNBLOCK_ENDPOINTS = ['/song/url', '/song/url/v1'];
+
 apiClient.interceptors.request.use((config) => {
-  if (!ncmProxy) {
+  if (!_unblockEnabled) {
     return config;
   }
-
+  const url = config.url || '';
+  const matches = UNBLOCK_ENDPOINTS.some((ep) => url.includes(ep));
+  if (!matches) {
+    return config;
+  }
   config.params = {
     ...(config.params || {}),
-    proxy: ncmProxy,
+    proxy: UNBLOCK_PROXY,
   };
-
   return config;
 });
 

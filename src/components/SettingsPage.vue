@@ -189,6 +189,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
       items: [
         { key: 'autoplay', label: '自动播放下一首', desc: '当前歌曲结束后自动切换到下一首', type: 'switch' },
         { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'] },
+        { key: 'unblock', label: '音源替换', desc: '启用后自动从酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
         { key: 'playMode', label: '默认播放模式', desc: '循环/单曲/随机播放策略', type: 'select', options: ['列表循环', '单曲循环', '随机播放'] },
         { key: 'playbackRate', label: '播放速度', desc: '影响底部栏与全屏页播放速度', type: 'select', options: ['0.75x', '1.0x', '1.25x', '1.5x'] },
         { key: 'crossfade', label: '淡入淡出时长', desc: '控制切歌时过渡顺滑程度', type: 'range', min: 0, max: 12 },
@@ -261,6 +262,7 @@ const currentGroups = computed(() => {
 });
 
 const switchState = reactive<Record<string, boolean>>({
+  unblock: uiStore.unblockEnabled,
   autoplay: playerStore.autoplayNext,
   liquidGlass: uiStore.liquidGlassEnabled,
   compact: false,

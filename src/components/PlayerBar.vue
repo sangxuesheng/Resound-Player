@@ -6,6 +6,7 @@
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
           <span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span>
+          <span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span>
         </div>
         <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist">{{ artistText }}</AnimatedAppear>
       </div>
@@ -113,6 +114,7 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-vue-next';
+import { uiStore } from '../stores/ui';
 import { playerStore } from '../stores/player';
 import { getSongUrlV1, toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { userStore } from '../stores/user';
@@ -244,6 +246,12 @@ const artistText = computed(() => {
   return ar.map((a) => a.name).join('/');
 });
 
+const sourceLabel = computed(() => {
+  const s = playerStore.currentSource;
+  if (s === 'official' || !s) return '官方';
+  return s;
+});
+
 const qualityLabel = computed(() => {
   const br = playerStore.currentQualityBr;
   if (br >= 1920000) return 'Hi-Res';
@@ -336,6 +344,7 @@ function formatTime(sec: number) {
 .title { color: #111827; font-weight: 600; }
 .artist { color: #6b7280; font-size: 12px; }
 .quality-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
+.source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
 .center { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; }
 .controls-row { height: 42px; display: flex; align-items: center; gap: var(--space-2); }
 .progress-row { width: min(420px, 100%); display: grid; grid-template-columns: 44px 1fr 44px; gap: var(--space-2); align-items: center; }

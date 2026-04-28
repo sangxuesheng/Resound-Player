@@ -23,6 +23,11 @@ export default defineConfig(({ mode }) => {
           secure: false,
           rewrite: (p) => p.replace(/^\/api/, ''),
         },
+        '/unblock-api': {
+          target: 'http://127.0.0.1:38763',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/unblock-api/, ''),
+        },
       },
     },
     optimizeDeps: {

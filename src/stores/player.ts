@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
+import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
 
 type Artist = { name: string };
@@ -71,6 +72,7 @@ export const playerStore = reactive({
   currentTrack: null as Track | null,
   currentSongId: 0,
   currentQualityBr: 0,
+  currentSource: 'official' as string,
   isPlaying: false,
   currentTime: 0,
   duration: 0,
@@ -309,6 +311,27 @@ export const playerStore = reactive({
         // ignore url fetch failures and fall back to cached/attached url
       }
 
+      // 音源替换开启时，优先尝试 Unblock 匹配（无论官方是否返回 URL）
+      const { uiStore } = await import('../stores/ui');
+      if (uiStore.unblockEnabled) {
+        console.log('[unblock] trying match for track:', track.id, track.name);
+        try {
+          const result = await tryUnblockMatch(track.id, uiStore.unblockSources || ['kugou', 'migu', 'bilibili']);
+          if (result?.url) {
+            playUrl = result.url;
+            this.currentSource = result.source || 'unblock';
+            if (result.br > 0) this.currentQualityBr = result.br;
+            console.log('[unblock] matched:', result.source, 'br:', result.br, 'size:', result.size);
+          } else {
+            console.log('[unblock] no match result, fallback to official');
+          }
+        } catch (e) {
+          console.log('[unblock] match error:', e);
+        }
+      } else {
+        console.log('[unblock] disabled, using official source');
+      }
+
       const wasPlaying = this.isPlaying;
       if (typeof seekTo === 'number') {
         console.log('[quality] playTrack with seekTo:', seekTo, '| wasPlaying:', wasPlaying, '| level:', this.defaultQuality);
@@ -543,6 +566,10 @@ export const playerStore = reactive({
     this.playbackRate = r;
     this.audio.playbackRate = r;
     this.persist();
+  },
+
+  setCurrentSource(source: string) {
+    this.currentSource = source || 'official';
   },
 
   setDefaultQuality(quality: '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带') {

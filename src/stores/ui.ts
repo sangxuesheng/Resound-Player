@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { searchMusicDefault } from '../api/music';
+import { setUnblockProxyEnabled } from '../api/client';
 
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type ResolvedTheme = 'light' | 'dark';
@@ -7,6 +8,8 @@ type AccentMode = '绿色' | '蓝色' | '紫色' | '橙色' | '自定义';
 
 const STORAGE_KEY = 'tm_theme_mode';
 const GLASS_KEY = 'tm_liquid_glass';
+const UNBLOCK_KEY = 'tm_unblock_enabled';
+const UNBLOCK_SRC_KEY = 'tm_unblock_sources';
 const ACCENT_KEY = 'tm_accent_mode';
 const ACCENT_COLOR_KEY = 'tm_accent_custom_color';
 let mediaQuery: MediaQueryList | null = null;
@@ -71,6 +74,8 @@ export const uiStore = reactive({
   accentMode: '绿色' as AccentMode,
   accentCustomColor: '#22c55e',
   liquidGlassEnabled: true,
+  unblockEnabled: true,
+  unblockSources: ['kugou', 'migu', 'bilibili'],
   searchKeyword: '',
   searchType: 1,
   defaultSearchHint: '',
@@ -86,6 +91,11 @@ export const uiStore = reactive({
     this.accentMode = savedAccent;
     this.accentCustomColor = normalizeHexColor(savedAccentColor);
     this.liquidGlassEnabled = savedGlass === null ? true : savedGlass === '1';
+    const savedUnblock = localStorage.getItem(UNBLOCK_KEY);
+    const savedUnblockSources = localStorage.getItem(UNBLOCK_SRC_KEY);
+    this.unblockEnabled = savedUnblock === null ? true : savedUnblock === '1';
+    setUnblockProxyEnabled(this.unblockEnabled);
+    try { this.unblockSources = savedUnblockSources ? JSON.parse(savedUnblockSources) : ['kugou', 'migu', 'bilibili']; } catch { this.unblockSources = ['kugou', 'migu', 'bilibili']; }
 
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
@@ -124,6 +134,15 @@ export const uiStore = reactive({
     if (this.accentMode === '自定义') {
       applyAccentToDom('自定义', next);
     }
+  },
+  setUnblockEnabled(enabled: boolean) {
+    this.unblockEnabled = enabled;
+    localStorage.setItem(UNBLOCK_KEY, enabled ? '1' : '0');
+    setUnblockProxyEnabled(enabled);
+  },
+  setUnblockSources(sources: string[]) {
+    this.unblockSources = sources;
+    localStorage.setItem(UNBLOCK_SRC_KEY, JSON.stringify(sources));
   },
   setLiquidGlass(enabled: boolean) {
     this.liquidGlassEnabled = enabled;
