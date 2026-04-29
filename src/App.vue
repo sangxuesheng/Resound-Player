@@ -56,8 +56,10 @@
             v-else-if="activePage === 'artist-detail'"
             :artist-id="activeArtistId"
             :back-label="artistBackLabel"
+            :initial-tab="artistActiveTabState"
+            @update:active-tab="artistActiveTabState = $event"
             @back="backToArtist"
-            @open-album-detail="(albumId) => openAlbumDetail(albumId, 'artist-detail')"
+            @open-album-detail="(albumId, tab) => { artistActiveTabState = tab || 'songs'; openAlbumDetail(albumId, 'artist-detail'); }"
             @open-artist="openArtistDetail($event, 'artist-detail')"
             @open-mv-player="openMvFromSearch"
           />
@@ -177,6 +179,7 @@ const activePage = ref('home');
 const activePlaylistId = ref(0);
 const activeAlbumId = ref(0);
 const activeArtistId = ref(0);
+const artistActiveTabState = ref('songs');
 const activeUserId = ref(0);
 const activeRankId = ref(0);
 const activeMvItem = ref<any>(null);

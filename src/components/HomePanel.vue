@@ -1554,7 +1554,7 @@ async function playLatestSong(index: number) {
 .home-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-auto-rows: var(--row-h); gap: var(--gap); }
 .card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); padding-top: calc(var(--layout-card-padding) + 10px); overflow: hidden; }
 .card.list,
-.card.albums { overflow-y: auto; overflow-x: hidden; padding: 10px 2px; margin: -10px -2px; }
+.card.albums { overflow-y: auto; overflow-x: hidden; }
 .card.list::-webkit-scrollbar,
 .card.albums::-webkit-scrollbar { width: 0; height: 0; }
 .card.list,

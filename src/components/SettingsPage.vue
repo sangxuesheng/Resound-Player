@@ -53,7 +53,7 @@
                 :key="src.key"
                 class="source-row"
               >
-                <span class="source-index">{{ srcIdx + 1 }}</span>
+                <span class="source-index" :style="{ backgroundColor: src.color + '22', color: src.color }">{{ srcIdx + 1 }}</span>
                 <span class="source-name">{{ src.label }}</span>
                 <div class="source-arrows">
                   <button
@@ -184,6 +184,7 @@ import FancySwitch from './ui/FancySwitch.vue';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
+import { getSourceMeta } from '../config/musicSources';
 
 type SettingItem = {
   key: string;
@@ -353,21 +354,13 @@ const inputState = reactive<Record<string, string>>({
 });
 
 // --- Source order ---
-const SOURCE_LABELS: Record<string, string> = {
-  bodian: '波点音乐',
-  kugou: '酷狗音乐',
-  kuwo: '酷我音乐',
-  migu: '咪咕音乐',
-  qq: 'QQ音乐',
-  bilibili: 'B站',
-};
 
 const sourceOrder = computed({
   get: () =>
-    uiStore.unblockSources.map((key) => ({
-      key,
-      label: SOURCE_LABELS[key] || key,
-    })),
+    uiStore.unblockSources.map((key) => {
+      const meta = getSourceMeta(key);
+      return { key, label: meta?.label || key, color: meta?.color || '#888' };
+    }),
   set: (value) => {
     uiStore.setUnblockSources(value.map((s) => s.key));
   },

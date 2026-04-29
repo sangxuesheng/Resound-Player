@@ -103,7 +103,7 @@
         </AnimatedAppear>
 
         <AnimatedAppear v-else-if="activeTab === 'albums'" tag="div" variant="content" rhythm="list" class-name="album-grid">
-          <AnimatedAppear v-for="(album, idx) in albums" :key="album.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card album-card" type="button" @click="emit('open-album-detail', Number(album.id || 0))">
+          <AnimatedAppear v-for="(album, idx) in albums" :key="album.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card album-card" type="button" @click="emit('open-album-detail', Number(album.id || 0), activeTab)">
             <img v-if="resolveAlbumCover(album)" class="entity-cover cover-image" :src="resolveAlbumCover(album)" :alt="album.name || '专辑封面'" loading="lazy" />
             <div v-else class="entity-cover album-fallback">AL</div>
             <div class="entity-main">
@@ -181,18 +181,21 @@ const props = withDefaults(
     artistId: number;
     backLabel?: string;
     scrollHostSelector?: string;
+    initialTab?: string;
   }>(),
   {
     backLabel: '返回搜索结果',
     scrollHostSelector: '.content',
+    initialTab: 'songs',
   },
 );
 
 const emit = defineEmits<{
   (e: 'back'): void;
-  (e: 'open-album-detail', albumId: number): void;
+  (e: 'open-album-detail', albumId: number, activeTab?: string): void;
   (e: 'open-artist', artist: any): void;
   (e: 'open-mv-player', item: any): void;
+  (e: 'update:active-tab', tab: string): void;
 }>();
 
 const loading = ref(false);
@@ -203,7 +206,10 @@ const albums = ref<any[]>([]);
 const mvs = ref<any[]>([]);
 const bio = ref<any>(null);
 const isDescriptionExpanded = ref(false);
-const activeTab = ref<'songs' | 'albums' | 'mvs' | 'bio'>('songs');
+const activeTab = computed({
+  get: () => (props.initialTab || 'songs') as 'songs' | 'albums' | 'mvs' | 'bio',
+  set: (v) => emit('update:active-tab', v),
+});
 const tabs = [
   { key: 'songs', label: '热门歌曲' },
   { key: 'albums', label: '专辑' },
@@ -218,9 +224,9 @@ const shellStyle = computed<Record<string, string>>(() => {
 });
 const artistAreaText = computed(() => artist.value?.area ? `地区：${artist.value.area}` : '歌手详情');
 const artistDescriptionPreview = computed(() => {
-  const introduction = Array.isArray(bio.value?.introduction) ? bio.value.introduction[0]?.ti || bio.value.introduction[0]?.txt : '';
   const brief = bio.value?.briefDesc || artist.value?.briefDesc || '';
-  return (introduction || brief || '这里将展示歌手简介、代表作品与创作风格。').trim();
+  const firstBlock = Array.isArray(bio.value?.introduction) ? bio.value.introduction[0]?.txt || '' : '';
+  return (brief || firstBlock || '这里将展示歌手简介、代表作品与创作风格。').trim();
 });
 const shouldShowDescriptionToggle = computed(() => artistDescriptionPreview.value.length > DESC_COLLAPSE_THRESHOLD);
 const bioBlocks = computed(() => {
@@ -738,6 +744,7 @@ watch(
 
 :deep(.playlist-detail-header-wrap .hero-title-shell) {
   min-width: 0;
+  max-width: 100%;
 }
 
 :deep(.playlist-detail-header-wrap .hero-meta-shell) {
@@ -798,15 +805,13 @@ watch(
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
   width: 100%;
   min-height: 36px;
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell) {
+  flex: 1;
   min-width: 0;
-  flex: 1 1 auto;
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell .title) {
@@ -814,9 +819,6 @@ watch(
   font-size: 24px;
   line-height: 1.2;
   letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 :deep(.playlist-detail-header-wrap.is-sticky-header .hero-meta-shell) {
