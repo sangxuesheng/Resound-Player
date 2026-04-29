@@ -33,6 +33,7 @@
     "dev:unblock-match": "node server/unblock-match-server.mjs"
   },
   "dependencies": {
+    "@applemusic-like-lyrics/lyric": "^1.0.0",
     "@neteasecloudmusicapienhanced/api": "^4.31.0",
     "axios": "^1.8.2",
     "lucide-vue-next": "^0.507.0",

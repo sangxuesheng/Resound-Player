@@ -80,7 +80,18 @@ const server = http.createServer(async (req, res) => {
   res.end();
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, '127.0.0.1', async () => {
   console.log(`[unblock-match] server running on http://127.0.0.1:${PORT}`);
   console.log(`[unblock-match] default sources: ${global.source.join(',')}`);
+  // 预初始化：加载匹配模块 + 预热 DNS，避免首次匹配延迟
+  try {
+    const preload = await import('@unblockneteasemusic/server');
+    console.log('[unblock-match] preload: module ready');
+    if (typeof preload.default === 'function') {
+      await preload.default(186016, global.source).catch(() => {});
+      console.log('[unblock-match] preload: warmup done');
+    }
+  } catch (e) {
+    console.log('[unblock-match] preload skipped:', e.message);
+  }
 });

@@ -244,14 +244,10 @@ const artistText = computed(() => {
   return ar.map((a) => a.name).join('/');
 });
 
-const SOURCE_LABELS: Record<string, string> = {
-  official: '官方', bodian: '波点', kugou: '酷狗',
-  kuwo: '酷我', migu: '咪咕', qq: 'QQ', bilibili: 'B站',
-};
 const sourceLabel = computed(() => {
   const s = playerStore.currentSource;
   if (s === 'official' || !s) return '官方';
-  return SOURCE_LABELS[s] || s;
+  return s;
 });
 
 const qualityLabel = computed(() => {
@@ -346,7 +342,7 @@ function formatTime(sec: number) {
 .title { color: #111827; font-weight: 600; }
 .artist { color: #6b7280; font-size: 12px; }
 .quality-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
-.source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
+.source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; margin-left: 4px; }
 .center { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; }
 .controls-row { height: 42px; display: flex; align-items: center; gap: var(--space-2); }
 .progress-row { width: min(420px, 100%); display: grid; grid-template-columns: 44px 1fr 44px; gap: var(--space-2); align-items: center; }

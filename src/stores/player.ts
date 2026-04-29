@@ -356,11 +356,22 @@ export const playerStore = reactive({
       let playUrl = track.url || '';
       // 直连获取 URL + fee（绕过 proxy 拦截器，不重复调用）
 
+      // 并行：fee 探测 + uiStore 导入 + 音源匹配（三者同时发起）
+      const nocookie = userStore.loginCookie || undefined;
+      const level = toApiLevel(this.defaultQuality);
+      const qs = `id=${track.id}&level=${level}${nocookie ? '&cookie=' + encodeURIComponent(nocookie) : ''}`;
+      const feePromise = fetch(`/api/song/url/v1?${qs}`);
+      const uiImport = import("../stores/ui");
+      const cached = getCache(track.id);
+      const { uiStore } = await uiImport;
+      const matchPromise = (!cached && uiStore.unblockEnabled)
+        ? tryUnblockMatch(track.id, uiStore.unblockSources)
+        : null;
+
+      // 1. 先等 fee 结果
       let isFreePlayable = false;
       try {
-        const nocookie = userStore.loginCookie || undefined;
-        const level = toApiLevel(this.defaultQuality);
-        const directRes = await fetch(`/api/song/url/v1?id=${track.id}&level=${level}${nocookie ? '&cookie=' + encodeURIComponent(nocookie) : ''}`);
+        const directRes = await feePromise;
         const directData = await directRes.json();
         const officialItem = Array.isArray(directData?.data) ? directData.data[0] : null;
         const officialCode = Number(officialItem?.code || 0);
@@ -368,32 +379,26 @@ export const playerStore = reactive({
         if (officialItem?.url) playUrl = officialItem.url;
         if (officialItem?.br > 0) this.currentQualityBr = officialItem.br;
         const hasTrial = Boolean(officialItem?.freeTrialInfo);
-        // fee: 0=免费, 1=VIP, 4=购买专辑, 8=低音质免费(非会员可播)
         const isFeeFree = fee === 0 || fee === 8;
         isFreePlayable = officialCode === 200 && Boolean(playUrl) && isFeeFree && !hasTrial;
         console.log('[debug] direct fee:', { fee, hasTrial, officialCode, hasUrl: Boolean(playUrl) });
       } catch (e) {
-        console.warn('[debug] direct check failed, fallback to apiClient result:', e);
-
+        console.warn('[debug] direct check failed:', e);
       }
 
-      // 音源替换（优先读缓存）
-      const { uiStore } = await import("../stores/ui");
-      // 音源替换（缓存命中秒播；未命中则阻塞等待匹配，Promise.any 竞速所有源）
-      if (uiStore.unblockEnabled && !isFreePlayable) {
-        const cached = getCache(track.id);
-        if (cached) {
-          playUrl = cached.url;
-          this.currentSource = cached.source;
-          if (cached.br > 0) this.currentQualityBr = cached.br;
-        } else {
-          const result = await tryUnblockMatch(track.id, uiStore.unblockSources);
-          if (result?.url) {
-            playUrl = result.url;
-            this.currentSource = result.source || 'unblock';
-            if (result.br > 0) this.currentQualityBr = result.br;
-            setCache(track.id, { url: result.url, source: result.source || 'unblock', br: result.br || 0, size: result.size || 0, songName: track.name });
-          }
+      // 2. 缓存命中 - 直接使用
+      if (cached) {
+        playUrl = cached.url;
+        this.currentSource = cached.source;
+        if (cached.br > 0) this.currentQualityBr = cached.br;
+      } else if (matchPromise && !isFreePlayable) {
+        // 3. 付费歌曲 - 等待匹配结果
+        const result = await matchPromise;
+        if (result?.url) {
+          playUrl = result.url;
+          this.currentSource = result.source || 'unblock';
+          if (result.br > 0) this.currentQualityBr = result.br;
+          setCache(track.id, { url: result.url, source: result.source || 'unblock', br: result.br || 0, size: result.size || 0, songName: track.name });
         }
       } else {
         this.currentSource = "official";
