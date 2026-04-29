@@ -2,6 +2,7 @@ import { reactive } from 'vue';
 import { getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
 import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
+import { hydrateCache, getCache, setCache } from './unblock-cache';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
@@ -97,6 +98,7 @@ export const playerStore = reactive({
   defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
 
   init() {
+    hydrateCache();
     this.audio.volume = this.volume;
 
     this.audio.ontimeupdate = () => {
@@ -124,8 +126,13 @@ export const playerStore = reactive({
   },
 
   persist() {
+    const playlist = this.trimPlaylistForStorage();
+    const defaultPlaylist = Array.isArray(this.defaultPlaylist) ? this.defaultPlaylist.slice(0, 50).map((t: any) =>
+      t ? { id: t.id, name: t.name, ar: t.ar?.slice(0, 3) || [], al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined } : t
+    ) : [];
+    const personalFmTrackIds = this.personalFmTrackIds.slice(0, 200);
     const payload = {
-      playlist: this.playlist,
+      playlist,
       currentIndex: this.currentIndex,
       volume: this.volume,
       muted: this.muted,
@@ -138,13 +145,54 @@ export const playerStore = reactive({
       themePrimary: this.themePrimary,
       themeMode: this.themeMode,
       isDarkMode: this.isDarkMode,
-      personalFmTrackIds: this.personalFmTrackIds,
+      personalFmTrackIds,
       personalFmHasMore: this.personalFmHasMore,
-      defaultPlaylist: this.defaultPlaylist,
+      defaultPlaylist,
     };
-    const json = JSON.stringify(payload);
-    localStorage.setItem(PLAYER_STORAGE_KEY, json);
+    try {
+      const json = JSON.stringify(payload);
+      localStorage.setItem(PLAYER_STORAGE_KEY, json);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        console.warn('[player] quota exceeded, trimming aggressively');
+        payload.playlist = this.trimPlaylistForStorage(10);
+        payload.defaultPlaylist = [];
+        payload.personalFmTrackIds = [];
+        try {
+          const json = JSON.stringify(payload);
+          localStorage.setItem(PLAYER_STORAGE_KEY, json);
+        } catch {
+          try {
+            localStorage.removeItem(PLAYER_STORAGE_KEY);
+            localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify({ ...payload, playlist: [], defaultPlaylist: [] }));
+          } catch {}
+        }
+      }
+    }
     console.debug('[player] persist saved, defaultQuality:', payload.defaultQuality);
+  },
+
+  trimPlaylistForStorage(maxEntries = 50) {
+    if (this.playlist.length <= maxEntries) {
+      return this.playlist.map((t) => ({
+        id: t.id,
+        name: t.name,
+        ar: t.ar?.slice(0, 3) || [],
+        al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined,
+        source: t.source,
+        podcast: t.podcast,
+      }));
+    }
+    const start = Math.max(0, this.currentIndex - 10);
+    const trimmed = this.playlist.slice(start, start + maxEntries);
+    return trimmed.map((t) => ({
+      id: t.id,
+      name: t.name,
+      ar: t.ar?.slice(0, 3) || [],
+      al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined,
+      source: t.source,
+      podcast: t.podcast,
+    }));
   },
 
   hydrate() {
@@ -299,65 +347,75 @@ export const playerStore = reactive({
     this.loading = true;
     try {
       let playUrl = track.url || '';
+      // 直连获取 URL + fee（绕过 proxy 拦截器，不重复调用）
+
+      let isFreePlayable = false;
       try {
+        const nocookie = userStore.loginCookie || undefined;
         const level = toApiLevel(this.defaultQuality);
-        const cookie = userStore.loginCookie || undefined;
-        const { data: urlRes } = await getSongUrlV1(track.id, level, cookie);
-        const results = Array.isArray(urlRes?.data) ? urlRes.data : [];
-        playUrl = results[0]?.url || playUrl;
-        const br = Number(results[0]?.br || 0);
-        if (br > 0) this.currentQualityBr = br;
-      } catch {
-        // ignore url fetch failures and fall back to cached/attached url
+        const directRes = await fetch(`/api/song/url/v1?id=${track.id}&level=${level}${nocookie ? '&cookie=' + encodeURIComponent(nocookie) : ''}`);
+        const directData = await directRes.json();
+        const officialItem = Array.isArray(directData?.data) ? directData.data[0] : null;
+        const officialCode = Number(officialItem?.code || 0);
+        const fee = Number(officialItem?.fee ?? 0);
+        if (officialItem?.url) playUrl = officialItem.url;
+        if (officialItem?.br > 0) this.currentQualityBr = officialItem.br;
+        const hasTrial = Boolean(officialItem?.freeTrialInfo);
+        // fee: 0=免费, 1=VIP, 4=购买专辑, 8=低音质免费(非会员可播)
+        const isFeeFree = fee === 0 || fee === 8;
+        isFreePlayable = officialCode === 200 && Boolean(playUrl) && isFeeFree && !hasTrial;
+        console.log('[debug] direct fee:', { fee, hasTrial, officialCode, hasUrl: Boolean(playUrl) });
+      } catch (e) {
+        console.warn('[debug] direct check failed, fallback to apiClient result:', e);
+
       }
 
-      // 音源替换开启时，优先尝试 Unblock 匹配（无论官方是否返回 URL）
-      const { uiStore } = await import('../stores/ui');
-      if (uiStore.unblockEnabled) {
-        console.log('[unblock] trying match for track:', track.id, track.name);
-        try {
-          const result = await tryUnblockMatch(track.id, uiStore.unblockSources || ['kugou', 'migu', 'bilibili']);
+      // 音源替换（优先读缓存）
+      const { uiStore } = await import("../stores/ui");
+      // 音源替换（缓存命中秒播；未命中则阻塞等待匹配，Promise.any 竞速所有源）
+      if (uiStore.unblockEnabled && !isFreePlayable) {
+        const cached = getCache(track.id);
+        if (cached) {
+          playUrl = cached.url;
+          this.currentSource = cached.source;
+          if (cached.br > 0) this.currentQualityBr = cached.br;
+        } else {
+          const result = await tryUnblockMatch(track.id, uiStore.unblockSources);
           if (result?.url) {
             playUrl = result.url;
             this.currentSource = result.source || 'unblock';
             if (result.br > 0) this.currentQualityBr = result.br;
-            console.log('[unblock] matched:', result.source, 'br:', result.br, 'size:', result.size);
-          } else {
-            console.log('[unblock] no match result, fallback to official');
+            setCache(track.id, { url: result.url, source: result.source || 'unblock', br: result.br || 0, size: result.size || 0, songName: track.name });
           }
-        } catch (e) {
-          console.log('[unblock] match error:', e);
         }
       } else {
-        console.log('[unblock] disabled, using official source');
+        this.currentSource = "official";
       }
 
       const wasPlaying = this.isPlaying;
       if (typeof seekTo === 'number') {
         console.log('[quality] playTrack with seekTo:', seekTo, '| wasPlaying:', wasPlaying, '| level:', this.defaultQuality);
       }
-      let merged = track;
-      try {
-        const { data: detailRes } = await getSongDetail(track.id);
-        const detail = detailRes?.songs?.[0];
-        if (detail) {
-          const normalizedDetail = formatTrack(detail);
-          merged = {
-            ...normalizedDetail,
-            name: track.name || normalizedDetail.name,
-            ar: track.ar?.length ? track.ar : normalizedDetail.ar,
-            al: track.al?.picUrl || track.al?.name ? track.al : normalizedDetail.al,
-            url: track.url || normalizedDetail.url,
-            source: track.source || normalizedDetail.source,
-            podcast: track.podcast || normalizedDetail.podcast,
-          };
-        }
-      } catch {
-        // cloud tracks may not have /song/detail support in this environment
+      // 背景获取歌曲详情，不阻塞播放
+      if (track.id) {
+        getSongDetail(track.id).then(res => {
+          const detail = res?.data?.songs?.[0];
+          if (detail && this.currentSongId === track.id) {
+            const n = formatTrack(detail);
+            this.currentTrack = {
+              ...n, name: track.name || n.name,
+              ar: track.ar?.length ? track.ar : n.ar,
+              al: track.al?.picUrl || track.al?.name ? track.al : n.al,
+              url: track.url || n.url, source: track.source || n.source,
+              podcast: track.podcast || n.podcast,
+            };
+          }
+        }).catch(() => {});
       }
 
-      this.currentTrack = merged;
-      this.currentSongId = Number(merged?.id || 0);
+      this.currentTrack = track;
+      this.currentSongId = Number(track.id || 0);
+	console.log("[playback] source:", this.currentSource, "| br:", this.currentQualityBr, "| id:", this.currentSongId, "| song:", track.name);
       if (!playUrl) {
           this.audio.removeAttribute('src');
         this.audio.load();
@@ -383,7 +441,7 @@ export const playerStore = reactive({
       }
 
       if (this.currentIndex === -1) {
-        const idx = this.playlist.findIndex((x) => x.id === merged.id);
+        const idx = this.playlist.findIndex((x) => x.id === this.currentSongId);
         this.currentIndex = idx;
       }
 

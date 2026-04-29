@@ -29,7 +29,7 @@
     "check:animated-rhythm": "node scripts/check-animated-rhythm.mjs",
     "fix:animated-rhythm": "node scripts/check-animated-rhythm.mjs --fix",
     "start": "electron .",
-    "dev:unblock": "ENABLE_FLAC=true node node_modules/@unblockneteasemusic/server/app.js -p 38762 -o kugou migu bilibili -s",
+    "dev:unblock": "ENABLE_FLAC=true node node_modules/@unblockneteasemusic/server/app.js -p 38762 -o bodian kugou migu qq bilibili -s",
     "dev:unblock-match": "node server/unblock-match-server.mjs"
   },
   "dependencies": {

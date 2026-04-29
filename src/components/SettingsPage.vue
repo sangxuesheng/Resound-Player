@@ -47,6 +47,36 @@
               <FancySwitch v-model="switchState[item.key]" />
             </div>
 
+            <div v-else-if="item.type === 'source-order'" class="source-order-wrap">
+              <div
+                v-for="(src, srcIdx) in sourceOrder"
+                :key="src.key"
+                class="source-row"
+              >
+                <span class="source-index">{{ srcIdx + 1 }}</span>
+                <span class="source-name">{{ src.label }}</span>
+                <div class="source-arrows">
+                  <button
+                    class="arrow-btn"
+                    :disabled="srcIdx === 0"
+                    @click="moveSource(srcIdx, -1)"
+                    aria-label="上移"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 10l4-4 4 4"/></svg>
+                  </button>
+                  <button
+                    class="arrow-btn"
+                    :disabled="srcIdx === sourceOrder.length - 1"
+                    @click="moveSource(srcIdx, 1)"
+                    aria-label="下移"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 6l4 4 4-4"/></svg>
+                  </button>
+                </div>
+              </div>
+              <p v-if="sourceOrderFeedback" class="source-order-feedback">{{ sourceOrderFeedback }}</p>
+            </div>
+
             <DropdownSelect
               v-else-if="item.type === 'select'"
               v-model="selectState[item.key]"
@@ -159,7 +189,7 @@ type SettingItem = {
   key: string;
   label: string;
   desc?: string;
-  type: 'switch' | 'select' | 'range' | 'action' | 'input';
+  type: 'switch' | 'select' | 'range' | 'action' | 'input' | 'source-order';
   options?: string[];
   min?: number;
   max?: number;
@@ -189,7 +219,8 @@ const groupsMap: Record<string, SettingGroup[]> = {
       items: [
         { key: 'autoplay', label: '自动播放下一首', desc: '当前歌曲结束后自动切换到下一首', type: 'switch' },
         { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'] },
-        { key: 'unblock', label: '音源替换', desc: '启用后自动从酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
+        { key: 'unblock', label: '音源替换', desc: '启用后自动从波点/酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
+        { key: 'unblockSources', label: '音源优先级', desc: '按从上到下的顺序逐个尝试，第一个匹配成功的使用，全部失败则使用官方音源', type: 'source-order' },
         { key: 'playMode', label: '默认播放模式', desc: '循环/单曲/随机播放策略', type: 'select', options: ['列表循环', '单曲循环', '随机播放'] },
         { key: 'playbackRate', label: '播放速度', desc: '影响底部栏与全屏页播放速度', type: 'select', options: ['0.75x', '1.0x', '1.25x', '1.5x'] },
         { key: 'crossfade', label: '淡入淡出时长', desc: '控制切歌时过渡顺滑程度', type: 'range', min: 0, max: 12 },
@@ -250,6 +281,7 @@ const currentGroups = computed(() => {
       ...g,
       items: g.items.filter((item) => {
         if (item.key === 'accentCustomColor') return selectState.accent === '自定义';
+        if (item.key === 'unblockSources') return switchState.unblock;
         if (item.key === 'logout') return userStore.isLogin;
         if (item.key === 'cookieEditor') return userStore.isLogin;
         if (!userStore.isLogin && activeTab.value === 'account') {
@@ -320,6 +352,47 @@ const inputState = reactive<Record<string, string>>({
   cookieEditor: userStore.loginCookie || '',
 });
 
+// --- Source order ---
+const SOURCE_LABELS: Record<string, string> = {
+  bodian: '波点音乐',
+  kugou: '酷狗音乐',
+  kuwo: '酷我音乐',
+  migu: '咪咕音乐',
+  qq: 'QQ音乐',
+  bilibili: 'B站',
+};
+
+const sourceOrder = computed({
+  get: () =>
+    uiStore.unblockSources.map((key) => ({
+      key,
+      label: SOURCE_LABELS[key] || key,
+    })),
+  set: (value) => {
+    uiStore.setUnblockSources(value.map((s) => s.key));
+  },
+});
+
+const sourceOrderFeedback = ref('');
+let sourceOrderFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+function showSourceFeedback(message: string) {
+  sourceOrderFeedback.value = message;
+  if (sourceOrderFeedbackTimer) clearTimeout(sourceOrderFeedbackTimer);
+  sourceOrderFeedbackTimer = setTimeout(() => {
+    sourceOrderFeedback.value = '';
+  }, 4000);
+}
+
+function moveSource(index: number, direction: number) {
+  const list = [...sourceOrder.value];
+  const target = index + direction;
+  if (target < 0 || target >= list.length) return;
+  [list[index], list[target]] = [list[target], list[index]];
+  uiStore.setUnblockSources(list.map((s) => s.key));
+  showSourceFeedback('音源顺序已更新，播放下首歌曲时生效');
+}
+
 const homeWidgetLayout = [
   { id: 'tags', x: 0, y: 0, w: 8, h: 2, title: '分类模块', content: '首页分类标签区域' },
   { id: 'list', x: 0, y: 2, w: 8, h: 8, title: '热门音乐模块', content: '首页热门音乐列表区域' },
@@ -355,6 +428,14 @@ watch(
   () => switchState.liquidGlass,
   (enabled) => {
     uiStore.setLiquidGlass(Boolean(enabled));
+  },
+);
+
+watch(
+  () => switchState.unblock,
+  (enabled) => {
+    uiStore.setUnblockEnabled(Boolean(enabled));
+    showSourceFeedback(enabled ? '音源替换已开启' : '音源替换已关闭');
   },
 );
 
@@ -707,6 +788,82 @@ function onHomeLayoutSaved(payload: unknown) {
   color: var(--text-soft);
   min-width: 74px;
   text-transform: lowercase;
+}
+
+.source-order-feedback {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--accent);
+  text-align: center;
+  transition: opacity 0.3s ease;
+}
+
+.source-order-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.source-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 36px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-muted);
+}
+
+.source-index {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.source-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-main);
+}
+
+.source-arrows {
+  display: flex;
+  gap: 2px;
+}
+
+.arrow-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.arrow-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.arrow-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .toast {

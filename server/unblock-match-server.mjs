@@ -2,28 +2,45 @@ import http from 'http';
 
 const PORT = 38763;
 
+// FOLLOW_SOURCE_ORDER not set — uses Promise.any (race all sources, fastest wins)
+
+// Initialize global state required by the unblock server's match function
+global.source = (process.env.UNBLOCK_SOURCES || 'bodian,kugou,migu,qq,bilibili').split(',').filter(Boolean);
+global.proxy = process.env.UNBLOCK_PROXY_URL ? new URL(process.env.UNBLOCK_PROXY_URL) : null;
+global.cnrelay = process.env.UNBLOCK_CNRELAY || null;
+
 /**
  * @param {number} id - Netease song ID
  * @param {string[]} sources - Source priority list
- * @returns {Promise<{url:string|null, source:string|null, br:number, size:number}>}
+ * @returns {Promise<{url:string|null, source:string|null, br:number, size:number, errors:string[]}>}
  */
 async function matchSong(id, sources) {
+  const errors = [];
   try {
     const match = await import('@unblockneteasemusic/server');
-    const result = await match.default(id, sources || ['kugou', 'migu']);
+    const effectiveSources = sources?.length ? sources : global.source || ['kugou', 'kuwo', 'migu', 'qq'];
+    console.log(`[unblock-match] matching song ${id} with sources:`, effectiveSources);
+    const result = await match.default(id, effectiveSources);
+    if (result?.url) {
+      console.log(`[unblock-match] matched: ${result.source} br:${result.br} size:${result.size}`);
+    } else {
+      console.log(`[unblock-match] no match found for song ${id}`);
+    }
     return {
       url: result?.url || null,
       source: result?.source || null,
       br: result?.br || 0,
       size: result?.size || 0,
+      errors,
     };
-  } catch {
-    return { url: null, source: null, br: 0, size: 0 };
+  } catch (e) {
+    console.error(`[unblock-match] match error for song ${id}:`, e.message);
+    errors.push(e.message);
+    return { url: null, source: null, br: 0, size: 0, errors };
   }
 }
 
 const server = http.createServer(async (req, res) => {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -38,7 +55,7 @@ const server = http.createServer(async (req, res) => {
 
   if (path === '/match' && req.method === 'GET') {
     const id = Number(url.searchParams.get('id') || 0);
-    const sourcesParam = url.searchParams.get('sources') || 'kugou,migu,bilibili';
+    const sourcesParam = url.searchParams.get('sources') || 'bodian,kugou,migu,qq,bilibili';
     const sources = sourcesParam.split(',').filter(Boolean);
 
     if (!id) {
@@ -55,7 +72,7 @@ const server = http.createServer(async (req, res) => {
 
   if (path === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ ok: true }));
+    res.end(JSON.stringify({ ok: true, sources: global.source }));
     return;
   }
 
@@ -65,4 +82,5 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[unblock-match] server running on http://127.0.0.1:${PORT}`);
+  console.log(`[unblock-match] default sources: ${global.source.join(',')}`);
 });

@@ -5,10 +5,8 @@
       <div class="meta">
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-          <span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span>
-          <span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span>
         </div>
-        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist">{{ artistText }}</AnimatedAppear>
+        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist">{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></AnimatedAppear>
       </div>
     </AnimatedAppear>
 
@@ -246,10 +244,14 @@ const artistText = computed(() => {
   return ar.map((a) => a.name).join('/');
 });
 
+const SOURCE_LABELS: Record<string, string> = {
+  official: '官方', bodian: '波点', kugou: '酷狗',
+  kuwo: '酷我', migu: '咪咕', qq: 'QQ', bilibili: 'B站',
+};
 const sourceLabel = computed(() => {
   const s = playerStore.currentSource;
   if (s === 'official' || !s) return '官方';
-  return s;
+  return SOURCE_LABELS[s] || s;
 });
 
 const qualityLabel = computed(() => {
@@ -407,4 +409,5 @@ function formatTime(sec: number) {
 .quality-toast-fade-leave-active { transition: opacity 0.22s ease, transform 0.22s ease; }
 .quality-toast-fade-enter-from,
 .quality-toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
+
 </style>

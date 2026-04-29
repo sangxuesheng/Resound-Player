@@ -75,7 +75,7 @@ export const uiStore = reactive({
   accentCustomColor: '#22c55e',
   liquidGlassEnabled: true,
   unblockEnabled: true,
-  unblockSources: ['kugou', 'migu', 'bilibili'],
+  unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   searchKeyword: '',
   searchType: 1,
   defaultSearchHint: '',
@@ -95,7 +95,7 @@ export const uiStore = reactive({
     const savedUnblockSources = localStorage.getItem(UNBLOCK_SRC_KEY);
     this.unblockEnabled = savedUnblock === null ? true : savedUnblock === '1';
     setUnblockProxyEnabled(this.unblockEnabled);
-    try { this.unblockSources = savedUnblockSources ? JSON.parse(savedUnblockSources) : ['kugou', 'migu', 'bilibili']; } catch { this.unblockSources = ['kugou', 'migu', 'bilibili']; }
+    try { this.unblockSources = savedUnblockSources ? JSON.parse(savedUnblockSources) : ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; } catch { this.unblockSources = ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; }
 
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
