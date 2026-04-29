@@ -5,7 +5,7 @@
   --an-duration-slow: 460ms;
   --an-stagger-step: 48ms;
 
-  --image-hover-scale: 1.06;
+  --image-hover-scale: 1.05;
   --image-hover-saturate: 1.05;
   --image-hover-duration: var(--an-duration-base);
   --image-hover-ease: var(--an-ease);
@@ -210,67 +210,80 @@
     opacity 220ms var(--an-ease);
 }
 
-/* 明确声明的封面交互类，避免全局 img 误伤 */
+/* 封面交互放大效果：统一使用 --image-hover-scale */
 .hover-scale-image,
 img.cover,
-img[class*='cover'],
 img.song-cover,
 img.rank-cover,
 img.global-cover,
+img.featured-cover,
 img.language-cover,
 img.genre-cover,
 img.car-cover,
-img.featured-cover,
+img.curated-cover,
 img.detail-cover,
 img.hero-cover,
-img.entity-cover.cover-image {
+img.entity-cover.cover-image,
+img.album-cover,
+.playlist-card-cover-image {
   transform: scale(1);
   transition: transform var(--image-hover-duration) var(--image-hover-ease), filter var(--image-hover-duration) var(--image-hover-ease);
   transform-origin: center center;
   will-change: transform;
 }
 
+/* 封面元素：动画结束后不锁定 transform，让 hover 平滑过渡生效 */
+.hover-scale-image,
+.cover,
+.song-cover,
+.rank-cover,
+.global-cover,
+.featured-cover,
+.language-cover,
+.genre-cover,
+.car-cover,
+.curated-cover,
+.detail-cover,
+.hero-cover,
+img.entity-cover.cover-image,
+.album-cover,
+.playlist-card-cover-image {
+  animation-fill-mode: backwards;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .hover-scale-image:hover,
   .hover-scale-image:focus-visible,
-  img.cover:hover,
-  img.cover:focus-visible,
-  img[class*='cover']:hover,
-  img[class*='cover']:focus-visible,
+  .cover:hover,
+  .cover:focus-visible,
   img.song-cover:hover,
   img.song-cover:focus-visible,
+  .song-item:hover img.song-cover,
+  .song:hover .cover,
   img.rank-cover:hover,
   img.rank-cover:focus-visible,
   img.global-cover:hover,
   img.global-cover:focus-visible,
+  img.featured-cover:hover,
+  img.featured-cover:focus-visible,
   img.language-cover:hover,
   img.language-cover:focus-visible,
   img.genre-cover:hover,
   img.genre-cover:focus-visible,
   img.car-cover:hover,
   img.car-cover:focus-visible,
-  img.featured-cover:hover,
-  img.featured-cover:focus-visible,
+  img.curated-cover:hover,
+  img.curated-cover:focus-visible,
   img.detail-cover:hover,
   img.detail-cover:focus-visible,
   img.hero-cover:hover,
   img.hero-cover:focus-visible,
+  img.entity-cover.cover-image:focus-within,
   img.entity-cover.cover-image:hover,
-  img.entity-cover.cover-image:focus-visible,
-  .cover:hover img,
-  .cover:focus-within img,
-  .cover:hover img.cover,
-  .cover:focus-within img.cover,
-  .song-item:hover img.song-cover,
-  .song-item:focus-within img.song-cover,
-  .row:hover img.cover,
-  .row:focus-within img.cover,
-  .hero:hover img.hero-cover,
-  .hero:focus-within img.hero-cover,
-  .detail-head:hover img.detail-cover,
-  .detail-head:focus-within img.detail-cover,
-  .entity-card:hover img.entity-cover.cover-image,
-  .entity-card:focus-within img.entity-cover.cover-image {
+  img.album-cover:hover,
+  img.album-cover:focus-visible,
+  .playlist-card-cover-image:hover,
+  .playlist-card-cover-image:focus-visible {
     transform: scale(var(--image-hover-scale));
     filter: saturate(var(--image-hover-saturate));
   }
@@ -279,8 +292,7 @@ img.entity-cover.cover-image {
 /* 触屏设备点击反馈 */
 @media (hover: none) {
   .hover-scale-image:active,
-  img.cover:active,
-  img[class*='cover']:active,
+  .cover:active,
   img.song-cover:active,
   img.rank-cover:active,
   img.global-cover:active,
@@ -288,16 +300,11 @@ img.entity-cover.cover-image {
   img.genre-cover:active,
   img.car-cover:active,
   img.featured-cover:active,
+  img.curated-cover:active,
   img.detail-cover:active,
   img.hero-cover:active,
   img.entity-cover.cover-image:active,
-  .cover:active img,
-  .cover:active img.cover,
-  .song-item:active img.song-cover,
-  .row:active img.cover,
-  .hero:active img.hero-cover,
-  .detail-head:active img.detail-cover,
-  .entity-card:active img.entity-cover.cover-image {
+  img.album-cover:active {
     transform: scale(1.02);
   }
 }
@@ -323,6 +330,8 @@ img.entity-cover.cover-image {
   img.song-cover,
   img.song-cover:hover,
   img.song-cover:focus-visible,
+  .song-item:hover img.song-cover,
+  .song:hover .cover,
   img.song-cover:active,
   img.rank-cover,
   img.rank-cover:hover,

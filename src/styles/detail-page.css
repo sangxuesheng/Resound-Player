@@ -121,11 +121,6 @@
   isolation: isolate;
 }
 
-.hero-cover-trigger {
-  --hero-cover-scale: var(--image-hover-scale, 1.04);
-  --hero-cover-saturate: var(--image-hover-saturate, 1.04);
-}
-
 .cover {
   width: 269px;
   height: 269px;
@@ -133,38 +128,24 @@
   object-fit: cover;
   box-shadow: none;
   will-change: transform;
-  transform: translateZ(0) scale(1);
+  transform: var(--scroll-transform, scale(1));
   transform-origin: center center;
   backface-visibility: hidden;
   transition: transform 0.32s ease-out;
 }
 
-.hero-cover-image {
-  transition:
-    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
-    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
-}
-
 @media (hover: hover) and (pointer: fine) {
-  .hero-cover-trigger:hover .hero-cover-image,
-  .hero-cover-trigger:focus-visible .hero-cover-image,
-  .hero-cover-trigger:focus-within .hero-cover-image {
-    transform: translateZ(0) scale(var(--hero-cover-scale));
-    filter: saturate(var(--hero-cover-saturate));
+  .hero-media-shell:hover .cover,
+  .hero-media-shell:focus-within .cover {
+    animation-fill-mode: backwards;
+    transform: var(--scroll-transform, scale(1)) scale(var(--image-hover-scale, 1.05));
+    filter: saturate(var(--image-hover-saturate, 1.05));
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cover,
-  .hero-cover-image {
+  .cover {
     transition: none;
-  }
-
-  .hero-cover-trigger:hover .hero-cover-image,
-  .hero-cover-trigger:focus-visible .hero-cover-image,
-  .hero-cover-trigger:focus-within .hero-cover-image {
-    transform: translateZ(0) scale(1);
-    filter: none;
   }
 }
 
@@ -268,6 +249,7 @@
   padding: 10px 12px;
   border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   border-radius: 16px;
+  overflow: hidden;
 }
 
 .song-item:last-child {

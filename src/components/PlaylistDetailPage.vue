@@ -669,6 +669,7 @@ watch(
 .playlist-detail-page--embedded .song-item {
   padding-left: 0;
   padding-right: 0;
+  overflow: hidden;
 }
 
 .song-item--playing .song-cover {
@@ -841,8 +842,6 @@ watch(
 }
 
 :deep(.playlist-detail-header-wrap .cover) {
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
   filter: saturate(1) blur(0);
 }
 

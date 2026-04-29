@@ -142,7 +142,7 @@
         content-layout="flex"
       >
         <button v-for="artist in topArtists" :key="artist.id" class="artist-chip" @click="openArtistDetail(artist)">
-          <span class="artist-avatar" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
+          <span class="artist-avatar hover-scale-image" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
           <span class="artist-name">{{ artist.name }}</span>
         </button>
         <span
@@ -198,7 +198,7 @@
               :class="{ 'song-item--playing': Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0), playing: Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0) }"
               @dblclick="onSongRowDblClick($event, idx)"
             >
-              <AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" class-name="cover" :style="{ backgroundImage: `url(${song.al?.picUrl || ''})` }" />
+              <AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" class-name="cover hover-scale-image" :style="{ backgroundImage: `url(${song.al?.picUrl || ''})` }" />
               <div class="meta">
                 <div class="name">{{ song.name }}</div>
                 <div class="artist">

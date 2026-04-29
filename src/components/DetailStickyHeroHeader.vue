@@ -115,7 +115,7 @@ function updateProgress() {
   }
   if (coverImgEl) {
     coverImgEl.style.opacity = String(1 - progress);
-    coverImgEl.style.transform = `translate3d(${-14 * progress}px, ${-6 * progress}px, 0) scale(${1 - 0.3 * progress})`;
+    coverImgEl.style.setProperty('--scroll-transform', `translate3d(${-14 * progress}px, ${-6 * progress}px, 0) scale(${1 - 0.3 * progress})`);
     coverImgEl.style.filter = `saturate(${1 - 0.12 * progress}) blur(${6 * progress}px)`;
     coverImgEl.style.borderRadius = `${16 + 6 * progress}px`;
   }
