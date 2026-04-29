@@ -104,10 +104,6 @@
 
           <div class="right-zone">
             <div ref="lyricBoxRef" class="lyric-box">
-              <div class="lyric-headline">
-                <strong>歌词</strong>
-                <span>{{ lyricSourceText }}</span>
-              </div>
               <p v-if="!lyricLines.length" class="line">暂无歌词</p>
               <div
                 v-for="(line, idx) in lyricLines"
@@ -250,7 +246,6 @@ type LyricLine = {
 };
 
 const lyricLines = ref<LyricLine[]>([]);
-const lyricSourceText = ref('');
 const lyricBoxRef = ref<HTMLElement | null>(null);
 const lyricLineRefs = ref<HTMLElement[]>([]);
 const tickNow = ref(0);
@@ -544,9 +539,6 @@ watch(
 watch(
   () => [playerStore.currentTrack?.id, playerStore.currentTrack?.source, playerStore.currentTrack?.cloudSid],
   async ([id, source, cloudSid]) => {
-    lyricLines.value = [];
-    lyricLineRefs.value = [];
-    lyricSourceText.value = source === 'cloud' ? '云盘歌词' : '歌曲歌词';
     if (!id) return;
     try {
       const data = source === 'cloud' && cloudSid
@@ -686,7 +678,8 @@ async function playFromPopup(index: number) {
 
 function parseLyrics(payload: any): LyricLine[] {
   const yrcText = payload?.yrc?.lyric || '';
-  const lrcText = payload?.lrc?.lyric || '';
+  // 云盘歌词: lrc 是字符串；普通歌词: lrc 是 { lyric: "..." }
+  const lrcText = typeof payload?.lrc === 'string' ? payload.lrc : (payload?.lrc?.lyric || '');
   const tlyricText = payload?.tlyric?.lyric || '';
 
   const lrcLines = parseLrc(lrcText);
@@ -1053,14 +1046,6 @@ function parseYrc(yrc: string): LyricLine[] {
   border: 0;
   box-shadow: none;
   scroll-behavior: smooth;
-}
-.lyric-headline {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin: 0 0 var(--space-3);
-  color: rgba(255,255,255,0.86);
-  font-size: 13px;
 }
 .line-wrap {
   margin: var(--space-3) 0;

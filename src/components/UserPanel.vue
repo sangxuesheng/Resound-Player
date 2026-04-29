@@ -258,6 +258,8 @@ function normalizeCloudItem(item: any) {
     coverImgUrl,
     type: 'cloud',
     source: 'cloud',
+    cloudSid: Number(item.simpleSong?.id || source.id || id),
+    cloudOwnerId: Number(userStore.profile?.userId || 0),
   };
 }
 

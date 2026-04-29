@@ -6,7 +6,7 @@ import { hydrateCache, getCache, setCache } from './unblock-cache';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
-type TrackSource = 'song' | 'podcast';
+type TrackSource = 'song' | 'podcast' | 'cloud';
 type PodcastMeta = { rid?: number };
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type PersonalFmFetcher = () => Promise<any[]>;
@@ -21,6 +21,10 @@ export type Track = {
   podcast?: PodcastMeta;
   liked?: boolean;
   isLiked?: boolean;
+  // 云盘歌曲专用
+  cloudSid?: number;
+  cloudOwnerId?: number;
+  uid?: number;
 };
 
 const PLAYER_STORAGE_KEY = 'gm_player_state_v1';
@@ -32,10 +36,13 @@ function formatTrack(raw: any): Track {
     ar: raw.ar || raw.artists || [],
     al: raw.al || raw.album || {},
     url: raw.url,
-    source: raw.source === 'podcast' ? 'podcast' : 'song',
+    source: raw.source === 'podcast' ? 'podcast' : raw.source === 'cloud' ? 'cloud' : 'song',
     podcast: raw.podcast,
     liked: Boolean(raw.liked || raw.isLiked),
     isLiked: Boolean(raw.isLiked || raw.liked),
+    cloudSid: raw.cloudSid,
+    cloudOwnerId: raw.cloudOwnerId,
+    uid: raw.uid,
   };
 }
 
@@ -408,6 +415,9 @@ export const playerStore = reactive({
               al: track.al?.picUrl || track.al?.name ? track.al : n.al,
               url: track.url || n.url, source: track.source || n.source,
               podcast: track.podcast || n.podcast,
+              cloudSid: track.cloudSid || n.cloudSid,
+              cloudOwnerId: track.cloudOwnerId || n.cloudOwnerId,
+              uid: track.uid || n.uid,
             };
           }
         }).catch(() => {});
