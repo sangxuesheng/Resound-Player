@@ -8,6 +8,15 @@
       @click.self="playerStore.closeExpanded()"
     >
       <div class="cover-aura" :style="coverAuraStyle"></div>
+      <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
+      <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
+      <div v-show="showSoftGradient" class="soft-gradient-bg" :style="{ animationDuration: softGradientDuration + 's' }"></div>
+      <div v-show="showThreeScene" ref="threeSceneRef" class="three-scene-container"></div>
+      <div v-show="showPaper" ref="paperRef" class="paper-container"></div>
+      <div v-show="showMist" ref="mistRef" class="mist-container"></div>
+      <div v-show="showLoom" ref="loomRef" class="loom-container"></div>
+      <div v-show="showSilk" ref="silkRef" class="silk-container"></div>
+      <div v-show="showAurora" ref="auroraRef" class="aurora-container"></div>
       <section class="expanded-panel">
         <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
@@ -129,6 +138,13 @@ import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { lyricsSettings } from '../stores/lyricsSettings';
+import { useIridescence, type IridescenceConfig } from '../composables/useIridescence';
+import { useThreeScene } from '../composables/useThreeScene';
+import { usePaperShaders } from '../composables/usePaperShaders';
+import { useMistBackground } from '../composables/useMistBackground';
+import { useDigitalLoom } from '../composables/useDigitalLoom';
+import { useSilkBackground } from '../composables/useSilkBackground';
+import { useAuroraShader } from '../composables/useAuroraShader';
 import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
@@ -170,6 +186,63 @@ watch(() => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.cu
 const isSeeking = ref(false);
 const seekPreviewTime = ref(0);
 
+/* ---- custom background modes ---- */
+const iriContainerRef = ref<HTMLElement | null>(null);
+const showIridescence = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'iridescence');
+const showSoftGradient = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'soft-gradient');
+const softGradientDuration = computed(() => {
+  const speed = lyricsSettings.iriSpeed || 5;
+  return 12 - speed;
+});
+const threeSceneRef = ref<HTMLElement | null>(null);
+const showThreeScene = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'three-scene');
+const threeSceneActive = computed(() => showThreeScene.value && playerStore.expanded);
+useThreeScene(threeSceneRef, threeSceneActive);
+const paperRef = ref<HTMLElement | null>(null);
+const showPaper = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'paper-shaders');
+const paperActive = computed(() => showPaper.value && playerStore.expanded);
+const paperConfig = computed(() => ({
+  color1: lyricsSettings.iriColors?.[0] || '#3A29FF',
+  color2: lyricsSettings.iriColors?.[1] || '#FF94B4',
+  color3: lyricsSettings.iriColors?.[2] || '#FF3232',
+  color4: lyricsSettings.iriColors?.[3] || '#1a1a2e',
+  speed: (lyricsSettings.iriSpeed || 5) / 10,
+}));
+usePaperShaders(paperRef, paperConfig, paperActive);
+const mistRef = ref<HTMLElement | null>(null);
+const showMist = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'mist');
+const mistActive = computed(() => showMist.value && playerStore.expanded);
+useMistBackground(mistRef, mistActive);
+const loomRef = ref<HTMLElement | null>(null);
+const showLoom = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'digital-loom');
+const loomActive = computed(() => showLoom.value && playerStore.expanded);
+useDigitalLoom(loomRef, loomActive);
+const silkRef = ref<HTMLElement | null>(null);
+const showSilk = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'silk');
+const silkActive = computed(() => showSilk.value && playerStore.expanded);
+useSilkBackground(silkRef, silkActive);
+const auroraRef = ref<HTMLElement | null>(null);
+const showAurora = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'aurora');
+const auroraActive = computed(() => showAurora.value && playerStore.expanded);
+useAuroraShader(auroraRef, auroraActive);
+const iriConfig = computed((): IridescenceConfig => {
+  const toRgb = (hex: string) => { const h = (hex || '#3A29FF').replace('#',''); return [parseInt(h.substring(0,2),16)/255, parseInt(h.substring(2,4),16)/255, parseInt(h.substring(4,6),16)/255] as [number,number,number]; };
+  return {
+    color1: toRgb(lyricsSettings.iriColors?.[0]),
+    color2: toRgb(lyricsSettings.iriColors?.[1]),
+    color3: toRgb(lyricsSettings.iriColors?.[2]),
+    speed: (lyricsSettings.iriSpeed || 5) / 10,
+    amplitude: (lyricsSettings.iriScale || 5) / 10,
+  };
+});
+const iriActive = computed(() => showIridescence.value && playerStore.expanded);
+useIridescence(iriContainerRef, iriConfig, iriActive);
+
+const iriBlurStyle = computed(() => {
+  const px = ((lyricsSettings.iriBlur || 0) / 10) * 24;
+  return { backdropFilter: `blur(${px}px)`, WebkitBackdropFilter: `blur(${px}px)` };
+});
+
 const coverAuraStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
 /* settings-driven */
@@ -183,49 +256,38 @@ const panelBodyStyle = computed(() => {
 });
 
 const bgStyle = computed(() => {
-  const { bgMode, bgTheme, bgCustomMode, bgColor } = lyricsSettings;
-  if (bgMode === 'basic') {
-    if (bgTheme === 'light') return {
-      background: `linear-gradient(160deg, ${fade(palette.value.c1, 0.3)} 0%, ${fade(palette.value.c2, 0.2)} 42%, ${fade(palette.value.c4, 0.15)} 100%)`,
-      '--panel-bg': fade(palette.value.c1, 0.3), '--panel-bg-soft': fade(palette.value.c2, 0.2),
-      '--card-bg': 'rgba(255,255,255,0.92)', '--card-bg-2': 'rgba(240,242,248,0.96)',
-      '--line-muted': 'rgba(0,0,0,0.12)', '--accent': palette.value.c3,
-    };
-    if (bgTheme === 'dark') return {
-      background: `linear-gradient(160deg, ${darken(palette.value.c1, 0.5)} 0%, ${darken(palette.value.c2, 0.4)} 42%, ${darken(palette.value.c4, 0.6)} 100%)`,
-      '--panel-bg': darken(palette.value.c1, 0.5), '--panel-bg-soft': darken(palette.value.c2, 0.4),
-      '--card-bg': 'rgba(0,0,0,0.96)', '--card-bg-2': 'rgba(8,10,16,0.98)',
-      '--line-muted': 'rgba(255,255,255,0.12)', '--accent': palette.value.c3,
-    };
+  const { bgMode } = lyricsSettings;
+  // 自定义模式 → 虹彩效果由 canvas 渲染
+  if (bgMode === 'custom') {
+    if (lyricsSettings.bgCustomMode === 'soft-gradient') {
+      return {
+        background: '#0a0c14',
+        '--panel-bg': 'rgba(0,0,0,0.3)',
+        '--panel-bg-soft': 'rgba(0,0,0,0.2)',
+        '--card-bg': 'rgba(18,20,28,0.92)',
+        '--card-bg-2': 'rgba(24,26,36,0.94)',
+        '--line-muted': 'rgba(255,255,255,0.12)',
+        '--accent': palette.value.c3,
+      };
+    }
     return {
-      background: `linear-gradient(160deg, ${palette.value.c1} 0%, ${palette.value.c2} 42%, ${palette.value.c4} 100%)`,
-      '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2,
-      '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)',
-      '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3,
+      background: '#0a0c14',
+      '--panel-bg': 'rgba(0,0,0,0.3)',
+      '--panel-bg-soft': 'rgba(0,0,0,0.2)',
+      '--card-bg': 'rgba(18,20,28,0.92)',
+      '--card-bg-2': 'rgba(24,26,36,0.94)',
+      '--line-muted': 'rgba(255,255,255,0.12)',
+      '--accent': palette.value.c3,
     };
   }
-  const c = bgColor || '#1e293b';
-  if (bgCustomMode === 'solid') return { background: c, '--panel-bg': c, '--panel-bg-soft': c, '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.10)', '--accent': palette.value.c3 };
-  if (bgCustomMode === 'gradient') return {
-    background: `linear-gradient(160deg, ${c} 0%, ${shiftHue(c, 30)} 42%, ${shiftHue(c, -20)} 100%)`,
-    '--panel-bg': c, '--panel-bg-soft': shiftHue(c, 15), '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.10)', '--accent': palette.value.c3,
+  // 基础模式（仅默认主题）
+  return {
+    background: `linear-gradient(160deg, ${palette.value.c1} 0%, ${palette.value.c2} 42%, ${palette.value.c4} 100%)`,
+    '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2,
+    '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)',
+    '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3,
   };
-  if (bgCustomMode === 'image') {
-    const coverUrl = playerStore.currentTrack?.al?.picUrl;
-    return { background: coverUrl ? `url(${coverUrl}) center/cover no-repeat` : c, '--panel-bg': c, '--panel-bg-soft': fade(c, 0.8), '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.12)', '--accent': palette.value.c3 };
-  }
-  return { background: c, '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2, '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)', '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3 };
 });
-
-function fade(rgb: string, factor: number): string { const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb; return `rgba(${m[0]},${m[1]},${m[2]},${Math.min(1, Math.max(0, factor)).toFixed(2)})`; }
-function darken(rgb: string, factor: number): string { const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb; const f = Math.min(1, Math.max(0, factor)); return `rgb(${Math.round(Number(m[0])*(1-f))},${Math.round(Number(m[1])*(1-f))},${Math.round(Number(m[2])*(1-f))})`; }
-function shiftHue(rgb: string, degrees: number): string {
-  const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb;
-  let r = Number(m[0]), g = Number(m[1]), b = Number(m[2]);
-  if (degrees > 0) { r = Math.min(255, r + degrees * 1.5); g = Math.min(255, g + degrees * 0.5); b = Math.max(0, b - degrees * 0.5); }
-  else { r = Math.max(0, r + degrees); g = Math.max(0, g + degrees * 0.3); b = Math.max(0, b - degrees * 0.7); }
-  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
-}
 
 async function extractPaletteFromCover(url?: string) {
   if (!url) return;
@@ -290,7 +352,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 <style scoped>
 .expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; }
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
-.expanded-panel { width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
+.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
@@ -320,6 +382,22 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .favorite-ctrl { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .favorite-ctrl.saved { color: #ff6b8a !important; }
 .favorite-ctrl.saved :deep(svg) { fill: currentColor; }
+/* iridescence canvas */
+.iri-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.iri-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
+.iri-blur { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; background: transparent; }
+.three-scene-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.three-scene-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
+.paper-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.paper-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.paper-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
+.mist-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.mist-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.mist-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
+.loom-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.silk-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.aurora-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.aurora-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
 /* right actions */
 .right-actions { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); z-index: 65; }
 .ra-btn {
@@ -461,4 +539,23 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel { transition: transform 0.28s ease; }
 .player-sheet-enter-from, .player-sheet-leave-to { opacity: 0; }
 .player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
+.soft-gradient-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+</style>
+<style>
+@property --hue1 { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@property --hue2 { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.soft-gradient-bg {
+  background-image:
+    linear-gradient(in oklch longer hue to right, oklch(0.95 0.07 var(--hue1) / 60%), oklch(0.92 0.08 var(--hue2) / 60%)),
+    linear-gradient(in oklch longer hue to bottom, oklch(0.95 0.07 var(--hue1) / 60%), oklch(0.92 0.08 var(--hue2) / 60%));
+  background-size: 100% 100%;
+  animation-name: anim_bg;
+  animation-duration: 7s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+@keyframes anim_bg {
+  0% { --hue1: 30deg; --hue2: 180deg; }
+  100% { --hue1: 390deg; --hue2: 540deg; }
+}
 </style>

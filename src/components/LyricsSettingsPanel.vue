@@ -31,17 +31,28 @@
               <StepSliderRow label="高亮位置" :value="s.anchorPos" :min="0" :max="10" :step="1" :steps="['靠上', '', '', '', '中上', '居中', '中下', '', '', '', '靠下']" @update:value="set('anchorPos', $event)" />
             </div>
             <div v-show="activeTab === 'background'" class="tab-content">
-              <RadioRow label="背景模式" :value="s.bgMode" :options="bgModeOptions" @update:value="set('bgMode', $event)" />
-              <template v-if="s.bgMode === 'basic'"><RadioRow label="主题" :value="s.bgTheme" :options="bgThemeOptions" @update:value="set('bgTheme', $event)" /></template>
-              <template v-else>
-                <RadioRow label="类型" :value="s.bgCustomMode" :options="bgCustomModeOptions" @update:value="set('bgCustomMode', $event)" />
-                <div class="color-row">
-                  <label class="color-label">颜色</label>
-                  <div class="color-control">
-                    <input type="color" :value="s.bgColor" @input="set('bgColor', ($event.target as HTMLInputElement).value)" class="color-picker" />
-                    <input type="text" :value="s.bgColor" class="color-text" @input="set('bgColor', ($event.target as HTMLInputElement).value)" />
-                  </div>
+              <div class="radio-row">
+                <span class="radio-label">背景模式</span>
+                <div class="radio-group">
+                  <button v-for="opt in bgModeOptions" :key="opt.value" type="button" class="radio-chip" :class="{ active: localBgMode === opt.value }" @click="(localBgMode = opt.value), setBgMode(opt.value)">{{ opt.label }}</button>
                 </div>
+              </div>
+              <template v-if="localBgMode === 'basic'"><RadioRow label="主题" :value="s.bgTheme" :options="bgThemeOptions" @update:value="set('bgTheme', $event)" /></template>
+              <template v-else>
+                <RadioRow label="类型" :value="s.bgCustomMode" :options="bgCustomModeOptions" @update:value="setBgCustomMode($event)" />
+                <p class="custom-hint">自定义背景需要较高性能设备，可能影响续航与发热</p>
+                <template v-if="s.bgCustomMode === 'iridescence'">
+                  <div v-for="(label, i) in ['主色', '辅色', '点缀']" :key="i" class="color-row">
+                    <label class="color-label">{{ label }}</label>
+                    <div class="color-control">
+                      <input type="color" :value="s.iriColors[i] || '#3A29FF'" @input="updateIriColor(i, ($event.target as HTMLInputElement).value)" class="color-picker" />
+                      <input type="text" :value="s.iriColors[i] || '#3A29FF'" class="color-text" @input="updateIriColor(i, ($event.target as HTMLInputElement).value)" />
+                    </div>
+                  </div>
+                  <StepSliderRow label="流速" :value="s.iriSpeed" :min="0" :max="10" :step="1" :steps="['慢', '', '中', '', '快']" @update:value="set('iriSpeed', $event)" />
+                  <StepSliderRow label="强度" :value="s.iriScale" :min="0" :max="10" :step="1" :steps="['弱', '', '中', '', '强']" @update:value="set('iriScale', $event)" />
+                  <StepSliderRow label="模糊" :value="s.iriBlur" :min="0" :max="10" :step="1" :steps="['无', '微', '', '中', '', '强']" @update:value="set('iriBlur', $event)" />
+                </template>
               </template>
             </div>
           </div>
@@ -52,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { lyricsSettings as store } from '../stores/lyricsSettings';
 import FancySwitch from './ui/FancySwitch.vue';
 import StepSliderRow from './ui/StepSliderRow.vue';
@@ -64,6 +75,12 @@ function close() { emit('close'); }
 
 const s = store;
 function set(key: string, value: any) { (s as any)[key] = value; s.save(); }
+
+// 本地驱动状态 — 绕过 Teleport 下 reactive proxy 依赖追踪失效的问题
+const localBgMode = ref(s.bgMode);
+function setBgMode(v: string) { s.bgMode = v; s.save(); }
+const localBgCustomMode = ref(s.bgCustomMode);
+function setBgCustomMode(v: string) { s.bgCustomMode = v as any; s.save(); localBgCustomMode.value = v; }
 
 const popoverStyle = computed(() => {
   const a = props.anchor || { top: 80, right: 24 };
@@ -84,15 +101,24 @@ const bgModeOptions = [
 ];
 const bgThemeOptions = [
   { value: 'default', label: '默认' },
-  { value: 'light', label: '亮色' },
-  { value: 'dark', label: '暗色' },
 ];
 const bgCustomModeOptions = [
-  { value: 'solid', label: '纯色' },
-  { value: 'gradient', label: '渐变' },
-  { value: 'image', label: '图片' },
-  { value: 'css', label: 'CSS' },
+  { value: 'iridescence', label: '虹彩' },
+  { value: 'soft-gradient', label: '柔光渐变' },
+  { value: 'three-scene', label: '3D 光晕' },
+  { value: 'paper-shaders', label: '纹理波动' },
+  { value: 'mist', label: '雾霭' },
+  { value: 'digital-loom', label: '数码织机' },
+  { value: 'silk', label: '丝绸' },
+  { value: 'aurora', label: '极光' },
 ];
+
+function updateIriColor(idx: number, val: string) {
+  const colors = [...s.iriColors];
+  colors[idx] = val;
+  s.iriColors = colors;
+  s.save();
+}
 </script>
 
 <style scoped>
@@ -134,4 +160,23 @@ const bgCustomModeOptions = [
 .color-text:focus { border-color: var(--accent, #c39c76); }
 .popover-fade-enter-active, .popover-fade-leave-active { transition: opacity 0.15s ease; }
 .popover-fade-enter-from, .popover-fade-leave-to { opacity: 0; }
+/* 内联 radio-chip 样式，与 RadioRow 组件保持一致 */
+.radio-row { display: grid; gap: var(--space-1, 4px); }
+.radio-group { display: flex; flex-wrap: wrap; gap: var(--space-1, 4px); }
+.radio-chip {
+  padding: 5px 14px; border-radius: var(--button-radius-pill, 999px);
+  border: 1px solid var(--border-soft, rgba(255,255,255,0.12));
+  background: transparent; color: var(--text-soft, rgba(255,255,255,0.7));
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 120ms ease;
+}
+.radio-chip.active {
+  background: color-mix(in srgb, var(--accent) 88%, var(--bg-surface));
+  border-color: transparent; color: #fff;
+}
+.radio-chip:hover:not(.active) {
+  border-color: var(--border, rgba(255,255,255,0.3));
+  color: var(--text-main, #fff);
+}
+.custom-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: 11px; line-height: 1.4; margin: 0; padding: 2px 0; }
 </style>
