@@ -86,6 +86,12 @@ export async function getSongLyric(id: number) {
   });
 }
 
+export async function getSongLyricNew(id: number) {
+  return apiClient.get('/lyric/new', {
+    params: { id, timestamp: Date.now() },
+  });
+}
+
 export async function getCloudLyric(uid: number, sid: string | number) {
   return apiClient.get('/cloud/lyric/get', {
     params: {
