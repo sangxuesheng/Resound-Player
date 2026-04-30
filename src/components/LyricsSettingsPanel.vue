@@ -3,7 +3,6 @@
     <transition name="popover-fade">
       <div v-if="visible" class="popover-backdrop" @click="close" @touchstart="close">
         <div class="settings-popover" :style="popoverStyle" @click.stop @touchstart.stop>
-          <div class="popover-arrow"></div>
           <header class="popover-head">
             <h3>歌词设置</h3>
             <button class="popover-close" type="button" @click="close" aria-label="关闭设置">
@@ -99,7 +98,7 @@ const bgCustomModeOptions = [
 <style scoped>
 .popover-backdrop { position: fixed; inset: 0; z-index: 100; background: transparent; }
 .settings-popover {
-  position: fixed; width: 380px; max-height: calc(100vh - 120px); height: auto;
+  position: fixed; width: 380px; max-height: min(80vh, 600px); height: auto;
   background: var(--bg-surface, rgba(26,28,40,0.85));
   backdrop-filter: blur(24px) saturate(140%);
   -webkit-backdrop-filter: blur(24px) saturate(140%);
@@ -108,19 +107,7 @@ const bgCustomModeOptions = [
   display: grid; grid-template-rows: auto auto 1fr;
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
   overflow: hidden;
-  animation: popover-in 0.2s cubic-bezier(0.22,1,0.36,1);
-}
-@keyframes popover-in {
-  from { opacity: 0; transform: scale(0.94) translateY(-6px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-.popover-arrow {
-  position: absolute; top: 16px; right: -6px;
-  width: 12px; height: 12px;
-  background: var(--bg-surface, #1a1c28);
-  border: 1px solid var(--border, rgba(255,255,255,0.12));
-  border-left: none; border-bottom: none;
-  transform: rotate(45deg);
+  transform-origin: right center;
 }
 .popover-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06)); }
 .popover-head h3 { margin: 0; color: var(--text-main,#fff); font-size: 15px; font-weight: 700; }

@@ -52,11 +52,11 @@
         </div>
 
         <div class="right-actions">
-          <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
+          <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
-          <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
+          <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
         </div>
 
         <Teleport to="body">
@@ -147,7 +147,8 @@ const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
 
 function onOpenSettings() {
-  settingsAnchor.value = { top: 80, right: 16 };
+  const btn = gearBtnRef.value;
+  if (btn) { const r = btn.getBoundingClientRect(); settingsAnchor.value = { top: r.top - 8, right: window.innerWidth - r.left + 12 }; }
   showSettings.value = true;
 }
 
