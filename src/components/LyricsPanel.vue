@@ -37,10 +37,10 @@ import { useLyrics, getLineWrapStyle, getLineStyle, getWordStyle, getTranslation
 
 const { lyricLines, currentLyricIndex, displayTime, effectiveTime, isLoading, lyricBoxRef, setLyricLineRef, startTick, loadLyrics, scrollToCurrentLine, seekToLine } = useLyrics();
 
-const fontSizeMap = ['22px', '30px', '38px'];
-const letterSpacingMap = ['-0.02em', '0', '0.06em'];
-const fontWeightMap = ['400', '700', '900'];
-const lineHeightMap = ['1.2', '1.28', '1.5'];
+const fontSizeMap = ['20px','22px','24px','26px','28px','30px','32px','34px','36px','38px','40px'];
+const letterSpacingMap = ['-0.03em','-0.02em','-0.01em','0','0.01em','0.02em','0.03em','0.04em','0.05em','0.06em','0.08em'];
+const fontWeightMap = ['300','400','500','600','700','800','900','950','950','950','950'];
+const lineHeightMap = ['1.1','1.15','1.2','1.25','1.28','1.32','1.36','1.4','1.45','1.5','1.6'];
 
 const lyricVars = computed(() => ({
   '--l-font-size': fontSizeMap[lyricsSettings.fontSize] || fontSizeMap[1],

@@ -15,27 +15,21 @@
           </div>
           <div class="popover-body">
             <div v-show="activeTab === 'display'" class="tab-content">
-              <ToggleRow label="纯净模式" :model-value="s.pureMode" @update:model-value="set('pureMode', $event)" />
-              <ToggleRow label="隐藏封面" :model-value="s.showCover" @update:model-value="set('showCover', $event)" />
-              <ToggleRow label="居中显示" :model-value="s.centerAlign" @update:model-value="set('centerAlign', $event)" />
-              <ToggleRow label="显示翻译" :model-value="s.showTranslation" @update:model-value="set('showTranslation', $event)" />
-              <ToggleRow label="隐藏歌词" :model-value="!s.showLyrics" @update:model-value="set('showLyrics', !$event)" />
+              <div class="sw-row"><span class="sw-label">纯净模式</span><FancySwitch :model-value="s.pureMode" @update:model-value="set('pureMode', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">隐藏封面</span><FancySwitch :model-value="s.showCover" @update:model-value="set('showCover', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">居中显示</span><FancySwitch :model-value="s.centerAlign" @update:model-value="set('centerAlign', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">显示翻译</span><FancySwitch :model-value="s.showTranslation" @update:model-value="set('showTranslation', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="set('showLyrics', !$event)" /></div>
+              <div class="sw-row"><span class="sw-label">播放栏切换</span><FancySwitch :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" /></div>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
-              <ToggleRow label="播放栏切换" :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" />
-              <div class="slider-row">
-                <label class="slider-label">内容区宽度</label>
-                <div class="slider-control">
-                  <input type="range" min="50" max="100" step="1" :value="s.contentWidth" @input="set('contentWidth', Number(($event.target as HTMLInputElement).value))" />
-                  <span class="slider-value">{{ s.contentWidth }}%</span>
-                </div>
-              </div>
             </div>
             <div v-show="activeTab === 'typography'" class="tab-content">
               <StepSliderRow label="字体大小" :value="s.fontSize" :steps="['小', '中', '大']" @update:value="set('fontSize', $event)" />
               <StepSliderRow label="字间距" :value="s.letterSpacing" :steps="['紧凑', '默认', '宽松']" @update:value="set('letterSpacing', $event)" />
               <StepSliderRow label="字体粗细" :value="s.fontWeight" :steps="['细', '常规', '粗']" @update:value="set('fontWeight', $event)" />
               <StepSliderRow label="行高" :value="s.lineHeight" :steps="['紧凑', '默认', '宽松']" @update:value="set('lineHeight', $event)" />
+              <StepSliderRow label="高亮位置" :value="s.anchorPos" :min="0" :max="10" :step="1" :steps="['靠上', '', '', '', '中上', '居中', '中下', '', '', '', '靠下']" @update:value="set('anchorPos', $event)" />
             </div>
             <div v-show="activeTab === 'background'" class="tab-content">
               <RadioRow label="背景模式" :value="s.bgMode" :options="bgModeOptions" @update:value="set('bgMode', $event)" />
@@ -61,11 +55,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { lyricsSettings as store } from '../stores/lyricsSettings';
-import ToggleRow from './ui/ToggleRow.vue';
+import FancySwitch from './ui/FancySwitch.vue';
 import StepSliderRow from './ui/StepSliderRow.vue';
 import RadioRow from './ui/RadioRow.vue';
 
-const props = defineProps<{ visible: boolean; anchor?: { top: number; right: number } }>();
+const props = defineProps<{ visible: boolean; anchor?: { top: number; right: number }; accentColor?: string }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 function close() { emit('close'); }
 
@@ -74,14 +68,15 @@ function set(key: string, value: any) { (s as any)[key] = value; s.save(); }
 
 const popoverStyle = computed(() => {
   const a = props.anchor || { top: 80, right: 24 };
-  return { top: `${a.top}px`, right: `${a.right}px` };
+  const style: Record<string, string> = { top: `${a.top}px`, right: `${a.right}px` };
+  if (props.accentColor) style['--accent'] = props.accentColor;
+  return style;
 });
 
 const activeTab = ref('display');
 const tabs = [
   { key: 'display', label: '显示' },
-  { key: 'interface', label: '界面' },
-  { key: 'typography', label: '文字' },
+  { key: 'typography', label: '歌词' },
   { key: 'background', label: '背景' },
 ];
 const bgModeOptions = [
@@ -104,13 +99,15 @@ const bgCustomModeOptions = [
 <style scoped>
 .popover-backdrop { position: fixed; inset: 0; z-index: 100; background: transparent; }
 .settings-popover {
-  position: fixed; width: 380px; max-height: min(80vh, 600px);
-  background: var(--bg-surface, #1a1c28);
+  position: fixed; width: 380px; max-height: calc(100vh - 120px); height: auto;
+  background: var(--bg-surface, rgba(26,28,40,0.85));
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
   border-radius: var(--radius-lg, 14px);
   display: grid; grid-template-rows: auto auto 1fr;
   box-shadow: 0 12px 40px rgba(0,0,0,0.4);
-  overflow: hidden; transform-origin: top right;
+  overflow: hidden;
   animation: popover-in 0.2s cubic-bezier(0.22,1,0.36,1);
 }
 @keyframes popover-in {
@@ -118,11 +115,11 @@ const bgCustomModeOptions = [
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 .popover-arrow {
-  position: absolute; top: -6px; right: 16px;
+  position: absolute; top: 16px; right: -6px;
   width: 12px; height: 12px;
   background: var(--bg-surface, #1a1c28);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
-  border-right: none; border-bottom: none;
+  border-left: none; border-bottom: none;
   transform: rotate(45deg);
 }
 .popover-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06)); }
@@ -131,21 +128,23 @@ const bgCustomModeOptions = [
 .popover-close:hover { color: var(--text-main,#fff); background: var(--control-hover, rgba(255,255,255,0.08)); }
 .tabs-nav { display: flex; gap: 0; padding: var(--space-2) var(--space-4) 0; border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06)); }
 .tab-btn { flex: 1; padding: 6px 0 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-soft, rgba(255,255,255,0.45)); font-size: 12px; font-weight: 600; cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
-.tab-btn.active { color: var(--text-main,#fff); border-bottom-color: var(--accent,#c39c76); }
+.tab-btn.active { color: var(--accent) !important; }
 .tab-btn:hover:not(.active) { color: var(--text-sub, rgba(255,255,255,0.7)); }
 .popover-body { overflow-y: auto; padding: var(--space-3) var(--space-4) var(--space-4); }
 .tab-content { display: grid; gap: var(--space-3); }
+.sw-row { display: flex; align-items: center; justify-content: space-between; min-height: 28px; }
+.sw-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 13px; }
 .slider-row { display: grid; gap: var(--space-1); }
 .slider-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 13px; }
 .slider-control { display: flex; align-items: center; gap: var(--space-2); }
-.slider-control input[type='range'] { flex: 1; accent-color: var(--accent,#c39c76); }
+.slider-control input[type='range'] { flex: 1; accent-color: var(--accent, #c39c76); }
 .slider-value { color: var(--text-soft, rgba(255,255,255,0.5)); font-size: 11px; min-width: 32px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .color-row { display: grid; gap: var(--space-1); }
 .color-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 13px; }
 .color-control { display: flex; align-items: center; gap: var(--space-2); }
 .color-picker { width: 32px; height: 32px; border: 1px solid var(--border-soft, rgba(255,255,255,0.1)); border-radius: var(--radius-sm,6px); cursor: pointer; padding: 0; background: none; }
 .color-text { flex: 1; background: var(--bg-muted, rgba(255,255,255,0.06)); border: 1px solid var(--border-soft, rgba(255,255,255,0.1)); border-radius: var(--radius-sm,6px); padding: 5px 8px; color: var(--text-main, rgba(255,255,255,0.8)); font-size: 12px; font-family: var(--font-mono,'SF Mono','Fira Code',monospace); outline: none; transition: border-color 120ms ease; }
-.color-text:focus { border-color: var(--accent,#c39c76); }
+.color-text:focus { border-color: var(--accent, #c39c76); }
 .popover-fade-enter-active, .popover-fade-leave-active { transition: opacity 0.15s ease; }
 .popover-fade-enter-from, .popover-fade-leave-to { opacity: 0; }
 </style>

@@ -20,6 +20,7 @@ export type LyricsSettings = {
   bgTheme: BgTheme;
   bgCustomMode: BgCustomMode;
   bgColor: string;
+  anchorPos: number;  // 歌词高亮锚点位置 0-10 (对应 0.0~1.0)
 };
 
 const STORAGE_KEY = 'gm_lyrics_settings_v1';
@@ -32,14 +33,15 @@ const defaults: LyricsSettings = {
   showLyrics: true,
   showMiniBar: false,
   contentWidth: 60,
-  fontSize: 1,
-  letterSpacing: 1,
-  fontWeight: 1,
-  lineHeight: 1,
+  fontSize: 5,
+  letterSpacing: 3,
+  fontWeight: 4,
+  lineHeight: 5,
   bgMode: 'basic',
   bgTheme: 'default',
   bgCustomMode: 'solid',
   bgColor: '#1e293b',
+  anchorPos: 3,  // 默认 0.3
 };
 
 function hydrate(): LyricsSettings {

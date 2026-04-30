@@ -210,7 +210,9 @@ export function parseLyricsNew(payload: any): LyricLine[] {
 /*  Style helpers                                                      */
 /* ------------------------------------------------------------------ */
 
+import { lyricsSettings } from '../stores/lyricsSettings';
 const LYRIC_ANCHOR_RATIO = 0.30;
+const LYRIC_BASE_COLOR = 'rgba(255,255,255,0.35)';
 
 export type LyricStyleOptions = {
   baseColor?: string;
@@ -230,7 +232,7 @@ export function getLineStyle(
   lineIndex: number, line: LyricLine, currentIndex: number, displayTime: number,
   nextLine?: LyricLine, opts: LyricStyleOptions = {},
 ) {
-  const baseColor = opts.baseColor || 'rgba(255,255,255,0.35)';
+  const baseColor = opts.baseColor || LYRIC_BASE_COLOR;
   const activeColor = opts.activeColor || '#ffffff';
   if (line.words?.length) return { color: baseColor };
   const startMs = line.time * 1000;
@@ -247,11 +249,11 @@ export function getWordStyle(lineIndex: number, word: LyricWord, currentIndex: n
   const currentMs = displayTime * 1000;
   // 已播放过的行 → 所有字都是灰色，统一 baseColor
   if (lineIndex < currentIndex) {
-    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
   }
   // 还未播放的行 → 灰色
   if (lineIndex > currentIndex) {
-    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
   }
   // 当前行 → 逐字高亮
   const start = word.startTime;
@@ -260,23 +262,23 @@ export function getWordStyle(lineIndex: number, word: LyricWord, currentIndex: n
     return { color: '#fff', backgroundImage: 'none' };
   }
   if (currentMs <= start) {
-    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
   }
   const percent = Math.min(1, Math.max(0, (currentMs - start) / Math.max(1, end - start)));
   const pct = Math.round(percent * 100);
   return {
-    backgroundImage: `linear-gradient(to right, #fff 0%, #fff ${pct}%, rgba(255,255,255,0.35) ${pct}%, rgba(255,255,255,0.35) 100%)`,
+    backgroundImage: `linear-gradient(to right, #fff 0%, #fff ${pct}%, ${LYRIC_BASE_COLOR} ${pct}%, ${LYRIC_BASE_COLOR} 100%)`,
     backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
   };
 }
 
 export function getTranslationStyle(lineIndex: number, line: LyricLine, currentIndex: number, displayTime: number, nextLine?: LyricLine, opts: LyricStyleOptions = {}) {
-  const baseColor = opts.baseColor || 'rgba(255,255,255,0.62)';
+  const baseColor = opts.baseColor || LYRIC_BASE_COLOR;
   const activeColor = opts.activeColor || 'rgba(255,255,255,0.94)';
   const currentMs = displayTime * 1000;
-  if (lineIndex < currentIndex) return { color: activeColor, opacity: 0.92, textShadow: '0 0 12px rgba(255,255,255,0.14)' };
-  if (lineIndex > currentIndex) return { color: baseColor, opacity: 0.72 };
-  if (!line.translation) return { color: baseColor, opacity: 0.72 };
+  if (lineIndex < currentIndex) return { color: baseColor + ' !important' };
+  if (lineIndex > currentIndex) return { color: baseColor + ' !important' };
+  if (!line.translation) return { color: baseColor + ' !important' };
   const startMs = line.time * 1000;
   const nextStartMs = (nextLine?.time ?? line.time + 3) * 1000;
   const percent = Math.round((Math.min(1, Math.max(0, (currentMs - startMs) / Math.max(1, nextStartMs - startMs)))) * 100);
@@ -290,7 +292,7 @@ export function scrollToLyricLine(container: HTMLElement | null, lineEls: HTMLEl
   if (index < 0 || !container) return;
   const lineEl = lineEls[index];
   if (!lineEl) return;
-  const anchorY = container.clientHeight * LYRIC_ANCHOR_RATIO;
+  const anchorY = container.clientHeight * ((lyricsSettings.anchorPos ?? 3) / 10);
   const targetTop = lineEl.offsetTop + lineEl.clientHeight / 2 - anchorY;
   container.scrollTo({ top: Math.max(0, targetTop), behavior });
 }

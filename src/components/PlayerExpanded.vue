@@ -11,21 +11,7 @@
       <section class="expanded-panel">
         <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
-          <div class="panel-head-right">
-            <button
-              ref="gearBtnRef"
-              type="button"
-              class="settings-gear-btn"
-              title="歌词设置"
-              aria-label="歌词设置"
-              @click="onOpenSettings"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-              </svg>
-            </button>
-            <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
-          </div>
+          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
@@ -70,6 +56,7 @@
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
+          <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
         </div>
 
         <Teleport to="body">
@@ -130,13 +117,13 @@
         </div>
       </section>
 
-      <LyricsSettingsPanel :visible="showSettings" :anchor="settingsAnchor" @close="showSettings = false" />
+      <LyricsSettingsPanel :visible="showSettings" :anchor="settingsAnchor" :accent-color="palette.c3" @close="showSettings = false" />
     </div>
   </transition>
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
+import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch } from 'vue';
 import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
@@ -160,8 +147,7 @@ const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
 
 function onOpenSettings() {
-  const btn = gearBtnRef.value;
-  if (btn) { const r = btn.getBoundingClientRect(); settingsAnchor.value = { top: r.bottom + 8, right: window.innerWidth - r.right }; }
+  settingsAnchor.value = { top: 80, right: 16 };
   showSettings.value = true;
 }
 
@@ -305,9 +291,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
 .expanded-panel { width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
-.panel-head-right { display: flex; align-items: center; gap: var(--space-2); }
-.settings-gear-btn { width: 32px; height: 32px; border: none; background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; display: grid; place-items: center; border-radius: 8px; transition: color 120ms ease, background 120ms ease; }
-.settings-gear-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
