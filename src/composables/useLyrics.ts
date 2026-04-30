@@ -1,5 +1,5 @@
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
-import { getCloudLyric, getSongLyric } from '../api/music';
+import { getCloudLyric, getSongLyric, getSongLyricNew } from '../api/music';
 import { playerStore } from '../stores/player';
 
 /* ------------------------------------------------------------------ */
@@ -119,6 +119,94 @@ export function parseLyrics(payload: any): LyricLine[] {
 }
 
 /* ------------------------------------------------------------------ */
+/*  YRC v2 parsers — for /lyric/new API                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 解析 `/lyric/new` 返回的 YRC 格式。
+ * 与旧版 parseYrc 的关键区别：
+ * - 跳过 JSON 元数据行（以 {"t": 开头）
+ * - 单词 duration 单位是 **厘秒 (0.01s)**，需 ×10 转毫秒
+ */
+export function parseYrcNew(yrcText: string): LyricLine[] {
+  if (!yrcText?.trim()) return [];
+  const lines = yrcText.split('\n');
+  const out: LyricLine[] = [];
+  const lineRegex = /^\[(\d+),(\d+)\](.*)$/;
+  const wordRegex = /\((\d+),(\d+),\d+\)([^()]+)/g;
+
+  for (const raw of lines) {
+    const row = raw.trim();
+    if (!row) continue;
+    // 跳过 JSON 元数据行
+    if (row.startsWith('{"t":')) continue;
+
+    const lineMatch = row.match(lineRegex);
+    if (!lineMatch) continue;
+
+    const lineStartMs = Number(lineMatch[1]);
+    const body = lineMatch[3] || '';
+
+    const words: LyricWord[] = [];
+    let fullText = '';
+
+    for (const m of body.matchAll(wordRegex)) {
+      const absStart = Number(m[1]);
+      const dur = Number(m[2]);              // 毫秒（实测与相邻单词间隔一致）
+      const rawWord = m[3];
+      const hasTrailingSpace = /\s$/.test(rawWord);
+      const text = rawWord.trimEnd();
+
+      if (!text && !hasTrailingSpace) continue;
+
+      words.push({
+        text,
+        startTime: absStart,     // ms
+        duration: dur,                          // ms
+        space: hasTrailingSpace,
+      });
+      fullText += text + (hasTrailingSpace ? ' ' : '');
+    }
+
+    out.push({
+      time: lineStartMs / 1000,
+      text: fullText.trim() || body.replace(wordRegex, '$3').trim(),
+      words,
+    });
+  }
+
+  return out.sort((a, b) => a.time - b.time);
+}
+
+/**
+ * 解析 `/lyric/new` 返回的完整 payload。
+ * 逐字数据在 `yrc.lyric`，翻译在 `yrc.ytlyric`（或旧位置 `tlyric.lyric`）。
+ */
+export function parseLyricsNew(payload: any): LyricLine[] {
+  const yrcText = payload?.yrc?.lyric || '';
+  const tlyricText = payload?.yrc?.ytlyric || payload?.tlyric?.lyric || '';
+
+  const mainLines = parseYrcNew(yrcText);
+  if (!mainLines.length) return [];
+
+  const tLines = parseLrc(tlyricText);
+  if (!tLines.length) return mainLines;
+
+  if (tLines.length === mainLines.length) {
+    return mainLines.map((line, i) => ({ ...line, translation: tLines[i]?.text || '' }));
+  }
+  return mainLines.map((line) => {
+    let best = '';
+    let diff = Infinity;
+    for (const tl of tLines) {
+      const d = Math.abs(tl.time - line.time);
+      if (d < diff && d <= 2) { diff = d; best = tl.text; }
+    }
+    return { ...line, translation: best };
+  });
+}
+
+/* ------------------------------------------------------------------ */
 /*  Style helpers                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -142,32 +230,42 @@ export function getLineStyle(
   lineIndex: number, line: LyricLine, currentIndex: number, displayTime: number,
   nextLine?: LyricLine, opts: LyricStyleOptions = {},
 ) {
-  const baseColor = opts.baseColor || 'rgba(255,255,255,0.86)';
+  const baseColor = opts.baseColor || 'rgba(255,255,255,0.35)';
   const activeColor = opts.activeColor || '#ffffff';
-  if (line.words?.length) return { color: lineIndex === currentIndex ? activeColor : baseColor };
+  if (line.words?.length) return { color: baseColor };
   const startMs = line.time * 1000;
   const endMs = (nextLine?.time ?? line.time + 3) * 1000;
   const currentMs = displayTime * 1000;
-  if (lineIndex < currentIndex || currentMs >= endMs) return { color: activeColor, backgroundImage: 'none', WebkitTextFillColor: 'initial' };
-  if (lineIndex > currentIndex || currentMs <= startMs) return { color: baseColor, backgroundImage: 'none', WebkitTextFillColor: 'initial' };
-  const percent = Math.round((Math.min(1, Math.max(0, (currentMs - startMs) / Math.max(1, endMs - startMs)))) * 100);
-  return {
-    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${percent}%, ${baseColor} ${percent}%, ${baseColor} 100%)`,
-    backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
-  };
+  // 已播放行 / 未播放行 → 统一使用 baseColor
+  if (lineIndex < currentIndex || currentMs >= endMs) return { color: baseColor + ' !important', backgroundImage: 'none' };
+  if (lineIndex > currentIndex || currentMs <= startMs) return { color: baseColor + ' !important', backgroundImage: 'none' };
+  // 当前行 → 直接整行亮白，无逐字数据时不做渐变
+  return { color: activeColor + ' !important', backgroundImage: 'none' };
 }
 
 export function getWordStyle(lineIndex: number, word: LyricWord, currentIndex: number, displayTime: number, opts: LyricStyleOptions = {}) {
-  const baseColor = opts.baseColor || 'rgba(255,255,255,0.55)';
-  const activeColor = opts.activeColor || '#ffffff';
   const currentMs = displayTime * 1000;
+  // 已播放过的行 → 所有字都是灰色，统一 baseColor
+  if (lineIndex < currentIndex) {
+    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+  }
+  // 还未播放的行 → 灰色
+  if (lineIndex > currentIndex) {
+    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+  }
+  // 当前行 → 逐字高亮
   const start = word.startTime;
   const end = word.startTime + Math.max(1, word.duration);
-  if (lineIndex < currentIndex || currentMs >= end) return { color: activeColor, backgroundImage: 'none', WebkitTextFillColor: 'initial' };
-  if (lineIndex > currentIndex || currentMs <= start) return { color: baseColor, backgroundImage: 'none', WebkitTextFillColor: 'initial' };
-  const percent = Math.round((Math.min(1, Math.max(0, (currentMs - start) / (end - start)))) * 100);
+  if (currentMs >= end) {
+    return { color: '#fff', backgroundImage: 'none' };
+  }
+  if (currentMs <= start) {
+    return { color: 'rgba(255,255,255,0.35)', backgroundImage: 'none' };
+  }
+  const percent = Math.min(1, Math.max(0, (currentMs - start) / Math.max(1, end - start)));
+  const pct = Math.round(percent * 100);
   return {
-    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${percent}%, ${baseColor} ${percent}%, ${baseColor} 100%)`,
+    backgroundImage: `linear-gradient(to right, #fff 0%, #fff ${pct}%, rgba(255,255,255,0.35) ${pct}%, rgba(255,255,255,0.35) 100%)`,
     backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
   };
 }
@@ -206,7 +304,6 @@ export function useLyrics() {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const displayTime = ref(0);
-  let tickTimer: ReturnType<typeof setInterval> | null = null;
   const lyricBoxRef = ref<HTMLElement | null>(null);
   const lyricLineRefs = ref<HTMLElement[]>([]);
 
@@ -222,15 +319,25 @@ export function useLyrics() {
     return idx;
   });
 
+  const tickRunning = { value: false };
+
   function startTick() {
-    if (tickTimer) return;
-    tickTimer = setInterval(() => {
-      if (playerStore.isPlaying) displayTime.value = playerStore.currentTime || 0;
-    }, 50);
+    if (tickRunning.value) return;
+    tickRunning.value = true;
+
+    function tick() {
+      if (!tickRunning.value) return;
+      if (playerStore.isPlaying) {
+        // 直接读 audio.currentTime 高精度值（~16ms），远超 timeupdate 事件精度（~250ms）
+        displayTime.value = playerStore.audio.currentTime || 0;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }
 
   function stopTick() {
-    if (tickTimer) { clearInterval(tickTimer); tickTimer = null; }
+    tickRunning.value = false;
   }
 
   function setLyricLineRef(el: Element | null, idx: number) {
@@ -246,10 +353,28 @@ export function useLyrics() {
     try {
       const source = track?.source;
       const cloudSid = track?.cloudSid;
-      const data = source === 'cloud' && cloudSid
-        ? (await getCloudLyric(Number(track?.cloudOwnerId || track?.uid || 0), cloudSid)).data
-        : (await getSongLyric(Number(id))).data;
-      lyricLines.value = parseLyrics(data);
+
+      // 云盘歌词不走新 API
+      if (source === 'cloud' && cloudSid) {
+        const data = (await getCloudLyric(Number(track?.cloudOwnerId || track?.uid || 0), cloudSid)).data;
+        lyricLines.value = parseLyrics(data);
+      } else {
+        // 优先尝试 /lyric/new
+        try {
+          const res = await getSongLyricNew(Number(id));
+          const data = res.data;
+          const newLines = parseLyricsNew(data);
+          if (newLines.length) {
+            lyricLines.value = newLines;
+          } else {
+            throw new Error('new api returned empty');
+          }
+        } catch {
+          // 回退旧 API
+          const data = (await getSongLyric(Number(id))).data;
+          lyricLines.value = parseLyrics(data);
+        }
+      }
       if (lyricBoxRef.value) lyricBoxRef.value.scrollTop = 0;
     } catch { lyricLines.value = []; error.value = '歌词加载失败'; }
     finally { isLoading.value = false; }

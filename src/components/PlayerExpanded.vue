@@ -271,7 +271,7 @@ function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.valu
 .settings-gear-btn { width: 32px; height: 32px; border: none; background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; display: grid; place-items: center; border-radius: 8px; transition: color 120ms ease, background 120ms ease; }
 .settings-gear-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: stretch; transition: grid-template-columns 0.3s ease; }
+.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
