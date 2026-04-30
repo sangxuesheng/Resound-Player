@@ -66,22 +66,27 @@
         </div>
 
         <div v-if="lyricsSettings.showMiniBar && !lyricsSettings.pureMode" class="bottom-console">
+          <div class="cc-left">
+            <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
+            <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
+            <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
+          </div>
+          <div class="cc-center">
+            <button class="con-btn" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="14" /></button>
+            <button class="con-btn con-play" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+            <button class="con-btn" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="14" /></button>
+          </div>
           <div class="console-progress">
             <span class="console-time">{{ formatTime(playerStore.currentTime) }}</span>
             <input class="console-bar" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
             <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
           </div>
-          <div class="console-controls">
-            <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
-            <button class="con-btn" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="14" /></button>
-            <button class="con-btn con-play" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
-            <button class="con-btn" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="14" /></button>
+          <div class="cc-right">
             <button class="con-btn" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="14" /></button>
             <div class="con-volume">
               <button class="con-btn con-vol-icon" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="14" /><Volume v-else-if="playerStore.volume < 0.33" :size="14" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="14" /><Volume2 v-else :size="14" /></button>
               <input class="con-vol-slider" type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
             </div>
-            <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
           </div>
         </div>
 
@@ -106,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, Heart, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
+import { AlignJustify, ChevronDown, Heart, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
@@ -299,22 +304,33 @@ function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.valu
 .expanded-wrap.l-pure .left-zone { display: none !important; }
 /* bottom console */
 .bottom-console {
-  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
-  width: min(620px, calc(100vw - 48px));
-  display: grid; gap: 6px;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg, 14px);
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  gap: 2px;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: auto 1fr;
+  padding: 0 var(--space-5) var(--space-3);
   z-index: 70;
 }
-.console-progress { display: flex; align-items: center; gap: var(--space-2); }
+.console-progress { grid-column: 2; grid-row: 2; display: flex; align-items: center; gap: var(--space-2); justify-self: center; width: 175%; }
 .console-time { color: rgba(255,255,255,0.5); font-size: 11px; min-width: 32px; font-variant-numeric: tabular-nums; }
 .console-time:last-child { text-align: right; }
-.console-bar { flex: 1; height: 4px; accent-color: var(--accent, #c39c76); cursor: pointer; }
-.console-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.console-bar { flex: 1; height: 10px; accent-color: var(--accent, #c39c76); cursor: pointer; border-radius: 5px; }
+.cc-left { grid-column: 1; grid-row: 1 / 3; display: flex; align-items: flex-end; gap: var(--space-2); padding-bottom: 6px; }
+.cc-center { grid-column: 2; grid-row: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-2); padding-top: var(--space-2); }
+.cc-right { grid-column: 3; grid-row: 1 / 3; display: flex; align-items: flex-end; justify-content: flex-end; gap: var(--space-2); padding-bottom: 6px; }
+.cc-left .con-btn, .cc-right .con-btn { width: 44px; height: 44px; }
+.cc-left .con-btn svg, .cc-right .con-btn svg { width: 22px; height: 22px; }
+.cc-right .con-vol-icon { width: 40px; height: 40px; }
+.cc-right .con-vol-icon svg { width: 20px; height: 20px; }
+.cc-right .con-vol-slider { width: 88px; }
+.cc-center { display: flex; align-items: center; gap: var(--space-2); }
+.cc-center .con-btn { width: 44px; height: 44px; }
+.cc-center .con-btn svg { width: 22px; height: 22px; }
+.cc-center .con-play { width: 50px; height: 50px; font-size: 18px; }
 .con-btn {
   width: 32px; height: 32px; border-radius: 50%; border: none;
   background: transparent; color: rgba(255,255,255,0.8);
@@ -323,8 +339,9 @@ function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.valu
   flex-shrink: 0;
 }
 .con-btn:hover { transform: scale(1.12); background: rgba(255,255,255,0.1); }
+.con-btn svg { stroke-width: 2.5; }
 .con-btn:active { transform: scale(0.95); }
-.con-play { width: 36px; height: 36px; background: rgba(255,255,255,0.15); font-size: 14px; }
+.con-play { width: 42px; height: 42px; background: rgba(255,255,255,0.15); font-size: 16px; }
 .con-play:hover { background: rgba(255,255,255,0.22); }
 .con-volume { display: flex; align-items: center; gap: 4px; }
 .con-vol-icon { width: 28px; height: 28px; }
