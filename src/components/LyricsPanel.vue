@@ -17,7 +17,7 @@
           <div v-for="(line, idx) in lyricLines" :key="`${idx}-${line.time}`" :ref="(el) => setLyricLineRef(el, idx)" class="line-wrap" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="getLineWrapStyle(idx, currentLyricIndex)" @click="seekToLine(idx)">
             <p class="line" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="lineStyle(idx, line)">
               <template v-if="line.words && line.words.length">
-                <span v-for="(word, wIdx) in line.words" :key="`${idx}-${wIdx}`" class="word" :style="getWordStyle(idx, word, currentLyricIndex, displayTime)">{{ word.text }}<span v-if="word.space">&nbsp;</span></span>
+                <span v-for="(word, wIdx) in line.words" :key="`${idx}-${wIdx}`" class="word" :style="getWordStyle(idx, word, currentLyricIndex, effectiveTime)">{{ word.text }}<span v-if="word.space">&nbsp;</span></span>
               </template>
               <template v-else>{{ line.text || '...' }}</template>
             </p>
@@ -35,7 +35,7 @@ import { playerStore } from '../stores/player';
 import { lyricsSettings } from '../stores/lyricsSettings';
 import { useLyrics, getLineWrapStyle, getLineStyle, getWordStyle, getTranslationStyle } from '../composables/useLyrics';
 
-const { lyricLines, currentLyricIndex, displayTime, isLoading, lyricBoxRef, setLyricLineRef, startTick, loadLyrics, scrollToCurrentLine, seekToLine } = useLyrics();
+const { lyricLines, currentLyricIndex, displayTime, effectiveTime, isLoading, lyricBoxRef, setLyricLineRef, startTick, loadLyrics, scrollToCurrentLine, seekToLine } = useLyrics();
 
 const fontSizeMap = ['22px', '30px', '38px'];
 const letterSpacingMap = ['-0.02em', '0', '0.06em'];
@@ -51,11 +51,11 @@ const lyricVars = computed(() => ({
 
 function lineStyle(idx: number, line: any) {
   const next = lyricLines.value[idx + 1];
-  return getLineStyle(idx, line, currentLyricIndex.value, displayTime.value, next);
+  return getLineStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next);
 }
 function translationStyle(idx: number, line: any) {
   const next = lyricLines.value[idx + 1];
-  return getTranslationStyle(idx, line, currentLyricIndex.value, displayTime.value, next);
+  return getTranslationStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next);
 }
 
 watch(currentLyricIndex, async (idx, prev) => {

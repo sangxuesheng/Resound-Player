@@ -304,13 +304,14 @@ export function useLyrics() {
   const isLoading = ref(false);
   const error = ref<string | null>(null);
   const displayTime = ref(0);
+  const effectiveTime = computed(() => displayTime.value + playerStore.lyricsOffset);
   const lyricBoxRef = ref<HTMLElement | null>(null);
   const lyricLineRefs = ref<HTMLElement[]>([]);
 
   const currentLyricIndex = computed(() => {
     const lines = lyricLines.value;
     if (!lines.length) return -1;
-    const t = displayTime.value;
+    const t = effectiveTime.value;
     let idx = -1;
     for (let i = 0; i < lines.length; i += 1) {
       if (t >= lines[i].time) idx = i;
@@ -394,7 +395,7 @@ export function useLyrics() {
   onUnmounted(() => { stopTick(); });
 
   return {
-    lyricLines, currentLyricIndex, displayTime, isLoading, error,
+    lyricLines, currentLyricIndex, displayTime, effectiveTime, isLoading, error,
     lyricBoxRef, lyricLineRefs, setLyricLineRef,
     startTick, stopTick, loadLyrics,
     scrollToCurrentLine, seekToLine,

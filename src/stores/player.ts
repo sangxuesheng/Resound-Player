@@ -104,6 +104,7 @@ export const playerStore = reactive({
   crossfadeSec: 0,
   playbackRate: 1,
   defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
+  lyricsOffset: 0,
 
   init() {
     hydrateCache();
@@ -653,6 +654,14 @@ export const playerStore = reactive({
     console.log('[quality] setDefaultQuality:', quality);
     localStorage.setItem('gm_quality_v1', quality);
     this.persist();
+  },
+
+  adjustLyricsOffset(delta: number) {
+    this.lyricsOffset = Math.max(-10, Math.min(10, this.lyricsOffset + delta));
+  },
+
+  resetLyricsOffset() {
+    this.lyricsOffset = 0;
   },
 
   openExpanded() {

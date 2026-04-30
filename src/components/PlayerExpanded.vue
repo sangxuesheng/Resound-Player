@@ -65,6 +65,31 @@
           <LyricsPanel />
         </div>
 
+        <div class="right-actions">
+          <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
+          <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
+          <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
+          <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
+        </div>
+
+        <Teleport to="body">
+          <transition name="offset-fade">
+            <div v-if="showOffsetPanel" class="offset-mask" @click="showOffsetPanel = false" @touchstart="showOffsetPanel = false">
+              <div class="offset-popover" @click.stop @touchstart.stop>
+                <div class="offset-head">歌词偏移</div>
+                <div class="offset-body">
+                  <button class="of-step" @click="playerStore.adjustLyricsOffset(-0.1)"><Minus :size="18" /></button>
+                  <input v-if="editingOffset" ref="offsetInputRef" class="of-input" type="number" step="0.1" :value="playerStore.lyricsOffset" @blur="commitOffset" @keydown.enter="commitOffset" @keydown.escape="editingOffset = false" />
+                  <span v-else class="of-value" @click="startEditOffset">{{ playerStore.lyricsOffset > 0 ? '+' : '' }}{{ playerStore.lyricsOffset.toFixed(1) }}s</span>
+                  <button class="of-step" @click="playerStore.adjustLyricsOffset(0.1)"><Plus :size="18" /></button>
+                </div>
+                <div class="of-hint">点击数值可手动输入，步进 ±100ms</div>
+                <div class="of-reset-wrap"><button class="of-reset" @click="playerStore.resetLyricsOffset()">重置为 0s</button></div>
+              </div>
+            </div>
+          </transition>
+        </Teleport>
+
         <div v-if="lyricsSettings.showMiniBar && !lyricsSettings.pureMode" class="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
@@ -111,8 +136,8 @@
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, ChevronDown, Heart, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
-import { computed, ref, watch } from 'vue';
+import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
+import { computed, nextTick, ref, watch } from 'vue';
 import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
@@ -130,6 +155,7 @@ const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.pi
 const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(195, 156, 118)', c4: 'rgb(20, 24, 36)' });
 const showPlaylistPopup = ref(false);
 const showSettings = ref(false);
+const showOffsetPanel = ref(false);
 const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
 
@@ -260,6 +286,18 @@ function scrollPlaylistIntoView() { if (!isPersonalFmCurrentTrack.value) showPla
 async function playFromPopup(index: number) { await playerStore.playByIndex(index); showPlaylistPopup.value = false; }
 function onRemoveTrack(index: number) { playerStore.removeFromPlaylist(index); }
 function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.value = false; }
+const editingOffset = ref(false);
+const offsetInputRef = ref<HTMLInputElement | null>(null);
+
+function startEditOffset() { editingOffset.value = true; nextTick(() => offsetInputRef.value?.focus()); }
+function commitOffset(e: Event) {
+  const v = Number((e.target as HTMLInputElement).value);
+  if (!isNaN(v)) { playerStore.resetLyricsOffset(); playerStore.adjustLyricsOffset(Math.max(-10, Math.min(10, v))); }
+  editingOffset.value = false;
+}
+
+function copyTrackInfo() { const t = playerStore.currentTrack; if (!t?.name) return; navigator.clipboard.writeText(`${t.name} - ${(t.ar||[]).map(a=>a.name).join('/')}`); }
+function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 ? '+' : ''; return `${sign}${v.toFixed(1)}s`; }
 </script>
 
 <style scoped>
@@ -298,6 +336,74 @@ function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.valu
 .favorite-ctrl { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .favorite-ctrl.saved { color: #ff6b8a !important; }
 .favorite-ctrl.saved :deep(svg) { fill: currentColor; }
+/* right actions */
+.right-actions { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); z-index: 65; }
+.ra-btn {
+  width: 44px; height: 44px; border-radius: 50%; border: none;
+  background: transparent; color: rgba(255,255,255,0.5);
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 12px; font-weight: 700;
+  transition: color 120ms ease, background 120ms ease;
+  flex-shrink: 0;
+}
+.ra-btn svg { width: 22px; height: 22px; stroke-width: 2.5; }
+.ra-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
+.ra-btn--rect { border-radius: 10px; font-size: 14px; width: 44px; }
+.ra-icon { position: relative; display: grid; place-items: center; }
+.ra-badge {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 9px; font-weight: 800;
+  color: rgba(255,255,255,0.85);
+  pointer-events: none;
+}
+/* offset popover */
+.offset-mask { position: fixed; inset: 0; z-index: 110; background: transparent; }
+.offset-popover {
+  position: fixed; right: 60px; top: 50%; transform: translateY(-50%);
+  width: 200px; padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface, #1a1c28);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  display: grid; gap: var(--space-2);
+  transform-origin: right center;
+  animation: offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+@keyframes offset-in { from { opacity: 0; transform: translateY(-50%) scale(0.92) translateX(8px); } to { opacity: 1; } }
+.offset-head { color: var(--text-main,#fff); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-align: center; }
+.offset-body { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.of-step {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-soft, rgba(255,255,255,0.12));
+  background: transparent; color: rgba(255,255,255,0.7);
+  cursor: pointer; display: grid; place-items: center;
+  transition: all 120ms ease; flex-shrink: 0;
+}
+.of-step:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
+.of-step svg { stroke-width: 2.5; }
+.of-value {
+  color: var(--accent,#c39c76); font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums;
+  min-width: 72px; text-align: center; cursor: pointer; padding: 2px 6px; border-radius: 6px;
+  transition: background 120ms ease;
+}
+.of-value:hover { background: rgba(255,255,255,0.06); }
+.of-input {
+  width: 72px; text-align: center; font-size: 20px; font-weight: 800;
+  background: rgba(255,255,255,0.08); border: 1px solid var(--accent,#c39c76);
+  color: var(--accent,#c39c76); border-radius: 8px; padding: 4px 6px;
+  outline: none; font-variant-numeric: tabular-nums; -moz-appearance: textfield;
+}
+.of-input::-webkit-inner-spin-button,
+.of-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.of-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: 11px; text-align: center; }
+.of-reset-wrap { text-align: center; }
+.of-reset {
+  padding: 5px 14px; border-radius: 999px; border: 1px solid var(--border-soft, rgba(255,255,255,0.1));
+  background: transparent; color: var(--text-soft, rgba(255,255,255,0.6)); font-size: 12px; cursor: pointer;
+  transition: all 120ms ease;
+}
+.of-reset:hover { color: var(--accent,#c39c76); border-color: var(--accent, rgba(195,156,118,0.4)); }
+.offset-fade-enter-active, .offset-fade-leave-active { transition: opacity 0.15s ease; }
+.offset-fade-enter-from, .offset-fade-leave-to { opacity: 0; }
 /* pure mode */
 .expanded-wrap.l-pure .cover-aura { display: none; }
 .expanded-wrap.l-pure .panel-body { grid-template-columns: 1fr !important; }
