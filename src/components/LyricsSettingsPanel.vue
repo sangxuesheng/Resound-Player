@@ -14,12 +14,12 @@
           </div>
           <div class="popover-body">
             <div v-show="activeTab === 'display'" class="tab-content">
-              <div class="sw-row"><span class="sw-label">纯净模式</span><FancySwitch :model-value="s.pureMode" @update:model-value="set('pureMode', $event)" /></div>
-              <div class="sw-row"><span class="sw-label">隐藏封面</span><FancySwitch :model-value="s.showCover" @update:model-value="set('showCover', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">隐藏封面</span><FancySwitch :model-value="!s.showCover" @update:model-value="setShowCover($event)" /></div>
               <div class="sw-row"><span class="sw-label">居中显示</span><FancySwitch :model-value="s.centerAlign" @update:model-value="set('centerAlign', $event)" /></div>
               <div class="sw-row"><span class="sw-label">显示翻译</span><FancySwitch :model-value="s.showTranslation" @update:model-value="set('showTranslation', $event)" /></div>
-              <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="set('showLyrics', !$event)" /></div>
+              <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="setShowLyrics($event)" /></div>
               <div class="sw-row"><span class="sw-label">播放栏切换</span><FancySwitch :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
@@ -81,6 +81,8 @@ const localBgMode = ref(s.bgMode);
 function setBgMode(v: string) { s.bgMode = v; s.save(); }
 const localBgCustomMode = ref(s.bgCustomMode);
 function setBgCustomMode(v: string) { s.bgCustomMode = v as any; s.save(); localBgCustomMode.value = v; }
+function setShowCover(v: boolean) { s.showCover = !v; if (v) { s.showLyrics = true; s.showMiniBar = true; } s.save(); }
+function setShowLyrics(v: boolean) { s.showLyrics = !v; if (v) s.showCover = true; s.save(); }
 
 const popoverStyle = computed(() => {
   const a = props.anchor || { top: 80, right: 24 };

@@ -3,7 +3,6 @@
     <div
       v-if="playerStore.expanded"
       class="expanded-wrap"
-      :class="{ 'l-pure': lyricsSettings.pureMode }"
       :style="bgStyle"
       @click.self="playerStore.closeExpanded()"
     >
@@ -24,18 +23,30 @@
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
-          <div v-show="showLeftZone" class="left-zone">
-            <div v-if="lyricsSettings.showCover" class="album-shell">
-              <div class="album-cover" :style="coverStyle"></div>
-            </div>
-            <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-            <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
+          <div v-if="!lyricsSettings.showCover" class="cover-hidden-head">
+            <h2 class="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</h2>
+            <p class="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
                 <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
               </template>
               <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-            </AnimatedAppear>
+            </p>
+          </div>
+          <div v-show="showLeftZone" class="left-zone">
+            <div v-if="lyricsSettings.showCover" class="album-shell">
+              <div class="album-cover" :style="coverStyle"></div>
+            </div>
+            <template v-if="lyricsSettings.showCover">
+              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
+                <template v-if="playerStore.currentTrack?.ar?.length">
+                  <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
+                </template>
+                <template v-else>{{ artistText }}</template>
+                <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
+              </AnimatedAppear>
+            </template>
             <div v-show="showLeftControls" class="progress-wrap">
               <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
               <div v-if="isSeeking" class="seek-preview">{{ formatTime(seekPreviewTime) }}</div>
@@ -86,7 +97,7 @@
           </transition>
         </Teleport>
 
-        <div v-if="lyricsSettings.showMiniBar && !lyricsSettings.pureMode" class="bottom-console">
+        <div v-if="lyricsSettings.showMiniBar" class="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -246,13 +257,12 @@ const iriBlurStyle = computed(() => {
 const coverAuraStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
 /* settings-driven */
-const showLeftZone = computed(() => !lyricsSettings.pureMode && lyricsSettings.showLyrics);
-const showLeftControls = computed(() => !lyricsSettings.showMiniBar || lyricsSettings.pureMode);
+const showLeftZone = computed(() => lyricsSettings.showCover);
+const showLeftControls = computed(() => !lyricsSettings.showMiniBar);
 
 const panelBodyStyle = computed(() => {
-  if (lyricsSettings.pureMode || !lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
-  const lw = lyricsSettings.showCover ? lyricsSettings.contentWidth : lyricsSettings.contentWidth * 0.5;
-  return { gridTemplateColumns: `${lw}% ${100 - lw}%` };
+  if (!lyricsSettings.showLyrics || !lyricsSettings.showCover) return { gridTemplateColumns: '1fr' };
+  return { gridTemplateColumns: `${lyricsSettings.contentWidth}% ${100 - lyricsSettings.contentWidth}%` };
 });
 
 const bgStyle = computed(() => {
@@ -354,6 +364,10 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
+.cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
+.song-name-center { margin: 0; color: #fff !important; font-size: 28px; font-weight: 700; line-height: 1.2; }
+.song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 15px; }
+.song-artist-center .rate-badge { margin-left: 8px; }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
@@ -466,10 +480,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .of-reset:hover { color: var(--accent,#c39c76); border-color: var(--accent, rgba(195,156,118,0.4)); }
 .offset-fade-enter-active, .offset-fade-leave-active { transition: opacity 0.15s ease; }
 .offset-fade-enter-from, .offset-fade-leave-to { opacity: 0; }
-/* pure mode */
-.expanded-wrap.l-pure .cover-aura { display: none; }
-.expanded-wrap.l-pure .panel-body { grid-template-columns: 1fr !important; }
-.expanded-wrap.l-pure .left-zone { display: none !important; }
 /* bottom console */
 .bottom-console {
   position: fixed;

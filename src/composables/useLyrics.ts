@@ -222,8 +222,9 @@ export type LyricStyleOptions = {
 export function getLineWrapStyle(lineIndex: number, currentIndex: number) {
   if (currentIndex < 0) return { opacity: 1, filter: 'none' };
   const diff = currentIndex - lineIndex;
-  if (diff > 0) {
-    return { opacity: Math.max(0.16, 1 - diff * 0.11), filter: `blur(${Math.min(2.4, diff * 0.2)}px)` };
+  const dist = Math.abs(diff);
+  if (dist > 0) {
+    return { opacity: Math.max(0.16, 1 - dist * 0.11), filter: `blur(${Math.min(2.4, dist * 0.2)}px)` };
   }
   return { opacity: 1, filter: 'none' };
 }
@@ -292,7 +293,8 @@ export function scrollToLyricLine(container: HTMLElement | null, lineEls: HTMLEl
   if (index < 0 || !container) return;
   const lineEl = lineEls[index];
   if (!lineEl) return;
-  const anchorY = container.clientHeight * ((lyricsSettings.anchorPos ?? 3) / 10);
+  const anchorRatio = 0.15 + ((lyricsSettings.anchorPos ?? 3) / 10) * 0.7;
+  const anchorY = container.clientHeight * anchorRatio;
   const targetTop = lineEl.offsetTop + lineEl.clientHeight / 2 - anchorY;
   container.scrollTo({ top: Math.max(0, targetTop), behavior });
 }
