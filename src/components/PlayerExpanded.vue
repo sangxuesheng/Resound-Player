@@ -1,1158 +1,357 @@
 <template>
   <transition name="player-sheet">
-    <div v-if="playerStore.expanded" class="expanded-wrap" :style="bgStyle" @click.self="playerStore.closeExpanded()">
+    <div
+      v-if="playerStore.expanded"
+      class="expanded-wrap"
+      :class="{ 'l-pure': lyricsSettings.pureMode }"
+      :style="bgStyle"
+      @click.self="playerStore.closeExpanded()"
+    >
       <div class="cover-aura" :style="coverAuraStyle"></div>
       <section class="expanded-panel">
         <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
+          <div class="panel-head-right">
+            <button
+              ref="gearBtnRef"
+              type="button"
+              class="settings-gear-btn"
+              title="歌词设置"
+              aria-label="歌词设置"
+              @click="onOpenSettings"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+              </svg>
+            </button>
+            <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
+          </div>
         </AnimatedAppear>
 
-        <div class="panel-body">
-          <div class="left-zone">
-            <div class="album-shell">
+        <div class="panel-body" :style="panelBodyStyle">
+          <div v-show="showLeftZone" class="left-zone">
+            <div v-if="lyricsSettings.showCover" class="album-shell">
               <div class="album-cover" :style="coverStyle"></div>
             </div>
-
             <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
               <template v-if="playerStore.currentTrack?.ar?.length">
-                <button
-                  v-for="artist in playerStore.currentTrack.ar"
-                  :key="artist.id || artist.name"
-                  type="button"
-                  class="artist-inline-btn"
-                  :disabled="!(artist.id || artist.artistId)"
-                  @click.stop="openArtist(artist)"
-                >
-                  {{ artist.name }}
-                </button>
+                <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
               </template>
               <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </AnimatedAppear>
-
-            <div class="progress-wrap">
-              <input
-                class="progress"
-                type="range"
-                min="0"
-                :max="Math.max(1, Math.floor(playerStore.duration || 0))"
-                :value="Math.floor(playerStore.currentTime || 0)"
-                @mousedown="onSeekStart"
-                @touchstart="onSeekStart"
-                @input="onSeek"
-                @change="onSeekEnd"
-                @mouseup="onSeekEnd"
-                @touchend="onSeekEnd"
-              />
+            <div v-show="showLeftControls" class="progress-wrap">
+              <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
               <div v-if="isSeeking" class="seek-preview">{{ formatTime(seekPreviewTime) }}</div>
-              <div class="times">
-                <span class="time">{{ formatTime(playerStore.currentTime) }}</span>
-                <span class="time">{{ formatTime(playerStore.duration) }}</span>
-              </div>
+              <div class="times"><span class="time">{{ formatTime(playerStore.currentTime) }}</span><span class="time">{{ formatTime(playerStore.duration) }}</span></div>
             </div>
-
-            <div class="controls">
-              <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式">
-                <Repeat v-if="playerStore.playMode === 'loop'" :size="16" />
-                <Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" />
-                <Shuffle v-else :size="16" />
-              </button>
-              <button class="ctrl" @click="playerStore.prev()" aria-label="上一首">◀◀</button>
-              <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">
-                {{ playerStore.isPlaying ? '❚❚' : '▶' }}
-              </button>
-              <button class="ctrl" @click="playerStore.next()" aria-label="下一首">▶▶</button>
-              <button
-                v-if="isPersonalFmCurrentTrack"
-                class="ctrl ctrl-fm-indicator"
-                type="button"
-                aria-label="当前为私人 FM"
-                disabled
-              >
-                FM
-              </button>
-              <button v-else class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表">
-                <AlignJustify :size="16" />
-              </button>
+            <div v-show="showLeftControls" class="controls">
+              <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
+              <button class="ctrl" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="16" /></button>
+              <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+              <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
+              <button v-if="isPersonalFmCurrentTrack" class="ctrl ctrl-fm-indicator" type="button" aria-label="当前为私人 FM" disabled>FM</button>
+              <button v-else class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="16" /></button>
             </div>
-
-            <div class="volume-wrap">
+            <div v-show="showLeftControls" class="volume-wrap">
               <div class="volume-control">
-                <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()">
-                  <VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" />
-                  <Volume v-else-if="playerStore.volume < 0.33" :size="18" />
-                  <Volume1 v-else-if="playerStore.volume < 0.66" :size="18" />
-                  <Volume2 v-else :size="18" />
-                </button>
+                <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" /><Volume v-else-if="playerStore.volume < 0.33" :size="18" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="18" /><Volume2 v-else :size="18" /></button>
                 <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
               </div>
-              <button
-                class="ctrl favorite-ctrl"
-                type="button"
-                :class="{ saved: isCurrentLiked, loading: likeLoading }"
-                :aria-pressed="isCurrentLiked"
-                :aria-label="isCurrentLiked ? '取消收藏' : '收藏'"
-                :disabled="likeLoading || !canToggleCurrentLike"
-                @click="toggleCurrentLike"
-              >
-                <Heart :size="16" />
-              </button>
+              <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
           </div>
+          <LyricsPanel />
+        </div>
 
-          <div class="right-zone">
-            <div ref="lyricBoxRef" class="lyric-box">
-              <p v-if="!lyricLines.length" class="line">暂无歌词</p>
-              <div
-                v-for="(line, idx) in lyricLines"
-                v-else
-                :key="`${idx}-${line.time}`"
-                :ref="(el) => setLyricLineRef(el, idx)"
-                class="line-wrap"
-                :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }"
-                :style="getLineWrapStyle(idx)"
-                @click="seekToLyricLine(idx)"
-              >
-                <p
-                  class="line"
-                  :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }"
-                  :style="getLineStyle(idx, line)"
-                >
-                  <template v-if="line.words && line.words.length">
-                    <span
-                      v-for="(word, wIdx) in line.words"
-                      :key="`${idx}-${wIdx}`"
-                      class="word"
-                      :style="getWordStyle(idx, word)"
-                    >
-                      {{ word.text }}<span v-if="word.space">&nbsp;</span>
-                    </span>
-                  </template>
-                  <template v-else>
-                    {{ line.text || '...' }}
-                  </template>
-                </p>
-                <p
-                  v-if="line.translation"
-                  class="line-sub"
-                  :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }"
-                  :style="getTranslationStyle(idx)"
-                >
-                  {{ line.translation }}
-                </p>
-              </div>
+        <div v-if="lyricsSettings.showMiniBar && !lyricsSettings.pureMode" class="bottom-console">
+          <div class="console-progress">
+            <span class="console-time">{{ formatTime(playerStore.currentTime) }}</span>
+            <input class="console-bar" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
+            <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
+          </div>
+          <div class="console-controls">
+            <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
+            <button class="con-btn" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="14" /></button>
+            <button class="con-btn con-play" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+            <button class="con-btn" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="14" /></button>
+            <button class="con-btn" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="14" /></button>
+            <div class="con-volume">
+              <button class="con-btn con-vol-icon" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="14" /><Volume v-else-if="playerStore.volume < 0.33" :size="14" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="14" /><Volume2 v-else :size="14" /></button>
+              <input class="con-vol-slider" type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
             </div>
+            <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
           </div>
         </div>
 
         <div v-if="showPlaylistPopup" class="playlist-popup-mask" @click.self="showPlaylistPopup = false">
-          <aside class="playlist-popup">
-            <div class="playlist-popup-head">
-              <h3>播放列表</h3>
-              <button class="ghost" @click="showPlaylistPopup = false">关闭</button>
-            </div>
-            <ul>
-              <li
-                v-for="(track, idx) in playerStore.playlist"
-                :key="track.id"
-                :class="{ active: idx === playerStore.currentIndex }"
-                @click="playFromPopup(idx)"
-              >
-                <span class="t">{{ track.name }}</span>
-                <span class="a">{{ (track.ar || []).map((x) => x.name).join('/') }}</span>
+          <aside class="playlist-popup" @click.stop>
+            <div class="playlist-popup-head"><h3>播放列表</h3><div class="playlist-popup-actions"><button v-if="playerStore.playlist.length" class="ghost" title="清空列表" @click="onClearPlaylist">清空</button><button class="ghost" @click="showPlaylistPopup = false">关闭</button></div></div>
+            <ul v-if="playerStore.playlist.length">
+              <li v-for="(track, idx) in playerStore.playlist" :key="track.id" :class="{ active: idx === playerStore.currentIndex }" @click="playFromPopup(idx)">
+                <span class="track-num">{{ idx + 1 }}</span>
+                <span class="track-info"><span class="t">{{ track.name }}</span><span class="a">{{ (track.ar || []).map((x) => x.name).join('/') }}</span></span>
+                <button class="track-remove-btn" title="移出列表" @click.stop="onRemoveTrack(idx)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </li>
             </ul>
+            <p v-else class="playlist-empty">列表为空</p>
           </aside>
         </div>
       </section>
+
+      <LyricsSettingsPanel :visible="showSettings" :anchor="settingsAnchor" @close="showSettings = false" />
     </div>
   </transition>
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, Heart, Repeat, Repeat1, Shuffle, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { getCloudLyric, getSongLyric, toggleDjSubscribe, toggleSongLike } from '../api/music';
+import { AlignJustify, Heart, Repeat, Repeat1, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
+import { toggleDjSubscribe, toggleSongLike } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
+import { lyricsSettings } from '../stores/lyricsSettings';
 import AnimatedAppear from './AnimatedAppear.vue';
+import LyricsPanel from './LyricsPanel.vue';
+import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
 
-const emit = defineEmits<{
-  'open-artist': [artist: Record<string, any>];
-}>();
+const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>] }>();
 
-const artistText = computed(() => {
-  const ar = playerStore.currentTrack?.ar || [];
-  return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist';
-});
+const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist'; });
+function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
+const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
-function openArtist(artist: Record<string, any>) {
-  const id = Number(artist?.id || artist?.artistId || 0);
-  if (!id) return;
-  emit('open-artist', artist);
+const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(195, 156, 118)', c4: 'rgb(20, 24, 36)' });
+const showPlaylistPopup = ref(false);
+const showSettings = ref(false);
+const settingsAnchor = ref({ top: 0, right: 0 });
+const gearBtnRef = ref<HTMLElement | null>(null);
+
+function onOpenSettings() {
+  const btn = gearBtnRef.value;
+  if (btn) { const r = btn.getBoundingClientRect(); settingsAnchor.value = { top: r.bottom + 8, right: window.innerWidth - r.right }; }
+  showSettings.value = true;
 }
 
-const coverStyle = computed(() => {
-  const url = playerStore.currentTrack?.al?.picUrl;
-  if (!url) return {};
-  return { backgroundImage: `url(${url})` };
-});
-
-const palette = ref({
-  c1: 'rgb(28, 33, 53)',
-  c2: 'rgb(84, 110, 126)',
-  c3: 'rgb(195, 156, 118)',
-  c4: 'rgb(20, 24, 36)',
-});
-
-const showPlaylistPopup = ref(false);
 const isPersonalFmCurrentTrack = computed(() => playerStore.isPersonalFmTrack(playerStore.currentTrack));
 const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
 const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
 const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
-const canToggleCurrentLike = computed(() => (isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0));
+const canToggleCurrentLike = computed(() => isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0);
 const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
 const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
 const isCurrentLiked = computed(() => {
-  void likedSongSignature.value;
-  void subscribedDjSignature.value;
+  void likedSongSignature.value; void subscribedDjSignature.value;
   if (isCurrentPodcast.value) return userStore.subscribedDjIds.includes(currentPodcastRid.value);
   return currentTrackId.value > 0 ? userStore.likedSongIds.includes(currentTrackId.value) : false;
 });
 const likeLoading = ref(false);
+watch(() => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`, () => { likeLoading.value = false; }, { immediate: true });
 
-watch(
-  () => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`,
-  () => {
-    likeLoading.value = false;
-  },
-  { immediate: true },
-);
-
-type LyricWord = {
-  text: string;
-  startTime: number;
-  duration: number;
-  space?: boolean;
-};
-
-type LyricLine = {
-  time: number;
-  text: string;
-  translation?: string;
-  words?: LyricWord[];
-};
-
-const lyricLines = ref<LyricLine[]>([]);
-const lyricBoxRef = ref<HTMLElement | null>(null);
-const lyricLineRefs = ref<HTMLElement[]>([]);
-const tickNow = ref(0);
 const isSeeking = ref(false);
 const seekPreviewTime = ref(0);
-let tickTimer: ReturnType<typeof setInterval> | null = null;
-const LYRIC_ANCHOR_RATIO = 0.30;
 
-const bgStyle = computed(() => ({
-  background: `
-    linear-gradient(160deg, ${palette.value.c1} 0%, ${palette.value.c2} 42%, ${palette.value.c4} 100%)
-  `,
-  '--panel-bg': `${palette.value.c1}`,
-  '--panel-bg-soft': `${palette.value.c2}`,
-  '--card-bg': 'rgba(18, 20, 28, 0.96)',
-  '--card-bg-2': 'rgba(24, 26, 36, 0.98)',
-  '--line-muted': 'rgba(255,255,255,0.16)',
-  '--accent': `${palette.value.c3}`,
-}));
+const coverAuraStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
-const coverAuraStyle = computed(() => {
-  const url = playerStore.currentTrack?.al?.picUrl;
-  if (!url) return {};
-  return {
-    backgroundImage: `url(${url})`,
-  };
+/* settings-driven */
+const showLeftZone = computed(() => !lyricsSettings.pureMode && lyricsSettings.showLyrics);
+const showLeftControls = computed(() => !lyricsSettings.showMiniBar || lyricsSettings.pureMode);
+
+const panelBodyStyle = computed(() => {
+  if (lyricsSettings.pureMode || !lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
+  const lw = lyricsSettings.showCover ? lyricsSettings.contentWidth : lyricsSettings.contentWidth * 0.5;
+  return { gridTemplateColumns: `${lw}% ${100 - lw}%` };
 });
 
-const displayTime = computed(() => {
-  // 通过 tickNow 建立响应，保证歌词在播放时持续刷新
-  void tickNow.value;
-  return playerStore.currentTime || 0;
+const bgStyle = computed(() => {
+  const { bgMode, bgTheme, bgCustomMode, bgColor } = lyricsSettings;
+  if (bgMode === 'basic') {
+    if (bgTheme === 'light') return {
+      background: `linear-gradient(160deg, ${fade(palette.value.c1, 0.3)} 0%, ${fade(palette.value.c2, 0.2)} 42%, ${fade(palette.value.c4, 0.15)} 100%)`,
+      '--panel-bg': fade(palette.value.c1, 0.3), '--panel-bg-soft': fade(palette.value.c2, 0.2),
+      '--card-bg': 'rgba(255,255,255,0.92)', '--card-bg-2': 'rgba(240,242,248,0.96)',
+      '--line-muted': 'rgba(0,0,0,0.12)', '--accent': palette.value.c3,
+    };
+    if (bgTheme === 'dark') return {
+      background: `linear-gradient(160deg, ${darken(palette.value.c1, 0.5)} 0%, ${darken(palette.value.c2, 0.4)} 42%, ${darken(palette.value.c4, 0.6)} 100%)`,
+      '--panel-bg': darken(palette.value.c1, 0.5), '--panel-bg-soft': darken(palette.value.c2, 0.4),
+      '--card-bg': 'rgba(0,0,0,0.96)', '--card-bg-2': 'rgba(8,10,16,0.98)',
+      '--line-muted': 'rgba(255,255,255,0.12)', '--accent': palette.value.c3,
+    };
+    return {
+      background: `linear-gradient(160deg, ${palette.value.c1} 0%, ${palette.value.c2} 42%, ${palette.value.c4} 100%)`,
+      '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2,
+      '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)',
+      '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3,
+    };
+  }
+  const c = bgColor || '#1e293b';
+  if (bgCustomMode === 'solid') return { background: c, '--panel-bg': c, '--panel-bg-soft': c, '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.10)', '--accent': palette.value.c3 };
+  if (bgCustomMode === 'gradient') return {
+    background: `linear-gradient(160deg, ${c} 0%, ${shiftHue(c, 30)} 42%, ${shiftHue(c, -20)} 100%)`,
+    '--panel-bg': c, '--panel-bg-soft': shiftHue(c, 15), '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.10)', '--accent': palette.value.c3,
+  };
+  if (bgCustomMode === 'image') {
+    const coverUrl = playerStore.currentTrack?.al?.picUrl;
+    return { background: coverUrl ? `url(${coverUrl}) center/cover no-repeat` : c, '--panel-bg': c, '--panel-bg-soft': fade(c, 0.8), '--card-bg': fade(c, 1.3), '--card-bg-2': fade(c, 1.4), '--line-muted': 'rgba(255,255,255,0.12)', '--accent': palette.value.c3 };
+  }
+  return { background: c, '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2, '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)', '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3 };
 });
 
-const currentLyricIndex = computed(() => {
-  if (!lyricLines.value.length) return -1;
-  const t = displayTime.value;
-  let idx = -1;
-  for (let i = 0; i < lyricLines.value.length; i += 1) {
-    if (t >= lyricLines.value[i].time) idx = i;
-    else break;
-  }
-  return idx;
-});
-
-function setLyricLineRef(el: Element | null, idx: number) {
-  if (!el) return;
-  lyricLineRefs.value[idx] = el as HTMLElement;
+function fade(rgb: string, factor: number): string { const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb; return `rgba(${m[0]},${m[1]},${m[2]},${Math.min(1, Math.max(0, factor)).toFixed(2)})`; }
+function darken(rgb: string, factor: number): string { const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb; const f = Math.min(1, Math.max(0, factor)); return `rgb(${Math.round(Number(m[0])*(1-f))},${Math.round(Number(m[1])*(1-f))},${Math.round(Number(m[2])*(1-f))})`; }
+function shiftHue(rgb: string, degrees: number): string {
+  const m = rgb.match(/\d+/g); if (!m || m.length < 3) return rgb;
+  let r = Number(m[0]), g = Number(m[1]), b = Number(m[2]);
+  if (degrees > 0) { r = Math.min(255, r + degrees * 1.5); g = Math.min(255, g + degrees * 0.5); b = Math.max(0, b - degrees * 0.5); }
+  else { r = Math.max(0, r + degrees); g = Math.max(0, g + degrees * 0.3); b = Math.max(0, b - degrees * 0.7); }
+  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
 }
-
-function getLineWrapStyle(lineIndex: number) {
-  const current = currentLyricIndex.value;
-  if (current < 0) {
-    return {
-      opacity: 1,
-      filter: 'none',
-    };
-  }
-
-  const diff = current - lineIndex;
-
-  // 当前行之前：越往前越淡
-  if (diff > 0) {
-    const opacity = Math.max(0.16, 1 - diff * 0.11);
-    const blur = Math.min(2.4, diff * 0.2);
-    return {
-      opacity,
-      filter: `blur(${blur}px)`,
-    };
-  }
-
-  // 当前行与未播放行：100% 透明度
-  return {
-    opacity: 1,
-    filter: 'none',
-  };
-}
-
-function getLineStyle(lineIndex: number, line: LyricLine) {
-  const baseColor = 'rgba(255,255,255,0.86)';
-  const activeColor = '#ffffff';
-
-  if (line.words?.length) {
-    return {
-      color: lineIndex === currentLyricIndex.value ? activeColor : baseColor,
-    };
-  }
-
-  const nextLine = lyricLines.value[lineIndex + 1];
-  const startMs = line.time * 1000;
-  const endMs = (nextLine?.time ?? line.time + 3) * 1000;
-  const currentMs = displayTime.value * 1000;
-
-  if (lineIndex < currentLyricIndex.value || currentMs >= endMs) {
-    return {
-      color: activeColor,
-      backgroundImage: 'none',
-      WebkitTextFillColor: 'initial',
-    };
-  }
-
-  if (lineIndex > currentLyricIndex.value || currentMs <= startMs) {
-    return {
-      color: baseColor,
-      backgroundImage: 'none',
-      WebkitTextFillColor: 'initial',
-    };
-  }
-
-  const progress = Math.min(1, Math.max(0, (currentMs - startMs) / Math.max(1, endMs - startMs)));
-  const percent = Math.round(progress * 100);
-
-  return {
-    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${percent}%, ${baseColor} ${percent}%, ${baseColor} 100%)`,
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    color: 'transparent',
-  };
-}
-
-function getWordStyle(lineIndex: number, word: LyricWord) {
-  const baseColor = 'rgba(255,255,255,0.55)';
-  const activeColor = '#ffffff';
-  const currentMs = displayTime.value * 1000;
-  const start = word.startTime;
-  const end = word.startTime + Math.max(1, word.duration);
-
-  if (lineIndex < currentLyricIndex.value || currentMs >= end) {
-    return {
-      color: activeColor,
-      backgroundImage: 'none',
-      WebkitTextFillColor: 'initial',
-    };
-  }
-
-  if (lineIndex > currentLyricIndex.value || currentMs <= start) {
-    return {
-      color: baseColor,
-      backgroundImage: 'none',
-      WebkitTextFillColor: 'initial',
-    };
-  }
-
-  const progress = Math.min(1, Math.max(0, (currentMs - start) / (end - start)));
-  const percent = Math.round(progress * 100);
-
-  return {
-    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${percent}%, ${baseColor} ${percent}%, ${baseColor} 100%)`,
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    color: 'transparent',
-  };
-}
-
-function getTranslationStyle(lineIndex: number) {
-  const baseColor = 'rgba(255,255,255,0.62)';
-  const activeColor = 'rgba(255,255,255,0.94)';
-  const currentMs = displayTime.value * 1000;
-  const line = lyricLines.value[lineIndex];
-
-  if (!line) return {};
-
-  if (lineIndex < currentLyricIndex.value) {
-    return {
-      color: activeColor,
-      opacity: 0.92,
-      textShadow: '0 0 12px rgba(255,255,255,0.14)',
-    };
-  }
-
-  if (lineIndex > currentLyricIndex.value) {
-    return {
-      color: baseColor,
-      opacity: 0.72,
-    };
-  }
-
-  if (!line.translation) {
-    return {
-      color: baseColor,
-      opacity: 0.72,
-    };
-  }
-
-  const startMs = line.time * 1000;
-  const nextStartMs = (lyricLines.value[lineIndex + 1]?.time ?? line.time + 3) * 1000;
-  const total = Math.max(1, nextStartMs - startMs);
-  const progress = Math.min(1, Math.max(0, (currentMs - startMs) / total));
-  const percent = Math.round(progress * 100);
-
-  return {
-    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${percent}%, ${baseColor} ${percent}%, ${baseColor} 100%)`,
-    backgroundClip: 'text',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    color: 'transparent',
-    opacity: 1,
-  };
-}
-
-function scrollCurrentLyricToCenter(index: number, behavior: ScrollBehavior = 'smooth') {
-  if (index < 0) return;
-
-  const box = lyricBoxRef.value;
-  const lineEl = lyricLineRefs.value[index];
-  if (!box || !lineEl) return;
-
-  const anchorY = box.clientHeight * LYRIC_ANCHOR_RATIO;
-  const targetTop = lineEl.offsetTop + lineEl.clientHeight / 2 - anchorY;
-
-  box.scrollTo({
-    top: Math.max(0, targetTop),
-    behavior,
-  });
-}
-
-watch(currentLyricIndex, async (idx, prev) => {
-  if (idx < 0 || isSeeking.value) return;
-  await nextTick();
-  scrollCurrentLyricToCenter(idx, prev === -1 ? 'auto' : 'smooth');
-});
 
 async function extractPaletteFromCover(url?: string) {
   if (!url) return;
-
-  const img = new Image();
-  img.crossOrigin = 'anonymous';
-  img.referrerPolicy = 'no-referrer';
-  img.src = url;
-
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject();
-  });
-
-  const canvas = document.createElement('canvas');
-  const size = 56;
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  ctx.drawImage(img, 0, 0, size, size);
-  const { data } = ctx.getImageData(0, 0, size, size);
-
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let n = 0;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3];
-    if (alpha < 40) continue;
-    r += data[i];
-    g += data[i + 1];
-    b += data[i + 2];
-    n += 1;
-  }
-
+  const img = new Image(); img.crossOrigin = 'anonymous'; img.referrerPolicy = 'no-referrer'; img.src = url;
+  await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(); });
+  const canvas = document.createElement('canvas'); const size = 56; canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d'); if (!ctx) return;
+  ctx.drawImage(img, 0, 0, size, size); const { data } = ctx.getImageData(0, 0, size, size);
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let i = 0; i < data.length; i += 4) { if (data[i + 3] < 40) continue; r += data[i]; g += data[i + 1]; b += data[i + 2]; n += 1; }
   if (!n) return;
-
-  const ar = Math.round(r / n);
-  const ag = Math.round(g / n);
-  const ab = Math.round(b / n);
-
+  const ar = Math.round(r / n), ag = Math.round(g / n), ab = Math.round(b / n);
   const clamp = (x: number) => Math.max(0, Math.min(255, x));
-  const tone = (dr: number, dg: number, db: number) => `rgb(${clamp(ar + dr)}, ${clamp(ag + dg)}, ${clamp(ab + db)})`;
-
-  palette.value = {
-    c1: tone(-52, -46, -40),
-    c2: tone(-8, -4, 6),
-    c3: tone(42, 34, 26),
-    c4: tone(-86, -80, -72),
-  };
+  const tone = (dr: number, dg: number, db: number) => `rgb(${clamp(ar + dr)},${clamp(ag + dg)},${clamp(ab + db)})`;
+  palette.value = { c1: tone(-52, -46, -40), c2: tone(-8, -4, 6), c3: tone(42, 34, 26), c4: tone(-86, -80, -72) };
 }
 
-watch(
-  () => playerStore.currentTrack?.al?.picUrl,
-  async (url) => {
-    try {
-      await extractPaletteFromCover(url);
-    } catch {
-      // ignore extract failures and keep previous palette
-    }
-  },
-  { immediate: true },
-);
+watch(() => playerStore.currentTrack?.al?.picUrl, async (url) => { try { await extractPaletteFromCover(url); } catch { /* keep previous */ } }, { immediate: true });
 
-watch(
-  () => [playerStore.currentTrack?.id, playerStore.currentTrack?.source, playerStore.currentTrack?.cloudSid],
-  async ([id, source, cloudSid]) => {
-    if (!id) return;
-    try {
-      const data = source === 'cloud' && cloudSid
-        ? (await getCloudLyric(Number(playerStore.currentTrack?.cloudOwnerId || playerStore.currentTrack?.uid || 0), cloudSid)).data
-        : (await getSongLyric(Number(id))).data;
-      lyricLines.value = parseLyrics(data);
-      await nextTick();
-      if (lyricBoxRef.value) lyricBoxRef.value.scrollTop = 0;
-    } catch {
-      lyricLines.value = [];
-    }
-  },
-  { immediate: true },
-);
-
-onMounted(() => {
-  tickTimer = setInterval(() => {
-    if (playerStore.isPlaying) {
-      tickNow.value = performance.now();
-    }
-  }, 50);
-
-  nextTick(() => {
-    if (currentLyricIndex.value >= 0) {
-      scrollCurrentLyricToCenter(currentLyricIndex.value, 'auto');
-    }
-  });
-});
-
-onUnmounted(() => {
-  if (tickTimer) {
-    clearInterval(tickTimer);
-    tickTimer = null;
-  }
-});
-
-function onVolume(e: Event) {
-  const value = Number((e.target as HTMLInputElement).value) / 100;
-  playerStore.setVolume(value);
-}
-
+function onVolume(e: Event) { playerStore.setVolume(Number((e.target as HTMLInputElement).value) / 100); }
 async function toggleCurrentLike() {
   if (likeLoading.value || !canToggleCurrentLike.value) return;
-
-  const next = !isCurrentLiked.value;
-  likeLoading.value = true;
-
+  const next = !isCurrentLiked.value; likeLoading.value = true;
   try {
     const response = isCurrentPodcast.value
       ? await toggleDjSubscribe({ rid: currentPodcastRid.value, subscribe: next, cookie: userStore.loginCookie || undefined })
-      : await toggleSongLike({
-        id: currentTrackId.value,
-        like: next,
-        uid: userStore.profile?.userId,
-        cookie: userStore.loginCookie || undefined,
-      });
-    const code = response?.data?.code ?? response?.data?.data?.code;
-    if (typeof code === 'number' && code !== 200) {
-      throw new Error(`收藏失败，接口返回 ${code}`);
-    }
-
+      : await toggleSongLike({ id: currentTrackId.value, like: next, uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
+    if (typeof (response?.data?.code ?? response?.data?.data?.code) === 'number' && (response?.data?.code ?? response?.data?.data?.code) !== 200) throw new Error('收藏失败');
     if (isCurrentPodcast.value) {
       const rid = currentPodcastRid.value;
-      const exists = userStore.subscribedDjIds.includes(rid);
-      if (next && !exists) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
-      if (!next && exists) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
-      return;
-    }
-
-    const id = currentTrackId.value;
-    if (next) {
-      if (!userStore.likedSongIds.includes(id)) {
-        userStore.likedSongIds = [...userStore.likedSongIds, id];
-      }
+      if (next && !userStore.subscribedDjIds.includes(rid)) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
+      if (!next) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
     } else {
-      userStore.likedSongIds = userStore.likedSongIds.filter((songId) => songId !== id);
+      if (next && !userStore.likedSongIds.includes(currentTrackId.value)) userStore.likedSongIds = [...userStore.likedSongIds, currentTrackId.value];
+      if (!next) userStore.likedSongIds = userStore.likedSongIds.filter((id) => id !== currentTrackId.value);
     }
-  } catch (error) {
-    console.error('[player-expanded] toggle like failed', error);
-  } finally {
-    likeLoading.value = false;
-  }
+  } catch { console.error('[player-expanded] toggle like failed'); }
+  finally { likeLoading.value = false; }
 }
-
-function onSeekStart() {
-  isSeeking.value = true;
-  seekPreviewTime.value = playerStore.currentTime || 0;
-}
-
-function onSeek(e: Event) {
-  const t = Number((e.target as HTMLInputElement).value);
-  seekPreviewTime.value = t;
-  playerStore.seek(t);
-  tickNow.value = performance.now();
-}
-
-function onSeekEnd() {
-  seekPreviewTime.value = playerStore.currentTime || 0;
-  tickNow.value = performance.now();
-  const idx = currentLyricIndex.value;
-  if (idx >= 0) {
-    nextTick(() => {
-      scrollCurrentLyricToCenter(idx, 'auto');
-    });
-  }
-  window.setTimeout(() => {
-    isSeeking.value = false;
-  }, 80);
-}
-
-function seekToLyricLine(index: number) {
-  const line = lyricLines.value[index];
-  if (!line) return;
-  playerStore.seek(line.time);
-  tickNow.value = performance.now();
-  nextTick(() => {
-    scrollCurrentLyricToCenter(index, 'auto');
-  });
-}
-
-function formatTime(sec: number) {
-  const s = Math.max(0, Math.floor(sec || 0));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, '0')}`;
-}
-
-function scrollPlaylistIntoView() {
-  if (isPersonalFmCurrentTrack.value) return;
-  showPlaylistPopup.value = true;
-}
-
-async function playFromPopup(index: number) {
-  await playerStore.playByIndex(index);
-  showPlaylistPopup.value = false;
-}
-
-function parseLyrics(payload: any): LyricLine[] {
-  const yrcText = payload?.yrc?.lyric || '';
-  // 云盘歌词: lrc 是字符串；普通歌词: lrc 是 { lyric: "..." }
-  const lrcText = typeof payload?.lrc === 'string' ? payload.lrc : (payload?.lrc?.lyric || '');
-  const tlyricText = payload?.tlyric?.lyric || '';
-
-  const lrcLines = parseLrc(lrcText);
-  const yrcLines = parseYrc(yrcText);
-
-  // 同步优先使用 LRC 时间轴（更稳定），YRC 只补充逐字数据
-  let baseLines: LyricLine[] = [];
-  if (lrcLines.length) {
-    baseLines = lrcLines.map((line) => ({ ...line }));
-
-    if (yrcLines.length) {
-      baseLines = baseLines.map((line) => {
-        let best: LyricLine | undefined;
-        let minDiff = 1.2;
-        for (const yLine of yrcLines) {
-          const diff = Math.abs(yLine.time - line.time);
-          if (diff <= minDiff) {
-            minDiff = diff;
-            best = yLine;
-          }
-        }
-
-        if (!best) return line;
-        return {
-          ...line,
-          text: best.text || line.text,
-          words: best.words,
-        };
-      });
-    }
-  } else {
-    baseLines = yrcLines;
-  }
-
-  if (!baseLines.length) return [];
-
-  const tLines = parseLrc(tlyricText);
-  if (!tLines.length) return baseLines;
-
-  if (tLines.length === baseLines.length) {
-    return baseLines.map((line, index) => ({
-      ...line,
-      translation: tLines[index]?.text || '',
-    }));
-  }
-
-  return baseLines.map((line) => {
-    let bestText = '';
-    let bestDiff = Infinity;
-    for (const tLine of tLines) {
-      const diff = Math.abs(tLine.time - line.time);
-      if (diff < bestDiff && diff <= 2) {
-        bestDiff = diff;
-        bestText = tLine.text;
-      }
-    }
-
-    return {
-      ...line,
-      translation: bestText,
-    };
-  });
-}
-
-function parseLrc(lrc: string): LyricLine[] {
-  if (!lrc?.trim()) return [];
-  const rows = lrc.split('\n');
-  const out: LyricLine[] = [];
-
-  for (const row of rows) {
-    const matches = [...row.matchAll(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g)];
-    if (!matches.length) continue;
-    const text = row.replace(/\[(\d{2}):(\d{2})(?:\.(\d{1,3}))?\]/g, '').trim();
-
-    for (const m of matches) {
-      const min = Number(m[1] || 0);
-      const sec = Number(m[2] || 0);
-      const msRaw = m[3] || '0';
-      const ms = Number(msRaw.padEnd(3, '0'));
-      out.push({ time: min * 60 + sec + ms / 1000, text });
-    }
-  }
-
-  return out.sort((a, b) => a.time - b.time);
-}
-
-function parseYrc(yrc: string): LyricLine[] {
-  if (!yrc?.trim()) return [];
-
-  const lines = yrc.split('\n');
-  const out: LyricLine[] = [];
-  const lineRegex = /^\[(\d+),(\d+)\](.*)$/;
-  const wordRegex = /\((\d+),(\d+),\d+\)([^()]+)/g;
-
-  for (const raw of lines) {
-    const row = raw.trim();
-    if (!row) continue;
-
-    const lineMatch = row.match(lineRegex);
-    if (!lineMatch) continue;
-
-    const lineStartMs = Number(lineMatch[1] || 0);
-    const body = lineMatch[3] || '';
-
-    const words: LyricWord[] = [];
-    let fullText = '';
-
-    for (const m of body.matchAll(wordRegex)) {
-      const offset = Number(m[1] || 0);
-      const duration = Number(m[2] || 0);
-      const rawWord = m[3] || '';
-      const hasTrailingSpace = /\s$/.test(rawWord);
-      const text = rawWord.trimEnd();
-
-      if (!text && !hasTrailingSpace) continue;
-
-      words.push({
-        text,
-        startTime: lineStartMs + offset,
-        duration,
-        space: hasTrailingSpace,
-      });
-
-      fullText += text + (hasTrailingSpace ? ' ' : '');
-    }
-
-    out.push({
-      time: lineStartMs / 1000,
-      text: fullText.trim() || body.replace(wordRegex, '$3').trim(),
-      words,
-    });
-  }
-
-  return out.sort((a, b) => a.time - b.time);
-}
+function onSeekStart() { isSeeking.value = true; seekPreviewTime.value = playerStore.currentTime || 0; }
+function onSeek(e: Event) { const t = Number((e.target as HTMLInputElement).value); seekPreviewTime.value = t; playerStore.seek(t); }
+function onSeekEnd() { seekPreviewTime.value = playerStore.currentTime || 0; setTimeout(() => { isSeeking.value = false; }, 80); }
+function formatTime(sec: number) { const s = Math.max(0, Math.floor(sec || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+function scrollPlaylistIntoView() { if (!isPersonalFmCurrentTrack.value) showPlaylistPopup.value = true; }
+async function playFromPopup(index: number) { await playerStore.playByIndex(index); showPlaylistPopup.value = false; }
+function onRemoveTrack(index: number) { playerStore.removeFromPlaylist(index); }
+function onClearPlaylist() { playerStore.clearPlaylist(); showPlaylistPopup.value = false; }
 </script>
 
 <style scoped>
-.expanded-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  overflow: hidden;
-}
-
-.cover-aura {
-  position: absolute;
-  inset: -8%;
-  background: center/cover no-repeat;
-  filter: blur(48px) saturate(130%);
-  transform: scale(1.08);
-  opacity: 0.18;
-  pointer-events: none;
-}
-
-.expanded-panel {
-  width: 100vw;
-  height: 100vh;
-  padding: var(--space-4) var(--space-6) var(--space-5);
-  box-sizing: border-box;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: var(--space-3);
-}
-
+.expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; }
+.cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
+.expanded-panel { width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
-.now { color: rgba(255,255,255,0.9); font-weight: 600; }
+.panel-head-right { display: flex; align-items: center; gap: var(--space-2); }
+.settings-gear-btn { width: 32px; height: 32px; border: none; background: transparent; color: rgba(255,255,255,0.5); cursor: pointer; display: grid; place-items: center; border-radius: 8px; transition: color 120ms ease, background 120ms ease; }
+.settings-gear-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
-
-.panel-body {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: 40% 60%;
-  gap: 0;
-  align-items: stretch;
-}
-
-.left-zone {
-  width: 100%;
-  box-sizing: border-box;
-  justify-self: stretch;
-  align-self: center;
-  display: grid;
-  justify-items: end;
-  gap: var(--space-2);
-  padding: var(--space-2) 5% var(--space-2) 0;
-}
-.album-shell { width: 300px; height: 300px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; }
+.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: stretch; transition: grid-template-columns 0.3s ease; }
+.left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
+.album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
-.song-name {
-  width: 300px;
-  margin: var(--space-2) 0 0;
-  color: #ffffff !important;
-  font-size: 36px;
-  font-weight: 700;
-  text-align: center;
-  justify-self: end;
-}
-.song-artist {
-  width: 300px;
-  margin: 0;
-  color: rgba(255,255,255,0.82);
-  text-align: center;
-  justify-self: end;
-}
-
-.progress-wrap { width: 300px; display: grid; gap: var(--space-1); justify-self: end; position: relative; }
+.song-name { width: 480px; margin: var(--space-2) 0 0; color: #ffffff !important; font-size: 36px; font-weight: 700; text-align: center;  }
+.song-artist { width: 480px; margin: 0; color: rgba(255,255,255,0.82); text-align: center;  }
+.progress-wrap { width: 300px; display: grid; gap: var(--space-1); position: relative; }
 .progress { width: 100%; }
-.seek-preview {
-  justify-self: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.38);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(6px);
-  animation: seek-fade-in 120ms ease;
-}
+.seek-preview { justify-self: center; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; background: rgba(0,0,0,0.38); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(6px); animation: seek-fade-in 120ms ease; }
 .times { display: flex; justify-content: space-between; }
 .time { color: rgba(255,255,255,0.78); font-size: 12px; }
-
-.controls {
-  width: 300px;
-  height: 52px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-1);
-  justify-self: end;
+.controls { width: 300px; height: 52px; display: flex; justify-content: center; align-items: center; gap: var(--space-3); margin-top: var(--space-1);  }
+.ctrl { width: 42px; height: 42px; border-radius: 50%; color: #fff; display: inline-grid; place-items: center; line-height: 1; transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease; }
+.ctrl:not(.main) { border: none; background: transparent; box-shadow: none; color: #ffffff; }
+.ctrl-fm-indicator { width: auto; height: 42px; padding: 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; border: none !important; border-radius: 0; background: transparent !important; box-shadow: none !important; color: #fff7d6 !important; text-shadow: 0 0 10px rgba(255,244,194,0.35); cursor: default; pointer-events: none; }
+.ctrl:not(.main) :deep(svg) { color: #ffffff; stroke: currentColor; }
+.ctrl:not(.main):hover { transform: translateY(-1px); }
+.ctrl:not(.main):active { transform: translateY(0); }
+.ctrl.main { width: 52px; height: 52px; border: 1px solid color-mix(in srgb, var(--panel-bg-soft) 36%, #ffffff33); background: color-mix(in srgb, var(--panel-bg-soft) 52%, #f1d1b4 48%); box-shadow: 0 12px 22px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.34); }
+.volume-wrap { width: 300px; display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; color: rgba(255,255,255,0.8);  }
+.volume-control { min-width: 0; flex: 1 1 auto; display: flex; justify-content: center; gap: var(--space-2); align-items: center; }
+.volume-control input { min-width: 0; flex: 1 1 auto; }
+.volume-icon-btn { width: 28px; height: 28px; border: none; background: transparent; color: rgba(255,255,255,0.8); cursor: pointer; display: inline-grid; place-items: center; border-radius: 6px; transition: color 0.16s ease, background 0.16s ease; flex-shrink: 0; }
+.volume-icon-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.favorite-ctrl { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
+.favorite-ctrl.saved { color: #ff6b8a !important; }
+.favorite-ctrl.saved :deep(svg) { fill: currentColor; }
+/* pure mode */
+.expanded-wrap.l-pure .cover-aura { display: none; }
+.expanded-wrap.l-pure .panel-body { grid-template-columns: 1fr !important; }
+.expanded-wrap.l-pure .left-zone { display: none !important; }
+/* bottom console */
+.bottom-console {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  width: min(620px, calc(100vw - 48px));
+  display: grid; gap: 6px;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg, 14px);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  z-index: 70;
 }
-.ctrl {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  color: #fff;
-  display: inline-grid;
-  place-items: center;
-  line-height: 1;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
-}
-.ctrl:not(.main) {
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  color: #ffffff;
-}
-.ctrl-fm-indicator {
-  width: auto;
-  height: 42px;
-  padding: 0 4px;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  border: none !important;
-  border-radius: 0;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: #fff7d6 !important;
-  text-shadow: 0 0 10px rgba(255, 244, 194, 0.35);
-  cursor: default;
-  pointer-events: none;
-}
-.ctrl:not(.main) :deep(svg) {
-  color: #ffffff;
-  stroke: currentColor;
-}
-.ctrl:not(.main):hover {
-  transform: translateY(-1px);
-  box-shadow: none;
-}
-.ctrl:not(.main):active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-.ctrl[aria-label='上一首'],
-.ctrl[aria-label='下一首'] {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff;
-  opacity: 1;
-}
-.ctrl.main {
-  width: 52px;
-  height: 52px;
-  border: 1px solid color-mix(in srgb, var(--panel-bg-soft) 36%, #ffffff33);
-  background: color-mix(in srgb, var(--panel-bg-soft) 52%, #f1d1b4 48%);
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,0.34);
-}
-
-.volume-wrap {
-  width: 300px;
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-3);
-  align-items: center;
-  color: rgba(255,255,255,0.8);
-  justify-self: end;
-}
-.volume-control {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-  align-items: center;
-}
-.volume-control input {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.volume-icon-btn {
-  width: 28px;
-  height: 28px;
-  border: none;
-  background: transparent;
-  color: rgba(255,255,255,0.8);
-  cursor: pointer;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 6px;
-  transition: color 0.16s ease, background 0.16s ease;
+.console-progress { display: flex; align-items: center; gap: var(--space-2); }
+.console-time { color: rgba(255,255,255,0.5); font-size: 11px; min-width: 32px; font-variant-numeric: tabular-nums; }
+.console-time:last-child { text-align: right; }
+.console-bar { flex: 1; height: 4px; accent-color: var(--accent, #c39c76); cursor: pointer; }
+.console-controls { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
+.con-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: transparent; color: rgba(255,255,255,0.8);
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 12px; transition: transform 0.12s ease, background 0.12s ease;
   flex-shrink: 0;
 }
-.volume-icon-btn:hover {
-  color: #fff;
-  background: rgba(255,255,255,0.08);
-}
-.volume-icon-btn:active {
-  color: rgba(255,255,255,0.65);
-}
-.favorite-ctrl {
-  flex: 0 0 42px;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  outline: none;
-}
-.favorite-ctrl.saved {
-  color: #ff6b8a !important;
-}
-.favorite-ctrl.saved :deep(svg) {
-  fill: currentColor;
-}
-.favorite-ctrl.loading {
-  opacity: 0.7;
-  cursor: progress;
-}
-
-.right-zone {
-  min-height: 0;
-  height: 100%;
-  display: grid;
-  grid-template-rows: 1fr;
-  gap: 0;
-}
-.lyric-box {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-radius: 0;
-  padding: 42% var(--space-2) var(--space-2);
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  scroll-behavior: smooth;
-}
-.line-wrap {
-  margin: var(--space-3) 0;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 12px;
-  padding: var(--space-2) var(--space-3);
-  transition: background-color 140ms ease, box-shadow 140ms ease;
-}
-
-.line-wrap:hover {
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
-}
-
-.line {
-  margin: 0;
-  color: rgba(255,255,255,0.55);
-  font-size: 30px;
-  font-weight: 700;
-  line-height: 1.28;
-  transition: color 140ms linear;
-}
-
-.line.passed {
-  color: rgba(255,255,255,0.8);
-}
-
-.line.active {
-  color: #fff;
-  text-shadow: 0 0 18px rgba(255, 255, 255, 0.28);
-}
-
-.line-sub {
-  margin: var(--space-1) 0 0;
-  color: rgba(255,255,255,0.62);
-  font-size: 20px;
-  font-weight: 500;
-  line-height: 1.3;
-  transition: color 140ms linear;
-}
-
-.line-sub.active {
-  color: rgba(255,255,255,0.9);
-}
-
-.word {
-  display: inline-block;
-  color: rgba(255,255,255,0.55);
-  transition: color 120ms linear;
-}
-
-.word.active,
-.word.passed {
-  color: #fff;
-}
-
-.playlist-popup-mask {
-  position: fixed;
-  inset: 0;
-  z-index: 90;
-  background: rgba(0, 0, 0, 0.38);
-  display: grid;
-  place-items: center;
-}
-
-.playlist-popup {
-  width: min(620px, calc(100vw - 32px));
-  max-height: min(70vh, 680px);
-  border-radius: 16px;
-  border: 1px solid var(--line-muted);
-  background:
-    linear-gradient(165deg,
-      color-mix(in srgb, var(--panel-bg) 78%, #111 22%) 0%,
-      color-mix(in srgb, var(--panel-bg-soft) 66%, #151822 34%) 55%,
-      color-mix(in srgb, var(--panel-bg) 72%, #0c1018 28%) 100%);
-  padding: var(--space-3);
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: var(--space-2);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.38);
-}
-
-.playlist-popup-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
+.con-btn:hover { transform: scale(1.12); background: rgba(255,255,255,0.1); }
+.con-btn:active { transform: scale(0.95); }
+.con-play { width: 36px; height: 36px; background: rgba(255,255,255,0.15); font-size: 14px; }
+.con-play:hover { background: rgba(255,255,255,0.22); }
+.con-volume { display: flex; align-items: center; gap: 4px; }
+.con-vol-icon { width: 28px; height: 28px; }
+.con-vol-slider { width: 64px; height: 4px; accent-color: var(--accent, #c39c76); }
+.con-fav.saved { color: #ff6b8a !important; }
+.con-fav.saved :deep(svg) { fill: currentColor; }
+/* playlist popup */
+.playlist-popup-mask { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.38); display: grid; place-items: center; }
+.playlist-popup { width: min(620px, calc(100vw - 32px)); max-height: min(70vh, 680px); border-radius: 16px; border: 1px solid var(--line-muted); background: linear-gradient(165deg, color-mix(in srgb, var(--panel-bg) 78%, #111 22%) 0%, color-mix(in srgb, var(--panel-bg-soft) 66%, #151822 34%) 55%, color-mix(in srgb, var(--panel-bg) 72%, #0c1018 28%) 100%); padding: var(--space-3); display: grid; grid-template-rows: auto 1fr; gap: var(--space-2); box-shadow: 0 18px 45px rgba(0,0,0,0.38); }
+.playlist-popup-head { display: flex; align-items: center; justify-content: space-between; }
+.playlist-popup-actions { display: flex; gap: var(--space-2); }
 .playlist-popup h3 { margin: 0; color: #fff; }
 .playlist-popup ul { margin: 0; padding: 0; list-style: none; overflow: auto; display: grid; gap: var(--space-1); }
-.playlist-popup li { padding: var(--space-2); border-radius: 10px; cursor: pointer; display: grid; border: 1px solid transparent; }
+.playlist-popup li { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-2); border: 1px solid transparent; transition: background 120ms ease; }
 .playlist-popup li.active { background: color-mix(in srgb, var(--panel-bg-soft) 42%, #ffffff12); border-color: var(--line-muted); }
-.t { color: #fff; font-size: 13px; }
-.a { color: rgba(255,255,255,0.75); font-size: 12px; }
-
-@keyframes seek-fade-in {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.player-sheet-enter-active,
-.player-sheet-leave-active { transition: opacity 0.24s ease; }
-.player-sheet-enter-active .expanded-panel,
-.player-sheet-leave-active .expanded-panel { transition: transform 0.28s ease; }
-.player-sheet-enter-from,
-.player-sheet-leave-to { opacity: 0; }
-.player-sheet-enter-from .expanded-panel,
-.player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
+.playlist-popup li:hover { background: color-mix(in srgb, var(--panel-bg-soft) 28%, #ffffff08); }
+.track-num { color: rgba(255,255,255,0.35); font-size: 12px; width: 20px; text-align: center; flex-shrink: 0; }
+.track-info { min-width: 0; display: grid; gap: 2px; }
+.t { color: #fff; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a { color: rgba(255,255,255,0.75); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-remove-btn { width: 28px; height: 28px; border: none; background: transparent; color: rgba(255,255,255,0.35); cursor: pointer; display: grid; place-items: center; border-radius: 6px; opacity: 0; transition: opacity 120ms ease, color 120ms ease, background 120ms ease; flex-shrink: 0; }
+.playlist-popup li:hover .track-remove-btn { opacity: 1; }
+.track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
+.playlist-empty { color: rgba(255,255,255,0.35); text-align: center; padding: var(--space-6) 0; margin: 0; }
+@keyframes seek-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+.player-sheet-enter-active, .player-sheet-leave-active { transition: opacity 0.24s ease; }
+.player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel { transition: transform 0.28s ease; }
+.player-sheet-enter-from, .player-sheet-leave-to { opacity: 0; }
+.player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
 </style>

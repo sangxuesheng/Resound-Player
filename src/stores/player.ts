@@ -3,6 +3,7 @@ import { getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
 import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
+import { recordLocalHistoryEntry } from '../utils/localHistory';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
@@ -455,6 +456,8 @@ export const playerStore = reactive({
         this.audio.currentTime = seekTo;
       }
 
+      this.recordCurrentTrackToHistory();
+
       if (this.currentIndex === -1) {
         const idx = this.playlist.findIndex((x) => x.id === this.currentSongId);
         this.currentIndex = idx;
@@ -662,5 +665,85 @@ export const playerStore = reactive({
 
   toggleExpanded() {
     this.expanded = !this.expanded;
+  },
+
+  /* ---- queue management ---- */
+
+  removeFromPlaylist(index: number) {
+    if (index < 0 || index >= this.playlist.length) return;
+    this.playlist.splice(index, 1);
+
+    if (this.playlist.length === 0) {
+      this.currentIndex = -1;
+      this.currentTrack = null;
+      this.currentSongId = 0;
+      this.audio.pause();
+      this.isPlaying = false;
+    } else if (index < this.currentIndex) {
+      this.currentIndex -= 1;
+    } else if (index === this.currentIndex) {
+      const nextIndex = Math.min(this.currentIndex, this.playlist.length - 1);
+      this.currentIndex = nextIndex;
+      this.currentTrack = this.playlist[nextIndex] || null;
+      this.currentSongId = Number(this.currentTrack?.id || 0);
+      this.persist();
+      if (this.isPlaying || this.autoplayNext) {
+        void this.playByIndex(nextIndex);
+        return;
+      }
+    }
+    this.persist();
+  },
+
+  clearPlaylist() {
+    this.playlist = [];
+    this.currentIndex = -1;
+    this.currentTrack = null;
+    this.currentSongId = 0;
+    this.audio.pause();
+    this.isPlaying = false;
+    this.persist();
+  },
+
+  moveTrack(fromIndex: number, toIndex: number) {
+    if (fromIndex < 0 || fromIndex >= this.playlist.length) return;
+    if (toIndex < 0 || toIndex >= this.playlist.length) return;
+    if (fromIndex === toIndex) return;
+    const [track] = this.playlist.splice(fromIndex, 1);
+    this.playlist.splice(toIndex, 0, track);
+    if (this.currentIndex === fromIndex) {
+      this.currentIndex = toIndex;
+    } else {
+      if (fromIndex < this.currentIndex && toIndex >= this.currentIndex) this.currentIndex -= 1;
+      else if (fromIndex > this.currentIndex && toIndex <= this.currentIndex) this.currentIndex += 1;
+    }
+    this.persist();
+  },
+
+  recordCurrentTrackToHistory() {
+    const track = this.currentTrack;
+    if (!track?.id || !track?.name) return;
+    const artistNames = (track.ar || []).map((a) => a.name).join('/');
+    const entry = {
+      key: `song-${track.id}`,
+      title: track.name,
+      subtitle: artistNames || '未知歌手',
+      source: 'local_play_history',
+      sourceTip: '当前设备本地播放记录',
+      summary: artistNames || '单曲',
+      typeLabel: '单曲',
+      countLabel: '0',
+      updatedAt: String(Date.now()),
+      playableLabel: '播放',
+      playActionTip: '',
+      coverUrl: track.al?.picUrl || '',
+      playTracks: [track],
+      playableItem: track,
+      manageType: 'song' as const,
+      canUnlike: false,
+      canOpenDetail: false,
+      sortKey: Date.now(),
+    };
+    recordLocalHistoryEntry(entry as any);
   },
 });
