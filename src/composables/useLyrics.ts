@@ -289,11 +289,16 @@ export function getTranslationStyle(lineIndex: number, line: LyricLine, currentI
   };
 }
 
+/** 将 lyricsSettings.anchorPos (0-10) 转换为高亮位置比例 (0-1) */
+export function getAnchorRatio(anchorPos: number): number {
+  return 0.15 + ((anchorPos ?? 3) / 10) * 0.7;
+}
+
 export function scrollToLyricLine(container: HTMLElement | null, lineEls: HTMLElement[], index: number, behavior: ScrollBehavior = 'smooth') {
   if (index < 0 || !container) return;
   const lineEl = lineEls[index];
   if (!lineEl) return;
-  const anchorRatio = 0.15 + ((lyricsSettings.anchorPos ?? 3) / 10) * 0.7;
+  const anchorRatio = getAnchorRatio(lyricsSettings.anchorPos);
   const anchorY = container.clientHeight * anchorRatio;
   const targetTop = lineEl.offsetTop + lineEl.clientHeight / 2 - anchorY;
   container.scrollTo({ top: Math.max(0, targetTop), behavior });

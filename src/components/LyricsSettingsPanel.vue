@@ -19,6 +19,7 @@
               <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="setShowLyrics($event)" /></div>
               <div class="sw-row"><span class="sw-label">播放栏切换</span><FancySwitch :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" /></div>
               <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>
+              <div class="sw-row"><span class="sw-label">AMLL 歌词渲染</span><FancySwitch :model-value="s.useAmllRenderer" @update:model-value="set('useAmllRenderer', $event)" /></div>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
@@ -112,6 +113,7 @@ const bgCustomModeOptions = [
   { value: 'digital-loom', label: '数码织机' },
   { value: 'silk', label: '丝绸' },
   { value: 'aurora', label: '极光' },
+  { value: 'amll-fluid', label: 'AMLL 流体' },
 ];
 
 function updateIriColor(idx: number, val: string) {

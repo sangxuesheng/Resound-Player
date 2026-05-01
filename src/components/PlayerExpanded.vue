@@ -16,6 +16,13 @@
       <div v-show="showLoom" ref="loomRef" class="loom-container"></div>
       <div v-show="showSilk" ref="silkRef" class="silk-container"></div>
       <div v-show="showAurora" ref="auroraRef" class="aurora-container"></div>
+      <div v-show="showAmllFluid" class="amll-fluid-container">
+        <BackgroundRender
+          :playing="playerStore.isPlaying"
+          :flowSpeed="amllFluidSpeed"
+          :fps="30"
+        />
+      </div>
       <section class="expanded-panel">
         <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
@@ -170,6 +177,7 @@ import { useMistBackground } from '../composables/useMistBackground';
 import { useDigitalLoom } from '../composables/useDigitalLoom';
 import { useSilkBackground } from '../composables/useSilkBackground';
 import { useAuroraShader } from '../composables/useAuroraShader';
+import { BackgroundRender } from '@applemusic-like-lyrics/vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
@@ -250,6 +258,13 @@ const auroraRef = ref<HTMLElement | null>(null);
 const showAurora = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'aurora');
 const auroraActive = computed(() => showAurora.value && playerStore.expanded);
 useAuroraShader(auroraRef, auroraActive);
+
+/* ---- AMLL fluid background ---- */
+const showAmllFluid = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'amll-fluid');
+const amllFluidSpeed = computed(() => {
+  const speed = lyricsSettings.iriSpeed || 5;
+  return speed / 5; // 0-10 → 0-2
+});
 const iriConfig = computed((): IridescenceConfig => {
   const toRgb = (hex: string) => { const h = (hex || '#3A29FF').replace('#',''); return [parseInt(h.substring(0,2),16)/255, parseInt(h.substring(2,4),16)/255, parseInt(h.substring(4,6),16)/255] as [number,number,number]; };
   return {
@@ -437,6 +452,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .loom-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .silk-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .aurora-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.amll-fluid-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; display: contents; }
+.amll-fluid-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
 .aurora-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
 /* right actions */
 .right-actions { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); z-index: 65; }
