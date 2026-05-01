@@ -2,7 +2,7 @@ import { reactive } from 'vue';
 
 export type BgTheme = 'default' | 'light' | 'dark';
 export type BgMode = 'basic' | 'custom';
-export type BgCustomMode = 'solid' | 'gradient' | 'image' | 'css' | 'iridescence' | 'soft-gradient' | 'three-scene' | 'paper-shaders' | 'mist' | 'digital-loom' | 'silk' | 'aurora';
+export type BgCustomMode = 'solid' | 'gradient' | 'image' | 'css' | 'iridescence' | 'soft-gradient' | 'three-scene' | 'paper-shaders' | 'mist' | 'digital-loom' | 'silk' | 'aurora' | 'amll-fluid';
 
 export type LyricsSettings = {
   showCover: boolean;
@@ -10,6 +10,7 @@ export type LyricsSettings = {
   showTranslation: boolean;
   showLyrics: boolean;
   showMiniBar: boolean;
+  useAmllRenderer: boolean;
   contentWidth: number;
   fontSize: number;
   letterSpacing: number;
@@ -35,6 +36,7 @@ const defaults: LyricsSettings = {
   showTranslation: true,
   showLyrics: true,
   showMiniBar: false,
+  useAmllRenderer: false,
   contentWidth: 45,
   fontSize: 5,
   letterSpacing: 3,
