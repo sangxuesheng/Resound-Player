@@ -12,7 +12,10 @@
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="center">
       <div class="controls-row">
-        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ctrl" @click="playerStore.prev()" aria-label="上一首">
+        <AnimatedAppear v-if="isPersonalFmCurrentTrack" tag="button" variant="control" rhythm="actions" class-name="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg>
+        </AnimatedAppear>
+        <AnimatedAppear v-else tag="button" variant="control" rhythm="actions" class-name="ctrl" @click="playerStore.prev()" aria-label="上一首">
           <SkipBack :size="16" />
         </AnimatedAppear>
         <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">
@@ -114,7 +117,7 @@ import {
 } from 'lucide-vue-next';
 import { uiStore } from '../stores/ui';
 import { playerStore } from '../stores/player';
-import { getSongUrlV1, toggleDjSubscribe, toggleSongLike } from '../api/music';
+import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -141,6 +144,15 @@ function showQualityToast(msg: string) {
 
 const showQualityPopup = ref(false);
 const qualitySizes = ref<Record<string, string>>({});
+
+const isPersonalFmCurrentTrack = computed(() => playerStore.isPersonalFmTrack(playerStore.currentTrack));
+async function dislikeFmTrack() {
+  const track = playerStore.currentTrack;
+  const id = Number(track?.id || 0);
+  if (!id) return;
+  try { await trashPersonalFm(id, userStore.loginCookie || undefined); } catch { /* ignore */ }
+  playerStore.next();
+}
 
 async function fetchQualitySizes() {
   const trackId = playerStore.currentTrack?.id;
@@ -326,6 +338,8 @@ function formatTime(sec: number) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   animation: none !important;
+.ctrl-dislike { color: var(--text-main) !important; }
+.ctrl-dislike:hover { color: var(--text-main) !important; opacity: 0.7; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
