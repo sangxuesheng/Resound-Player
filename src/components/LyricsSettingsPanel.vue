@@ -16,7 +16,6 @@
             <div v-show="activeTab === 'display'" class="tab-content">
               <div class="sw-row"><span class="sw-label">隐藏封面</span><FancySwitch :model-value="!s.showCover" @update:model-value="setShowCover($event)" /></div>
               <div class="sw-row"><span class="sw-label">居中显示</span><FancySwitch :model-value="s.centerAlign" @update:model-value="set('centerAlign', $event)" /></div>
-              <div class="sw-row"><span class="sw-label">显示翻译</span><FancySwitch :model-value="s.showTranslation" @update:model-value="set('showTranslation', $event)" /></div>
               <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="setShowLyrics($event)" /></div>
               <div class="sw-row"><span class="sw-label">播放栏切换</span><FancySwitch :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" /></div>
               <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>

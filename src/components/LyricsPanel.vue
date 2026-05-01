@@ -80,7 +80,7 @@ startTick();
 </script>
 
 <style scoped>
-.right-zone { min-height: 0; display: flex; flex-direction: column; max-height: calc(100vh - 170px); position: relative; }
+.right-zone { min-height: 0; display: flex; flex-direction: column; max-height: calc(100vh - 170px); }
 .right-zone.l-center .line-wrap { text-align: center; }
 .right-zone:not(.l-center) .line-wrap { text-align: left; padding-left: var(--space-4); padding-right: var(--space-4); }
 .right-zone.l-no-cover { max-width: min(700px, 85%); margin: 0 auto; width: 100%; }
@@ -94,11 +94,4 @@ startTick();
 .line-sub { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.62); font-size: calc(var(--l-font-size, 30px) * 0.66); font-weight: 500; line-height: var(--l-line-height, 1.28); }
 .line-sub.active { color: rgba(255,255,255,0.9); }
 .word { display: inline; }
-.right-zone::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 140px;
-  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  mask-image: linear-gradient(to bottom, transparent, #000 60%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 60%);
-  pointer-events: none; z-index: 1;
-}
 </style>

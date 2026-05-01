@@ -54,11 +54,18 @@
             </div>
             <div v-show="showLeftControls" class="controls">
               <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
-              <button class="ctrl" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="16" /></button>
-              <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
-              <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
-              <button v-if="isPersonalFmCurrentTrack" class="ctrl ctrl-fm-indicator" type="button" aria-label="当前为私人 FM" disabled>FM</button>
-              <button v-else class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="16" /></button>
+              <template v-if="isPersonalFmCurrentTrack">
+                <button class="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
+                <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+                <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
+                <button class="ctrl ctrl-fm-indicator" type="button" aria-label="当前为私人 FM" disabled>FM</button>
+              </template>
+              <template v-else>
+                <button class="ctrl" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="16" /></button>
+                <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+                <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
+                <button class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="16" /></button>
+              </template>
             </div>
             <div v-show="showLeftControls" class="volume-wrap">
               <div class="volume-control">
@@ -77,6 +84,7 @@
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
           <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
+          <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
         </div>
 
         <Teleport to="body">
@@ -104,7 +112,12 @@
             <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
           </div>
           <div class="cc-center">
-            <button class="con-btn" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="14" /></button>
+            <template v-if="isPersonalFmCurrentTrack">
+              <button class="con-btn con-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
+            </template>
+            <template v-else>
+              <button class="con-btn" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="14" /></button>
+            </template>
             <button class="con-btn con-play" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
             <button class="con-btn" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="14" /></button>
           </div>
@@ -114,7 +127,8 @@
             <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
           </div>
           <div class="cc-right">
-            <button class="con-btn" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="14" /></button>
+            <button v-if="isPersonalFmCurrentTrack" class="con-btn con-fm-label" type="button" aria-label="当前为私人 FM" disabled>FM</button>
+            <button v-else class="con-btn" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="14" /></button>
             <div class="con-volume">
               <button class="con-btn con-vol-icon" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="14" /><Volume v-else-if="playerStore.volume < 0.33" :size="14" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="14" /><Volume2 v-else :size="14" /></button>
               <input class="con-vol-slider" type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
@@ -145,7 +159,7 @@
 <script setup lang="ts">
 import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch } from 'vue';
-import { toggleDjSubscribe, toggleSongLike } from '../api/music';
+import { toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { lyricsSettings } from '../stores/lyricsSettings';
@@ -299,6 +313,13 @@ const bgStyle = computed(() => {
   };
 });
 
+async function dislikeFmTrack() {
+  const track = playerStore.currentTrack;
+  const id = Number(track?.id || 0);
+  if (!id) return;
+  try { await trashPersonalFm(id, userStore.loginCookie || undefined); } catch { /* ignore */ }
+  playerStore.next();
+}
 async function extractPaletteFromCover(url?: string) {
   if (!url) return;
   const img = new Image(); img.crossOrigin = 'anonymous'; img.referrerPolicy = 'no-referrer'; img.src = url;
@@ -365,10 +386,12 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
-.song-name-center { margin: 0; color: #fff !important; font-size: 28px; font-weight: 700; line-height: 1.2; }
-.song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 15px; }
+.song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
+.song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 18px; }
 .song-artist-center .rate-badge { margin-left: 8px; }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
+.artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
+.artist-inline-btn:focus-visible { outline: none; }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; }
@@ -384,6 +407,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ctrl { width: 42px; height: 42px; border-radius: 50%; color: #fff; display: inline-grid; place-items: center; line-height: 1; transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease; }
 .ctrl:not(.main) { border: none; background: transparent; box-shadow: none; color: #ffffff; }
 .ctrl-fm-indicator { width: auto; height: 42px; padding: 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; border: none !important; border-radius: 0; background: transparent !important; box-shadow: none !important; color: #fff7d6 !important; text-shadow: 0 0 10px rgba(255,244,194,0.35); cursor: default; pointer-events: none; }
+.ctrl-dislike { color: #fff !important; }
+.ctrl-dislike:hover { color: rgba(255,255,255,0.7) !important; }
+.con-dislike { color: #fff !important; }
 .ctrl:not(.main) :deep(svg) { color: #ffffff; stroke: currentColor; }
 .ctrl:not(.main):hover { transform: translateY(-1px); }
 .ctrl:not(.main):active { transform: translateY(0); }
@@ -425,6 +451,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ra-btn svg { width: 22px; height: 22px; stroke-width: 2.5; }
 .ra-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
 .ra-btn--rect { border-radius: 10px; font-size: 14px; width: 44px; }
+.ra-btn-trans { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; }
+.ra-btn-trans.line-through { text-decoration: line-through; opacity: 0.5; }
 .ra-icon { position: relative; display: grid; place-items: center; }
 .ra-badge {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -521,10 +549,12 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .con-btn:active { transform: scale(0.95); }
 .con-play { width: 42px; height: 42px; background: rgba(255,255,255,0.15); font-size: 16px; }
 .con-play:hover { background: rgba(255,255,255,0.22); }
+.con-fm-label { font-size: 14px; font-weight: 700; letter-spacing: 0.04em; background: transparent !important; border-radius: 0 !important; opacity: 1 !important; cursor: default !important; }
+.con-fm-label:hover { transform: none !important; background: transparent !important; }
 .con-volume { display: flex; align-items: center; gap: 4px; }
 .con-vol-icon { width: 28px; height: 28px; }
 .con-vol-slider { width: 64px; height: 4px; accent-color: var(--accent, #c39c76); }
-.con-fav.saved { color: #ff6b8a !important; }
+.con-fav.saved { color: var(--accent) !important; }
 .con-fav.saved :deep(svg) { fill: currentColor; }
 /* playlist popup */
 .playlist-popup-mask { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.38); display: grid; place-items: center; }
