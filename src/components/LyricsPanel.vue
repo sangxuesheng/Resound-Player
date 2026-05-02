@@ -8,6 +8,8 @@
       'l-record': vinylMode,
     }"
     :style="lyricVars"
+    @wheel.passive="onLyricScroll"
+    @touchmove.passive="onLyricScroll"
   >
     <!-- 隐藏歌词时：空占位 -->
     <template v-if="!lyricsSettings.showLyrics">
@@ -37,7 +39,7 @@
           />
         </div>
         <div v-show="!lyricsSettings.useAmllRenderer" class="renderer-layer">
-          <div ref="lyricBoxRef" class="lyric-box" :style="lyricBoxStyle">
+          <div ref="lyricBoxRef" class="lyric-box" :style="lyricBoxStyle" @scroll.passive="onLyricScroll">
             <div v-for="(line, idx) in lyricLines" :key="`${idx}-${line.time}`" :ref="(el) => setLyricLineRef(el, idx)" class="line-wrap" :class="{ active: idx === currentLyricIndex, 'hide-played': lyricsSettings.hidePlayed && idx < currentLyricIndex }" :style="lineWrapStyle(idx, currentLyricIndex)" @click="seekToLine(idx)">
               <p class="line" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="lineStyle(idx, line)">
                 <template v-if="line.words && line.words.length">
@@ -101,11 +103,9 @@ const lyricBoxStyle = computed(() => {
   return { paddingTop: topPad, paddingBottom: `calc(${ratio * 100}vh - 80px)` };
 });
 
-/* 用户滚动浏览时取消远端歌词模糊 */
+/* 滚动浏览时全部歌词不模糊（与 AMLL 行为一致） */
 function lineWrapStyle(idx: number, currentIdx: number) {
-  if (isUserScrolling.value && Math.abs(idx - currentIdx) > 3) {
-    return { opacity: 1, filter: 'none' };
-  }
+  if (isUserScrolling.value) return {};
   return getLineWrapStyle(idx, currentIdx);
 }
 
@@ -152,10 +152,9 @@ function onLyricScroll() {
 }
 
 onMounted(() => {
-  lyricBoxRef.value?.addEventListener('scroll', onLyricScroll, { passive: true });
+  // 监听已通过模板 @scroll/@wheel/@touchmove 完成
 });
 onBeforeUnmount(() => {
-  lyricBoxRef.value?.removeEventListener('scroll', onLyricScroll);
   if (scrollTimer) clearTimeout(scrollTimer);
 });
 
