@@ -35,7 +35,7 @@
       <section class="expanded-panel">
         <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
+          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="toggleFullscreen">{{ isFullscreen ? '取消全屏' : '全屏' }}</AnimatedAppear>
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
@@ -193,7 +193,7 @@
 
 <script setup lang="ts">
 import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
@@ -224,6 +224,18 @@ const showSettings = ref(false);
 const showOffsetPanel = ref(false);
 const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
+
+/* 全屏 */
+const isFullscreen = ref(false);
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => { isFullscreen.value = true; }).catch(() => {});
+  } else {
+    document.exitFullscreen().then(() => { isFullscreen.value = false; }).catch(() => {});
+  }
+}
+onMounted(() => document.addEventListener('fullscreenchange', () => { isFullscreen.value = !!document.fullscreenElement; }));
+onBeforeUnmount(() => document.removeEventListener('fullscreenchange', () => { isFullscreen.value = !!document.fullscreenElement; }));
 
 function onOpenSettings() {
   const btn = gearBtnRef.value;
