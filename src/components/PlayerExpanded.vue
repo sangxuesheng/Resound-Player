@@ -35,7 +35,7 @@
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
-          <div v-if="!lyricsSettings.showCover" class="cover-hidden-head">
+          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
             <h2 class="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</h2>
             <p class="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
@@ -63,7 +63,7 @@
                 </div>
               </div>
             </template>
-            <template v-if="lyricsSettings.showCover">
+            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
               <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
               <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
                 <template v-if="playerStore.currentTrack?.ar?.length">
