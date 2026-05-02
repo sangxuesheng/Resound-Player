@@ -248,18 +248,19 @@ const seekPreviewTime = ref(0);
 
 /* ---- custom background modes ---- */
 const iriContainerRef = ref<HTMLElement | null>(null);
-const showIridescence = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'iridescence');
-const showSoftGradient = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'soft-gradient');
+const notFullscreen = () => lyricsSettings.displayMode !== 'fullscreen';
+const showIridescence = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'iridescence');
+const showSoftGradient = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'soft-gradient');
 const softGradientDuration = computed(() => {
   const speed = lyricsSettings.iriSpeed || 5;
   return 12 - speed;
 });
 const threeSceneRef = ref<HTMLElement | null>(null);
-const showThreeScene = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'three-scene');
+const showThreeScene = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'three-scene');
 const threeSceneActive = computed(() => showThreeScene.value && playerStore.expanded);
 useThreeScene(threeSceneRef, threeSceneActive);
 const paperRef = ref<HTMLElement | null>(null);
-const showPaper = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'paper-shaders');
+const showPaper = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'paper-shaders');
 const paperActive = computed(() => showPaper.value && playerStore.expanded);
 const paperConfig = computed(() => ({
   color1: lyricsSettings.iriColors?.[0] || '#3A29FF',
@@ -270,24 +271,24 @@ const paperConfig = computed(() => ({
 }));
 usePaperShaders(paperRef, paperConfig, paperActive);
 const mistRef = ref<HTMLElement | null>(null);
-const showMist = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'mist');
+const showMist = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'mist');
 const mistActive = computed(() => showMist.value && playerStore.expanded);
 useMistBackground(mistRef, mistActive);
 const loomRef = ref<HTMLElement | null>(null);
-const showLoom = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'digital-loom');
+const showLoom = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'digital-loom');
 const loomActive = computed(() => showLoom.value && playerStore.expanded);
 useDigitalLoom(loomRef, loomActive);
 const silkRef = ref<HTMLElement | null>(null);
-const showSilk = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'silk');
+const showSilk = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'silk');
 const silkActive = computed(() => showSilk.value && playerStore.expanded);
 useSilkBackground(silkRef, silkActive);
 const auroraRef = ref<HTMLElement | null>(null);
-const showAurora = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'aurora');
+const showAurora = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'aurora');
 const auroraActive = computed(() => showAurora.value && playerStore.expanded);
 useAuroraShader(auroraRef, auroraActive);
 
 /* ---- AMLL fluid background ---- */
-const showAmllFluid = computed(() => lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'amll-fluid');
+const showAmllFluid = computed(() => notFullscreen() && lyricsSettings.bgMode === 'custom' && lyricsSettings.bgCustomMode === 'amll-fluid');
 const amllFluidSpeed = computed(() => {
   const speed = lyricsSettings.iriSpeed || 5;
   return speed / 5; // 0-10 → 0-2
