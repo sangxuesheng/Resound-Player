@@ -112,14 +112,14 @@
           <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" />
         </div>
 
-        <AnimatedAppear tag="div" variant="content" rhythm="actions" class-name="right-actions">
+        <div class="right-actions">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
           <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
           <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
-        </AnimatedAppear>
+        </div>
 
         <Teleport to="body">
           <transition name="offset-fade">
