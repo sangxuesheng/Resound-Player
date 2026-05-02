@@ -5,7 +5,10 @@
         <div class="sel-modal" :class="{ 'an-enter-card': true }" :style="{ '--rhythm-offset': 1, '--i': 0 }">
           <!-- header -->
           <div class="sel-head">
-            <h3 class="sel-title">选择歌词</h3>
+            <div class="sel-head-info">
+              <h3 class="sel-title">{{ playerStore.currentTrack?.name || '选择歌词' }}</h3>
+              <p class="sel-artist">{{ artistText }}</p>
+            </div>
             <button class="sel-close" type="button" aria-label="关闭" @click="closeSelection"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
           </div>
           <!-- 未加载 -->
@@ -55,6 +58,7 @@ import { playerStore } from '../stores/player';
 
 const { lyricLines, isLoading, loadLyrics } = useLyrics();
 const backdropRef = ref<HTMLElement | null>(null);
+const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a: any) => a.name).join('/') : ''; });
 
 /* 加载歌词 */
 watch(() => playerStore.currentTrack?.id, async (id) => {
@@ -131,11 +135,13 @@ async function onCopy() {
   overflow: hidden;
 }
 .sel-head {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: flex-start; justify-content: space-between;
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06));
 }
-.sel-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; }
+.sel-head-info { min-width: 0; display: grid; gap: 2px; }
+.sel-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-artist { margin: 0; color: rgba(255,255,255,0.55); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sel-close {
   width: 28px; height: 28px; border: none; background: transparent;
   color: rgba(255,255,255,0.5); cursor: pointer;
