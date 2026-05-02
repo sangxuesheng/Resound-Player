@@ -28,6 +28,7 @@
             <!-- footer -->
             <div class="sel-foot">
               <button class="sel-btn" :class="{ active: lyricsSelection.showTranslation }" @click="toggleSelectionTranslation">译</button>
+              <button class="sel-btn" @click="onSelectAll">{{ allSelected ? '取消全选' : '全选' }}</button>
               <span class="sel-count">已选 {{ lyricsSelection.selectedIndices.size }} 句</span>
               <button class="sel-btn sel-copy" :disabled="lyricsSelection.selectedIndices.size === 0" @click="onCopy">复制</button>
             </div>
@@ -43,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useLyrics } from '../composables/useLyrics';
 import { lyricsSelection, closeSelection, toggleLine, toggleSelectionTranslation } from '../stores/lyricsSelection';
 import { playerStore } from '../stores/player';
@@ -75,6 +76,16 @@ watch(() => playerStore.currentTrack?.id, (newId) => {
     lyricsSelection.showTranslation = false;
   }
 });
+
+/* 全选/取消全选 */
+const allSelected = computed(() => lyricLines.value.length > 0 && lyricsSelection.selectedIndices.size === lyricLines.value.length);
+function onSelectAll() {
+  if (allSelected.value) {
+    lyricsSelection.selectedIndices = new Set();
+  } else {
+    lyricsSelection.selectedIndices = new Set(lyricLines.value.map((_, i) => i));
+  }
+}
 
 /* 复制 */
 const copyFeedback = ref(false);
