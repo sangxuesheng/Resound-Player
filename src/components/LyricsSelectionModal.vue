@@ -18,12 +18,13 @@
           <!-- 歌词列表 -->
           <template v-else>
             <div class="sel-body">
-              <div v-for="(line, idx) in lyricLines" :key="idx" class="sel-row" @click="toggleLine(idx)">
+              <div v-for="(line, idx) in displayLines" :key="idx" class="sel-row" @click="toggleLine(idx)">
                 <span class="sel-check" :class="{ checked: lyricsSelection.selectedIndices.has(idx) }">
                   <svg v-if="lyricsSelection.selectedIndices.has(idx)" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
                 </span>
                 <div class="sel-text">
-                  <span class="sel-line">{{ line.text || '...' }}</span>
+                  <span class="sel-line">{{ line.text }}</span>
+                  <span v-if="line.tag" class="sel-tag">{{ line.tag }}</span>
                   <span v-if="lyricsSelection.showTranslation && line.translation" class="sel-trans">{{ line.translation }}</span>
                 </div>
               </div>
@@ -85,13 +86,25 @@ watch(() => playerStore.currentTrack?.id, (newId) => {
   }
 });
 
+/* 展示行：歌曲名 + 歌手 + 歌词 */
+const displayLines = computed(() => {
+  const lines: { text: string; tag?: string; translation?: string }[] = [];
+  if (playerStore.currentTrack?.name) lines.push({ text: playerStore.currentTrack.name, tag: '歌曲' });
+  if (artistText.value) lines.push({ text: artistText.value, tag: '歌手' });
+  for (const l of lyricLines.value) {
+    lines.push({ text: l.text || '...', translation: l.translation });
+  }
+  return lines;
+});
+const lineCount = computed(() => displayLines.value.length);
+
 /* 全选/取消全选 */
-const allSelected = computed(() => lyricLines.value.length > 0 && lyricsSelection.selectedIndices.size === lyricLines.value.length);
+const allSelected = computed(() => lineCount.value > 0 && lyricsSelection.selectedIndices.size === lineCount.value);
 function onSelectAll() {
   if (allSelected.value) {
     lyricsSelection.selectedIndices = new Set();
   } else {
-    lyricsSelection.selectedIndices = new Set(lyricLines.value.map((_, i) => i));
+    lyricsSelection.selectedIndices = new Set(displayLines.value.map((_, i) => i));
   }
 }
 
@@ -99,13 +112,13 @@ function onSelectAll() {
 const copyFeedback = ref(false);
 
 async function onCopy() {
-  const lines = lyricLines.value.filter((_, i) => lyricsSelection.selectedIndices.has(i));
-  if (!lines.length) return;
-  const text = lines.map((line) => {
-    if (lyricsSelection.showTranslation && line.translation) {
-      return `${line.text}\n${line.translation}`;
+  const items = displayLines.value.filter((_, i) => lyricsSelection.selectedIndices.has(i));
+  if (!items.length) return;
+  const text = items.map((item) => {
+    if (lyricsSelection.showTranslation && item.translation) {
+      return `${item.text}\n${item.translation}`;
     }
-    return line.text || '';
+    return item.text;
   }).join('\n');
   try {
     await navigator.clipboard.writeText(text);
@@ -173,6 +186,7 @@ async function onCopy() {
 .sel-check svg { color: #fff; }
 .sel-text { min-width: 0; display: grid; gap: 2px; }
 .sel-line { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; word-break: break-word; }
+.sel-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); font-size: 11px; line-height: 1.6; vertical-align: middle; }
 .sel-trans { color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.4; word-break: break-word; }
 .sel-foot {
   display: flex; align-items: center; justify-content: space-between;
