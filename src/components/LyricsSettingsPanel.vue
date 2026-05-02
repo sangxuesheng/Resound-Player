@@ -143,7 +143,7 @@ function updateIriColor(idx: number, val: string) {
 .popover-backdrop { position: fixed; inset: 0; z-index: 100; background: transparent; }
 .settings-popover {
   position: fixed; width: 380px; max-height: min(80vh, 600px); height: auto;
-  background: var(--bg-surface, rgba(26,28,40,0.85));
+  background: var(--bg-surface, rgba(26,28,40,0.97));
   backdrop-filter: blur(12px) saturate(120%);
   -webkit-backdrop-filter: blur(12px) saturate(120%);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
