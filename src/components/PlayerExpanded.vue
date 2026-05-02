@@ -311,7 +311,7 @@ const showLeftControls = computed(() => !lyricsSettings.showMiniBar);
 const displayMode = computed(() => lyricsSettings.displayMode);
 
 const panelBodyStyle = computed(() => {
-  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr' };
+  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr', rowGap: 'var(--space-3)' };
   if (!lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
   return { gridTemplateColumns: `${lyricsSettings.contentWidth}% ${100 - lyricsSettings.contentWidth}%` };
 });
