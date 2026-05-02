@@ -656,6 +656,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 /* 指针主体 */
 .needle {
+  display: block;
   position: absolute;
   top: 0;
   left: 0;
