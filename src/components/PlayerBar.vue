@@ -6,7 +6,7 @@
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
         </div>
-        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist">{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></AnimatedAppear>
+        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist"><template v-if="playerStore.isPlaying && currentLyricText"><span class="lyric-text" :title="currentLyricText">{{ currentLyricText }}</span></template><template v-else>{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></template></AnimatedAppear>
       </div>
     </AnimatedAppear>
 
@@ -120,6 +120,7 @@ import { playerStore } from '../stores/player';
 import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
+import { useLyrics } from '../composables/useLyrics';
 
 const qualityOptions = [
   { label: '标准', level: 'standard' },
@@ -242,6 +243,12 @@ const isCurrentLiked = computed(() => {
 });
 const likeLoading = ref(false);
 
+/* 加载歌词 */
+watch(() => playerStore.currentTrack?.id, async (id) => {
+  if (!id) return;
+  await loadLyrics(playerStore.currentTrack);
+}, { immediate: true });
+
 watch(
   () => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`,
   () => {
@@ -249,6 +256,19 @@ watch(
   },
   { immediate: true },
 );
+
+/* 播放时显示当前歌词行 */
+const { lyricLines, currentLyricIndex, effectiveTime, startTick, isLoading, loadLyrics } = useLyrics();
+startTick();
+
+const currentLyricText = computed(() => {
+  const idx = currentLyricIndex.value;
+  if (idx < 0 || idx >= lyricLines.value.length) return '';
+  const line = lyricLines.value[idx];
+  if (!line || !line.text) return '';
+  if (line.translation) return `${line.text} · ${line.translation}`;
+  return line.text;
+});
 
 const artistText = computed(() => {
   const ar = playerStore.currentTrack?.ar || [];
@@ -354,7 +374,8 @@ function formatTime(sec: number) {
 .meta { min-width: 0; }
 .title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .title { color: #111827; font-weight: 600; }
-.artist { color: #6b7280; font-size: 12px; }
+.artist { color: #6b7280; font-size: 12px; display: flex; align-items: center; gap: 4px; overflow: hidden; }
+.lyric-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent, #6b7280); font-size: 12px; }
 .quality-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
 .source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; margin-left: 4px; }
 .center { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; }
