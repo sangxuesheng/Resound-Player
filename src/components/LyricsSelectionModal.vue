@@ -27,10 +27,14 @@
             </div>
             <!-- footer -->
             <div class="sel-foot">
-              <button class="sel-btn" :class="{ active: lyricsSelection.showTranslation }" @click="toggleSelectionTranslation">译</button>
-              <button class="sel-btn" @click="onSelectAll">{{ allSelected ? '取消全选' : '全选' }}</button>
-              <span class="sel-count">已选 {{ lyricsSelection.selectedIndices.size }} 句</span>
-              <button class="sel-btn sel-copy" :disabled="lyricsSelection.selectedIndices.size === 0" @click="onCopy">复制</button>
+              <div class="sel-foot-left">
+                <button class="sel-btn" :class="{ active: lyricsSelection.showTranslation }" @click="toggleSelectionTranslation">译</button>
+                <button class="sel-btn" @click="onSelectAll">{{ allSelected ? '取消全选' : '全选' }}</button>
+              </div>
+              <div class="sel-foot-right">
+                <span class="sel-count">已选 {{ lyricsSelection.selectedIndices.size }} 句</span>
+                <button class="sel-btn sel-copy" :disabled="lyricsSelection.selectedIndices.size === 0" @click="onCopy">复制</button>
+              </div>
             </div>
           </template>
           <!-- 复制成功提示 -->
@@ -166,9 +170,10 @@ async function onCopy() {
 .sel-trans { color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.4; word-break: break-word; }
 .sel-foot {
   display: flex; align-items: center; justify-content: space-between;
-  gap: var(--space-2); padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border-soft, rgba(255,255,255,0.06));
 }
+.sel-foot-left, .sel-foot-right { display: flex; align-items: center; gap: var(--space-2); }
 .sel-btn {
   padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15);
   background: transparent; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
