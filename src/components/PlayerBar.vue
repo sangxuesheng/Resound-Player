@@ -372,7 +372,7 @@ function formatTime(sec: number) {
   overflow-x: clip;
 }
 .left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
-.cover-wrap { position: relative; flex-shrink: 0; }
+.cover-wrap { position: relative; flex-shrink: 0; display: inline-flex; border-radius: 12px; overflow: hidden; }
 .cover-wrap:hover .cover-fullscreen-btn { opacity: 1; pointer-events: auto; }
 .cover { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: #e5e7eb center/cover no-repeat; cursor: pointer; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
 .cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
