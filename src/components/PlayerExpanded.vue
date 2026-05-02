@@ -39,7 +39,8 @@
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
-          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
+          <Transition name="zone-fade">
+            <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
             <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
@@ -48,8 +49,9 @@
               <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </AnimatedAppear>
-          </div>
-          <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
+          </div></Transition>
+          <Transition name="zone-slide">
+            <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
               <Transition name="cover-switch" mode="out-in" appear>
@@ -108,7 +110,7 @@
               </div>
               <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
-          </div>
+          </div></Transition>
           <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" />
         </div>
 
@@ -649,6 +651,12 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-switch-enter-active, .cover-switch-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .cover-switch-enter-from { opacity: 0; transform: scale(0.95); }
 .cover-switch-leave-to { opacity: 0; transform: scale(0.95); }
+/* 封面显示/隐藏过渡 */
+.zone-fade-enter-active, .zone-fade-leave-active { transition: opacity 0.25s ease; }
+.zone-fade-enter-from, .zone-fade-leave-to { opacity: 0; }
+.zone-slide-enter-active, .zone-slide-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.zone-slide-enter-from { opacity: 0; transform: translateX(-20px); }
+.zone-slide-leave-to { opacity: 0; transform: translateX(-20px); }
 
 .player-sheet-enter-active, .player-sheet-leave-active {
   transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
