@@ -14,6 +14,7 @@ export type LyricsSettings = {
   showLyrics: boolean;
   showMiniBar: boolean;
   useAmllRenderer: boolean;
+  autoPlayOnSeek: boolean;
   contentWidth: number;
   fontSize: number;
   letterSpacing: number;
@@ -41,6 +42,7 @@ const defaults: LyricsSettings = {
   showLyrics: true,
   showMiniBar: false,
   useAmllRenderer: false,
+  autoPlayOnSeek: true,
   contentWidth: 45,
   fontSize: 5,
   letterSpacing: 3,

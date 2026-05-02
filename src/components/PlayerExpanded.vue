@@ -35,7 +35,7 @@
         </AnimatedAppear>
 
         <div class="panel-body" :style="panelBodyStyle">
-          <div v-if="!lyricsSettings.showCover" class="cover-hidden-head">
+          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
             <h2 class="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</h2>
             <p class="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
@@ -45,7 +45,7 @@
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </p>
           </div>
-          <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record' }">
+          <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
               <div class="album-shell" :class="{ playing: playerStore.isPlaying }">
@@ -56,14 +56,14 @@
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
               <div class="vinyl-record">
                 <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
-                  <div class="needle" />
+                  <img class="needle" src="/images/needle.png" alt="pointer" />
                 </div>
                 <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
                   <div class="record-cover" :style="coverStyle" />
                 </div>
               </div>
             </template>
-            <template v-if="lyricsSettings.showCover">
+            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
               <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
               <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
                 <template v-if="playerStore.currentTrack?.ar?.length">
@@ -101,7 +101,7 @@
               <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
           </div>
-          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" />
+          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" />
         </div>
 
         <div class="right-actions">
@@ -311,7 +311,7 @@ const showLeftControls = computed(() => !lyricsSettings.showMiniBar);
 const displayMode = computed(() => lyricsSettings.displayMode);
 
 const panelBodyStyle = computed(() => {
-  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr' };
+  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr', rowGap: 'var(--space-3)' };
   if (!lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
   return { gridTemplateColumns: `${lyricsSettings.contentWidth}% ${100 - lyricsSettings.contentWidth}%` };
 });
@@ -431,6 +431,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .artist-inline-btn:focus-visible { outline: none; }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
+.left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .album-shell.playing { transform: scale(1); }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
@@ -644,36 +645,26 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   width: min(52vh, 480px);
   aspect-ratio: 1 / 1;
 }
-/* 唱针 */
+/* 唱针 — 与 SPlayer 完全一致 */
 .vinyl-pointer {
   position: absolute;
   width: 30%;
-  aspect-ratio: 1 / 1.8;
   left: 46%;
   top: -22%;
   z-index: 5;
   pointer-events: none;
 }
-/* 指针主体 */
 .needle {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 100px;
-  height: 160px;
-  transform: translateX(-50%) rotate(-25deg);
-  transform-origin: top center;
-  z-index: 9;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: url(/images/needle.png) top center/contain no-repeat;
+  display: block;
+  width: 100%;
+  height: auto;
+  transform: rotate(-25deg);
+  transform-origin: 10% 10%;
+  backface-visibility: hidden;
+  transition: transform 0.3s;
 }
 .vinyl-pointer.active .needle {
-  transform: translateX(-50%) rotate(-3deg);
-  animation: needle-swing 1.5s ease-in-out infinite alternate;
-}
-@keyframes needle-swing {
-  from { transform: translateX(-50%) rotate(-3deg) rotate(-1deg); }
-  to   { transform: translateX(-50%) rotate(-3deg) rotate(1.5deg); }
+  transform: rotate(-8deg);
 }
 /* 唱片 */
 .vinyl-disc {
