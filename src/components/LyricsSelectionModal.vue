@@ -1,0 +1,165 @@
+<template>
+  <Teleport to="body">
+    <transition name="modal-fade">
+      <div v-if="lyricsSelection.isOpen" class="sel-backdrop" @click.self="closeSelection" @keydown.esc="closeSelection" tabindex="-1" ref="backdropRef">
+        <div class="sel-modal" :class="{ 'an-enter-card': true }" :style="{ '--rhythm-offset': 1, '--i': 0 }">
+          <!-- header -->
+          <div class="sel-head">
+            <h3 class="sel-title">选择歌词</h3>
+            <button class="sel-close" type="button" aria-label="关闭" @click="closeSelection"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>
+          <!-- 未加载 -->
+          <div v-if="isLoading" class="sel-status">歌词加载中...</div>
+          <!-- 无歌词 -->
+          <div v-else-if="!lyricLines.length" class="sel-status">暂无歌词</div>
+          <!-- 歌词列表 -->
+          <template v-else>
+            <div class="sel-body">
+              <div v-for="(line, idx) in lyricLines" :key="idx" class="sel-row" @click="toggleLine(idx)">
+                <span class="sel-check" :class="{ checked: lyricsSelection.selectedIndices.has(idx) }">
+                  <svg v-if="lyricsSelection.selectedIndices.has(idx)" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                </span>
+                <div class="sel-text">
+                  <span class="sel-line">{{ line.text || '...' }}</span>
+                  <span v-if="lyricsSelection.showTranslation && line.translation" class="sel-trans">{{ line.translation }}</span>
+                </div>
+              </div>
+            </div>
+            <!-- footer -->
+            <div class="sel-foot">
+              <button class="sel-btn" :class="{ active: lyricsSelection.showTranslation }" @click="toggleSelectionTranslation">译</button>
+              <span class="sel-count">已选 {{ lyricsSelection.selectedIndices.size }} 句</span>
+              <button class="sel-btn sel-copy" :disabled="lyricsSelection.selectedIndices.size === 0" @click="onCopy">复制</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </transition>
+  </Teleport>
+</template>
+
+<script setup lang="ts">
+import { nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue';
+import { useLyrics } from '../composables/useLyrics';
+import { lyricsSelection, closeSelection, toggleLine, toggleSelectionTranslation } from '../stores/lyricsSelection';
+import { playerStore } from '../stores/player';
+
+const { lyricLines, isLoading, loadLyrics } = useLyrics();
+const backdropRef = ref<HTMLElement | null>(null);
+
+/* 加载歌词 */
+watch(() => playerStore.currentTrack?.id, async (id) => {
+  if (!id) return;
+  await loadLyrics(playerStore.currentTrack);
+}, { immediate: true });
+
+/* ESC 关闭 */
+function onKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && lyricsSelection.isOpen) closeSelection();
+}
+watch(() => lyricsSelection.isOpen, (open) => {
+  if (open) nextTick(() => backdropRef.value?.focus());
+});
+onMounted(() => document.addEventListener('keydown', onKeydown));
+onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
+
+/* 切歌时关闭浮窗重置状态 */
+watch(() => playerStore.currentTrack?.id, (newId) => {
+  if (lyricsSelection.isOpen) {
+    lyricsSelection.currentTrackId = newId ?? null;
+    lyricsSelection.selectedIndices = new Set();
+    lyricsSelection.showTranslation = false;
+  }
+});
+
+/* 复制 */
+async function onCopy() {
+  const lines = lyricLines.value.filter((_, i) => lyricsSelection.selectedIndices.has(i));
+  if (!lines.length) return;
+  const text = lines.map((line) => {
+    if (lyricsSelection.showTranslation && line.translation) {
+      return `${line.text}\n${line.translation}`;
+    }
+    return line.text || '';
+  }).join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch { /* ignore */ }
+}
+</script>
+
+<style scoped>
+.sel-backdrop {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.45);
+  display: grid; place-items: center;
+}
+.sel-modal {
+  width: min(520px, calc(100vw - 40px));
+  max-height: min(70vh, 600px);
+  background: var(--bg-surface, rgba(26,28,40,0.97));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: 16px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.sel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06));
+}
+.sel-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; }
+.sel-close {
+  width: 28px; height: 28px; border: none; background: transparent;
+  color: rgba(255,255,255,0.5); cursor: pointer;
+  display: grid; place-items: center; border-radius: 6px;
+  transition: color 120ms ease, background 120ms ease;
+}
+.sel-close:hover { color: #fff; background: rgba(255,255,255,0.08); }
+.sel-status { padding: var(--space-6); text-align: center; color: rgba(255,255,255,0.4); font-size: 14px; }
+.sel-body {
+  overflow-y: auto; padding: var(--space-2) var(--space-3);
+  display: grid; gap: 2px;
+}
+.sel-row {
+  display: flex; align-items: flex-start; gap: var(--space-2);
+  padding: var(--space-2) var(--space-2); border-radius: 8px;
+  cursor: pointer; transition: background 120ms ease;
+}
+.sel-row:hover { background: rgba(255,255,255,0.06); }
+.sel-check {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 4px;
+  border: 2px solid rgba(255,255,255,0.25);
+  display: grid; place-items: center; margin-top: 2px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.sel-check.checked {
+  border-color: var(--accent, #c39c76);
+  background: var(--accent, #c39c76);
+}
+.sel-check svg { color: #fff; }
+.sel-text { min-width: 0; display: grid; gap: 2px; }
+.sel-line { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; word-break: break-word; }
+.sel-trans { color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.4; word-break: break-word; }
+.sel-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-2); padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border-soft, rgba(255,255,255,0.06));
+}
+.sel-btn {
+  padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15);
+  background: transparent; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
+  cursor: pointer; transition: all 120ms ease;
+}
+.sel-btn:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,0.3); }
+.sel-btn.active { background: var(--accent, #c39c76); border-color: transparent; color: #fff; }
+.sel-copy { background: var(--accent, #c39c76); border-color: transparent; color: #fff; }
+.sel-copy:disabled { opacity: 0.4; cursor: not-allowed; }
+.sel-count { color: rgba(255,255,255,0.4); font-size: 12px; }
+.modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s ease; }
+.modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+</style>
