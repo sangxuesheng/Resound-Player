@@ -669,11 +669,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 .vinyl-pointer.active .needle {
   transform: rotate(-3deg);
-  animation: needle-swing 1.5s ease-in-out infinite alternate;
-}
-@keyframes needle-swing {
-  from { transform: rotate(-4deg); }
-  to   { transform: rotate(-1.5deg); }
 }
 /* 唱片 */
 .vinyl-disc {
