@@ -6,6 +6,7 @@
       'l-no-cover': !lyricsSettings.showCover,
       'l-hidden': !lyricsSettings.showLyrics,
       'l-record': vinylMode,
+      'l-fullscreen': fullscreen,
     }"
     :style="[lyricVars, zoneStyle]"
     @wheel.passive="onLyricScroll"
@@ -69,6 +70,7 @@ import '@applemusic-like-lyrics/core/style.css';
 
 const props = defineProps<{
   vinylMode?: boolean;
+  fullscreen?: boolean;
 }>();
 
 const { lyricLines, currentLyricIndex, displayTime, effectiveTime, isLoading, lyricBoxRef, setLyricLineRef, startTick, loadLyrics, scrollToCurrentLine, seekToLine: origSeekToLine } = useLyrics();
@@ -211,6 +213,7 @@ startTick();
 .right-zone.l-center .line-wrap { text-align: center; }
 .right-zone:not(.l-center) .line-wrap { text-align: left; padding-left: var(--space-4); padding-right: var(--space-4); }
 .right-zone.l-no-cover { max-width: min(700px, 85%); margin: 0 auto; width: 100%; }
+.right-zone.l-fullscreen { max-width: min(700px, 85%); margin: 0 auto; width: 100%; }
 .right-zone.l-hidden { display: grid; place-items: center; }
 .lyric-box { flex: 1; overflow-y: auto; overflow-x: hidden; border-radius: 0; padding: 42% 60px 0; background: transparent; border: 0; box-shadow: none; scroll-behavior: smooth; }
 .lyric-box::-webkit-scrollbar { width: 0; }
