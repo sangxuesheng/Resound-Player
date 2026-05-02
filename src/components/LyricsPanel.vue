@@ -7,7 +7,7 @@
       'l-hidden': !lyricsSettings.showLyrics,
       'l-record': vinylMode,
     }"
-    :style="lyricVars"
+    :style="[lyricVars, zoneStyle]"
     @wheel.passive="onLyricScroll"
     @touchmove.passive="onLyricScroll"
     @mouseenter="onZoneEnter"
@@ -98,6 +98,10 @@ const lyricVars = computed(() => {
     'line-height': lh,
   };
 });
+
+const zoneStyle = computed(() => ({
+  maxHeight: lyricsSettings.showMiniBar ? 'calc(100vh - 250px)' : 'calc(100vh - 170px)',
+}));
 
 const lyricBoxStyle = computed(() => {
   const ratio = getAnchorRatio(lyricsSettings.anchorPos);
@@ -202,7 +206,7 @@ startTick();
 </script>
 
 <style scoped>
-.right-zone { min-height: 0; display: flex; flex-direction: column; max-height: calc(100vh - 170px); height: 100%; isolation: isolate; }
+.right-zone { min-height: 0; display: flex; flex-direction: column; height: 100%; isolation: isolate; }
 .right-zone.l-center .line-wrap { text-align: center; }
 .right-zone:not(.l-center) .line-wrap { text-align: left; padding-left: var(--space-4); padding-right: var(--space-4); }
 .right-zone.l-no-cover { max-width: min(700px, 85%); margin: 0 auto; width: 100%; }
