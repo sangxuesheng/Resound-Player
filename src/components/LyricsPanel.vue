@@ -100,6 +100,7 @@ const lyricVars = computed(() => {
 });
 
 const zoneStyle = computed(() => ({
+  boxSizing: 'border-box',
   paddingBottom: lyricsSettings.showMiniBar ? '85px' : '0',
 }));
 
