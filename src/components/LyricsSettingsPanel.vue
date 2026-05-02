@@ -31,6 +31,7 @@
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
             <div v-show="activeTab === 'typography'" class="tab-content">
+              <div class="sw-row"><span class="sw-label">暂停时点击跳转自动播放</span><FancySwitch :model-value="s.autoPlayOnSeek" @update:model-value="set('autoPlayOnSeek', $event)" /></div>
               <StepSliderRow label="字体大小" :value="s.fontSize" :steps="['小', '中', '大']" @update:value="set('fontSize', $event)" />
               <StepSliderRow label="字间距" :value="s.letterSpacing" :steps="['紧凑', '默认', '宽松']" @update:value="set('letterSpacing', $event)" />
               <StepSliderRow label="字体粗细" :value="s.fontWeight" :steps="['细', '常规', '粗']" @update:value="set('fontWeight', $event)" />

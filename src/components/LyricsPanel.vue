@@ -113,6 +113,10 @@ function seekToLine(idx: number) {
   isUserScrolling.value = false;
   if (scrollTimer) { clearTimeout(scrollTimer); scrollTimer = null; }
   origSeekToLine(idx);
+  // 暂停状态时点击跳转后自动恢复播放
+  if (lyricsSettings.autoPlayOnSeek && !playerStore.isPlaying) {
+    nextTick(() => playerStore.togglePlay());
+  }
 }
 
 function onZoneEnter() {
