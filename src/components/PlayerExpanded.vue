@@ -657,23 +657,22 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 /* 指针主体 */
 .needle {
   position: absolute;
-  top: 10px;
-  left: 50%;
-  width: 100px;
-  height: 160px;
-  transform: translateX(-50%) rotate(-25deg);
-  transform-origin: 50% 24%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-25deg);
+  transform-origin: 10% 10%;
   z-index: 9;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: url(/images/needle.png) top center/contain no-repeat;
+  background: url(/images/needle.png) top left/contain no-repeat;
 }
 .vinyl-pointer.active .needle {
-  transform: translateX(-50%) rotate(-3deg);
+  transform: rotate(-3deg);
   animation: needle-swing 1.5s ease-in-out infinite alternate;
 }
 @keyframes needle-swing {
-  from { transform: translateX(-50%) rotate(-3deg) rotate(-1deg); }
-  to   { transform: translateX(-50%) rotate(-3deg) rotate(1.5deg); }
+  from { transform: rotate(-4deg); }
+  to   { transform: rotate(-1.5deg); }
 }
 /* 唱片 */
 .vinyl-disc {
