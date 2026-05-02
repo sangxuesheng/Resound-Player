@@ -3,7 +3,7 @@
     <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="left">
       <AnimatedAppear tag="div" variant="media" rhythm="list" class-name="cover-wrap">
         <button class="cover" :style="coverStyle" @click="playerStore.openExpanded()" />
-        <button class="cover-fullscreen-btn" title="全屏" @click="playerStore.openExpanded()"><svg width="18" height="18" viewBox="0 0 1024 1024" fill="currentColor" transform="scale(-1,1)"><path d="M256 170.666667a128 128 0 0 0-128 128v213.333333a42.666667 42.666667 0 1 0 85.333333 0V298.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h213.333333a42.666667 42.666667 0 1 0 0-85.333333H256z m512 682.666666a128 128 0 0 0 128-128v-170.666666a42.666667 42.666667 0 1 0-85.333333 0v170.666666a42.666667 42.666667 0 0 1-42.666667 42.666667h-192a42.666667 42.666667 0 1 0 0 85.333333H768z"/></svg></button>
+        <button class="cover-fullscreen-btn" title="全屏" @click="playerStore.openExpanded()"><svg width="24" height="24" viewBox="0 0 1024 1024" fill="currentColor" transform="scale(-1,1)"><path d="M256 170.666667a128 128 0 0 0-128 128v213.333333a42.666667 42.666667 0 1 0 85.333333 0V298.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h213.333333a42.666667 42.666667 0 1 0 0-85.333333H256z m512 682.666666a128 128 0 0 0 128-128v-170.666666a42.666667 42.666667 0 1 0-85.333333 0v170.666666a42.666667 42.666667 0 0 1-42.666667 42.666667h-192a42.666667 42.666667 0 1 0 0 85.333333H768z"/></svg></button>
       </AnimatedAppear>
       <div class="meta">
         <div class="title-row">
