@@ -7,9 +7,13 @@
       :style="bgStyle"
       @click.self="playerStore.closeExpanded()"
     >
-      <!-- 全屏封面（独立层） -->
-      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" class="fullscreen-cover" :style="coverStyle" />
-      <div class="cover-aura" :style="coverAuraStyle"></div>
+      <!-- 全屏封面（独立层）：有自定义背景时隐藏，让自定义背景覆盖 -->
+      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen' && !isCustomBg" class="fullscreen-cover" :style="coverStyle"></div>
+      <Transition name="cover-switch" mode="out-in" appear>
+        <div :key="trackId" class="cover-aura" :style="coverAuraStyle"></div>
+      </Transition>
+      <!-- 背景过渡层：切歌时旧背景渐变淡出 -->
+      <div v-if="prevBg" class="bg-transition-layer" :style="{ background: prevBg, opacity: bgFadeOpacity }"></div>
       <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
       <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
       <div v-show="showSoftGradient" class="soft-gradient-bg" :style="{ animationDuration: softGradientDuration + 's' }"></div>
@@ -36,36 +40,40 @@
 
         <div class="panel-body" :style="panelBodyStyle">
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
-            <h2 class="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</h2>
-            <p class="song-artist-center">
+            <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+            <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
                 <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
               </template>
               <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-            </p>
+            </AnimatedAppear>
           </div>
-          <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
+          <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
-              <div class="album-shell" :class="{ playing: playerStore.isPlaying }">
-                <div class="album-cover" :style="coverStyle"></div>
-              </div>
+              <Transition name="cover-switch" mode="out-in" appear>
+                <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
+                  <div class="album-cover" :style="coverStyle"></div>
+                </div>
+              </Transition>
             </template>
             <!-- 唱片模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
-              <div class="vinyl-record">
-                <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
-                  <img class="needle" src="/images/needle.png" alt="pointer" />
+              <Transition name="cover-switch" mode="out-in" appear>
+                <div :key="trackId" class="vinyl-record">
+                  <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
+                    <img class="needle" src="/images/needle.png" alt="pointer" />
+                  </div>
+                  <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
+                    <div class="record-cover" :style="coverStyle" />
+                  </div>
                 </div>
-                <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
-                  <div class="record-cover" :style="coverStyle" />
-                </div>
-              </div>
+              </Transition>
             </template>
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
-              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
+              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name" :key="'sn-'+trackId">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist" :key="'sa-'+trackId">
                 <template v-if="playerStore.currentTrack?.ar?.length">
                   <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
                 </template>
@@ -101,7 +109,7 @@
               <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
           </div>
-          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" />
+          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
         </div>
 
         <div class="right-actions">
@@ -109,8 +117,8 @@
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
-          <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
           <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
+          <button class="ra-btn" title="多选歌词" @click="onOpenLyricsSelection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></button>
         </div>
 
         <Teleport to="body">
@@ -131,7 +139,7 @@
           </transition>
         </Teleport>
 
-        <div v-if="lyricsSettings.showMiniBar" class="bottom-console">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -160,7 +168,7 @@
               <input class="con-vol-slider" type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
             </div>
           </div>
-        </div>
+        </AnimatedAppear>
 
         <div v-if="showPlaylistPopup" class="playlist-popup-mask" @click.self="showPlaylistPopup = false">
           <aside class="playlist-popup" @click.stop>
@@ -178,6 +186,7 @@
       </section>
 
       <LyricsSettingsPanel :visible="showSettings" :anchor="settingsAnchor" :accent-color="palette.c3" @close="showSettings = false" />
+      <LyricsSelectionModal />
     </div>
   </transition>
 </template>
@@ -200,6 +209,8 @@ import { BackgroundRender } from '@applemusic-like-lyrics/vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
+import LyricsSelectionModal from './LyricsSelectionModal.vue';
+import { openSelection } from '../stores/lyricsSelection';
 
 const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>] }>();
 
@@ -309,6 +320,7 @@ const showLeftZone = computed(() => lyricsSettings.showCover && lyricsSettings.d
 const showLeftControls = computed(() => !lyricsSettings.showMiniBar);
 
 const displayMode = computed(() => lyricsSettings.displayMode);
+const isCustomBg = computed(() => lyricsSettings.bgMode === 'custom');
 
 const panelBodyStyle = computed(() => {
   if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr', rowGap: 'var(--space-3)' };
@@ -375,6 +387,26 @@ async function extractPaletteFromCover(url?: string) {
 
 watch(() => playerStore.currentTrack?.al?.picUrl, async (url) => { try { await extractPaletteFromCover(url); } catch { /* keep previous */ } }, { immediate: true });
 
+/* 切歌过渡动画 */
+const prevBg = ref('');
+const bgFadeOpacity = ref(0);
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+const trackId = computed(() => playerStore.currentTrack?.id);
+
+watch(trackId, (newId, oldId) => {
+  if (!oldId || newId === oldId) return;
+  // 捕获当前背景作为旧层
+  const curBg = bgStyle.value?.background;
+  if (curBg && curBg !== '#0a0c14') {
+    prevBg.value = curBg;
+    bgFadeOpacity.value = 1;
+    // 旧背景 500ms 淡出
+    if (transitionTimer) clearTimeout(transitionTimer);
+    requestAnimationFrame(() => { bgFadeOpacity.value = 0; });
+    transitionTimer = setTimeout(() => { prevBg.value = ''; }, 600);
+  }
+});
+
 function onVolume(e: Event) { playerStore.setVolume(Number((e.target as HTMLInputElement).value) / 100); }
 async function toggleCurrentLike() {
   if (likeLoading.value || !canToggleCurrentLike.value) return;
@@ -414,12 +446,14 @@ function commitOffset(e: Event) {
 }
 
 function copyTrackInfo() { const t = playerStore.currentTrack; if (!t?.name) return; navigator.clipboard.writeText(`${t.name} - ${(t.ar||[]).map(a=>a.name).join('/')}`); }
+function onOpenLyricsSelection() { openSelection(playerStore.currentTrack?.id ?? null); }
 function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 ? '+' : ''; return `${sign}${v.toFixed(1)}s`; }
 </script>
 
 <style scoped>
-.expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; }
-.cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
+.expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; transition: background 0.5s ease; }
+.cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
+.bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
@@ -616,10 +650,30 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
 .playlist-empty { color: rgba(255,255,255,0.35); text-align: center; padding: var(--space-6) 0; margin: 0; }
 @keyframes seek-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
-.player-sheet-enter-active, .player-sheet-leave-active { transition: opacity 0.24s ease; }
-.player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel { transition: transform 0.28s ease; }
-.player-sheet-enter-from, .player-sheet-leave-to { opacity: 0; }
-.player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
+/* 切歌过渡 */
+.cover-switch-enter-active, .cover-switch-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.cover-switch-enter-from { opacity: 0; transform: scale(0.95); }
+.cover-switch-leave-to { opacity: 0; transform: scale(0.95); }
+/* 封面显示/隐藏过渡 */
+.zone-fade-enter-active, .zone-fade-leave-active { transition: opacity 0.25s ease; }
+.zone-fade-enter-from, .zone-fade-leave-to { opacity: 0; }
+.zone-slide-enter-active, .zone-slide-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.zone-slide-enter-from { opacity: 0; transform: translateX(-20px); }
+.zone-slide-leave-to { opacity: 0; transform: translateX(-20px); }
+
+.player-sheet-enter-active, .player-sheet-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.player-sheet-enter-from, .player-sheet-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+.player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel {
+  transform: translateY(100%);
+}
 .soft-gradient-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 
 /* ── 全屏封面 ── */
@@ -634,6 +688,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   mask-image: linear-gradient(to right, #000 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%);
   pointer-events: none;
+  animation: anFadeUp 0.46s ease-out both;
+  animation-delay: 0.1s;
 }
 .expanded-wrap.mode-fullscreen .panel-body {
   grid-template-columns: 1fr !important;

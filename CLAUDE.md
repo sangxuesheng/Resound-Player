@@ -1,42 +1,110 @@
-# Resound-Player 开发规范
+# CLAUDE.md
 
-## 全局封面交互
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-所有封面统一使用 `--image-hover-scale`（`src/styles/animations.css:8`）：
-- 默认值 `1.05`，通过 `var(--image-hover-scale)` 读取
-- 过渡 `transition: transform var(--image-hover-duration) var(--image-hover-ease)`
-- **禁止在组件内单独定义封面 hover 缩放值**
-- **禁止使用 `[class*='cover']` 通配符选择器**
+## Commands
 
-### 封面元素需要满足的核心规则
+```bash
+# Dev server (web only, requires API)
+npm run dev:web:full    # Full stack: API + unblock + Vite on port 5173
 
-1. **所有封面元素（`.cover / .song-cover / .rank-cover` 等）** 必须在 `animations.css` 中声明 `animation-fill-mode: backwards`，防止 AnimatedAppear 的入场动画锁定 transform
-2. **不添加 `overflow: hidden` 的元素 hover 缩放会溢出父容器**
-3. **大封面（详情页 hero）** 使用 `--scroll-transform` CSS 变量驱动滚动动画，hover 时叠加 `scale(var(--image-hover-scale))`
-4. **歌单列表封面** 需要行级 hover：`.song-item:hover img.song-cover`；首页：`.song:hover .cover`
+# Dev server (web only, no API)
+npm run dev:web         # Vite dev server only
 
-### 新增封面 CSS 检查清单
+# Desktop (electron)
+npm run dev:desktop     # Vite + Electron
+npm run build:desktop   # Build for desktop
+npm run build:web       # Build web version only
 
-- [ ] 在 `animations.css` 的 `animation-fill-mode: backwards` 列表中加入新类名
-- [ ] 在 `animations.css` 的桌面 hover 和触屏 active 列表中加入新选择器
-- [ ] 确保父元素有 `overflow: hidden`
-- [ ] 不在组件 scoped CSS 中覆盖 `transform` 或 `transform-origin`
+# Unblock music sources
+npm run dev:unblock         # Run unblock server on port 38762
+npm run dev:unblock-match   # Run match server on port 38763
+```
 
-## 音源替换
+## Project Architecture
 
-- 匹配服务 `server/unblock-match-server.mjs` 使用 Promise.any 竞速所有源
-- 前端 `src/stores/player.ts` `playTrack` 中 fee 判定 + 匹配并行执行
-- 缓存 `src/stores/unblock-cache.ts`：Map + localStorage，最多 200 条，10 分钟 TTL
-- 音源注册 `src/config/musicSources.ts`：定义元数据，组件通过 `getSourceMeta()` 获取
+### Tech Stack
+- **Frontend**: Vue 3 `<script setup lang="ts">` SFCs, Vite
+- **Styling**: Plain CSS (no preprocessor), scoped styles per component, global styles in `src/styles/`
+- **State**: Vue `reactive()` singletons (no Pinia)
+- **API**: NeteaseCloudMusicApi enhanced backend
 
-## 代码风格
+### Source Structure
+```
+src/
+  stores/          # Reactive state singletons
+    player.ts      # Core player state (currentTrack, isPlaying, playlist, seek, volume)
+    lyricsSettings.ts  # Lyrics display settings (persisted to localStorage)
+    user.ts        # User/auth state
+    ui.ts          # UI state (sidebar, theme)
+    unblock-cache.ts  # Unblock source cache (Map + localStorage, 200 max, 10min TTL)
+  composables/     # Vue composables
+    useLyrics.ts   # Lyric parsing (LRC/YRC), timeline tracking, scroll anchoring
+    useAmllAdapter.ts  # AMLL lyric format adapter
+    useIridescence.ts / useThreeScene.ts / usePaperShaders.ts / etc. # Background effects
+  components/
+    PlayerBar.vue          # Bottom mini player bar
+    PlayerExpanded.vue     # Full-screen expanded player (cover/record/fullscreen modes)
+    LyricsPanel.vue        # Lyrics display (custom + AMLL renderer switching)
+    LyricsSettingsPanel.vue # Lyrics settings popover
+    ui/                    # Reusable UI components (FancySwitch, StepSliderRow, RadioRow, etc.)
+  styles/
+    theme.css         # Design tokens, light/dark theme, glass system (~1186 lines)
+    animations.css    # Entrance animations, hover-scale system, cover keyframes
+    detail-page.css   # Detail page layout
+  api/
+    music.ts          # Music API calls (lyric, song detail, playlist, etc.)
+    auth.ts           # Authentication
+    client.ts         # Axios instance with proxy
+```
 
-- Vue 3 `<script setup lang="ts">` 单文件组件
-- CSS 全局样式在 `src/styles/` 下
-- 组件 scoped 样式仅在组件内部使用
-- 避免 JS inline style 写 `transform`，改用 CSS 变量
+### Stores
+All stores are module-level `reactive()` singletons, not Pinia stores. They are imported directly:
+```ts
+import { playerStore } from '../stores/player';
+import { lyricsSettings } from '../stores/lyricsSettings';
+```
 
-## 文件修改联动
+### Display Modes (PlayerExpanded.vue)
+Three cover display modes controlled by `lyricsSettings.displayMode`:
+- `cover` — Rectangular album cover on left, lyrics on right (2-column grid)
+- `record` — Vinyl record with spinning disc + tonearm on left, lyrics on right
+- `fullscreen` — Cover as full-height background layer on left 60vw, lyrics full-width
 
-修改 `src/styles/` 全局 CSS 时，注意会影响所有组件。
-修改 `src/stores/` 时，注意可能影响所有消费者。
+Key settings affecting layout:
+- `showCover` — Show/hide the left zone (cover/record)
+- `showLyrics` — Show/hide the lyrics panel
+- `showMiniBar` — Use floating bottom control bar vs controls in left zone
+- `centerAlign` — Toggle lyrics text alignment (centered vs left-aligned)
+- `contentWidth` — Left/right column ratio (30-70%)
+
+### Lyrics Rendering
+Two renderers coexist, toggled by `useAmllRenderer`:
+1. **Custom renderer** — DOM-based, scrollable `.lyric-box` with `overflow-y: auto`
+2. **AMLL renderer** — `@applemusic-like-lyrics/vue` LyricPlayer component (canvas/DOM hybrid)
+
+Both are layered in `.renderer-stack` with `v-show` to keep both mounted.
+
+### Lyric Scroll Behavior
+- `isHovering` — Mouse enters lyrics area → removes blur on all lines
+- `isUserScrolling` — Scroll/wheel/touch on lyrics → pauses auto-follow for 3s, then scrolls to current line
+- `seekToLine` — Clicking a line seeks audio and resets scrolling state
+
+### API Server
+Requires `@neteasecloudmusicapienhanced` running on port 38761. Development proxy via `VITE_API_PROXY_TARGET`. Unblock music sources run on ports 38762 (unblock server) and 38763 (match server).
+
+## Key Patterns
+
+### CSS Variables for Covers
+All cover hover scales use `--image-hover-scale` from `animations.css`. Never define cover hover values in component scoped CSS. Never use `[class*='cover']` wildcard selectors.
+
+### Persisted Settings
+`lyricsSettings` is persisted to localStorage key `gm_lyrics_settings_v1`. The reactive object has a `.save()` method. Defaults are applied on first load or when fields are missing.
+
+### Palette Extraction
+`PlayerExpanded.vue` extracts a 4-color palette from the current track's cover art using a 56x56 canvas. The palette drives the background gradient (`c1`–`c4`) and accent color (`c3`).
+
+### Unblock Music Source Matching
+- `server/unblock-match-server.mjs` uses `Promise.any` to race multiple sources
+- `src/stores/unblock-cache.ts` caches results in Map + localStorage
+- `src/config/musicSources.ts` registers sources with metadata

@@ -27,6 +27,7 @@
               <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>
               <div class="sw-row"><span class="sw-label">AMLL 歌词渲染</span><FancySwitch :model-value="s.useAmllRenderer" @update:model-value="set('useAmllRenderer', $event)" /></div>
               <p class="custom-hint">AMLL 渲染需要较高性能设备，可能影响续航与发热</p>
+              <div class="sw-row"><span class="sw-label">歌词颜色跟随封面</span><FancySwitch :model-value="s.followCoverColor" @update:model-value="set('followCoverColor', $event)" /></div>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
@@ -143,9 +144,9 @@ function updateIriColor(idx: number, val: string) {
 .popover-backdrop { position: fixed; inset: 0; z-index: 100; background: transparent; }
 .settings-popover {
   position: fixed; width: 380px; max-height: min(80vh, 600px); height: auto;
-  background: var(--bg-surface, rgba(26,28,40,0.85));
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  background: var(--bg-surface, rgba(26,28,40,0.97));
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
   border-radius: var(--radius-lg, 14px);
   display: grid; grid-template-rows: auto auto 1fr;
