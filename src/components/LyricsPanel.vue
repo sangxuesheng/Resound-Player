@@ -107,7 +107,7 @@ const zoneStyle = computed(() => ({
 
 const lyricBoxStyle = computed(() => {
   const ratio = getAnchorRatio(lyricsSettings.anchorPos);
-  const topPad = lyricsSettings.showCover ? '42%' : '8%';
+  const topPad = lyricsSettings.showCover ? '42%' : '12vh';
   return { paddingTop: topPad, paddingBottom: `calc(${ratio * 100}vh - 80px)` };
 });
 
