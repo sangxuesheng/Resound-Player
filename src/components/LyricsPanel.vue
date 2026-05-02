@@ -100,7 +100,9 @@ const lyricVars = computed(() => {
 });
 
 const zoneStyle = computed(() => ({
-  maxHeight: lyricsSettings.showMiniBar ? 'calc(100vh - 250px)' : 'calc(100vh - 170px)',
+  maxHeight: lyricsSettings.showMiniBar ? 'calc(100vh - 170px)' : 'calc(100vh - 170px)',
+  boxSizing: 'border-box',
+  paddingBottom: lyricsSettings.showMiniBar ? '95px' : '0',
 }));
 
 const lyricBoxStyle = computed(() => {
