@@ -797,8 +797,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .vinyl-disc::after {
   content: '';
   position: absolute;
-  width: 72%;
-  height: 72%;
+  width: 64%;
+  height: 64%;
   border-radius: 50%;
   background: radial-gradient(circle at 40% 40%,
     rgba(255,255,255,0.06) 0%,
@@ -808,11 +808,10 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 /* 内圈封面（专辑图） */
 .record-cover {
-  width: 72%;
-  height: 72%;
+  width: 64%;
+  height: 64%;
   border-radius: 50%;
   background: #d9dee8 center/cover no-repeat;
-  border: 3px solid rgba(255,255,255,0.2);
   box-shadow:
     0 0 0 2px rgba(0,0,0,0.3),
     0 4px 16px rgba(0,0,0,0.5);
