@@ -9,7 +9,11 @@
     >
       <!-- 全屏封面（独立层） -->
       <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" class="fullscreen-cover" :style="coverStyle"></div>
-      <div class="cover-aura" :style="coverAuraStyle"></div>
+      <Transition name="cover-switch" mode="out-in" appear>
+        <div :key="trackId" class="cover-aura" :style="coverAuraStyle"></div>
+      </Transition>
+      <!-- 背景过渡层：切歌时旧背景渐变淡出 -->
+      <div v-if="prevBg" class="bg-transition-layer" :style="{ background: prevBg, opacity: bgFadeOpacity }"></div>
       <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
       <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
       <div v-show="showSoftGradient" class="soft-gradient-bg" :style="{ animationDuration: softGradientDuration + 's' }"></div>
@@ -48,24 +52,28 @@
           <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
-              <AnimatedAppear tag="div" variant="media" rhythm="body" class-name="album-shell" :class="{ playing: playerStore.isPlaying }">
-                <div class="album-cover" :style="coverStyle"></div>
-              </AnimatedAppear>
+              <Transition name="cover-switch" mode="out-in" appear>
+                <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
+                  <div class="album-cover" :style="coverStyle"></div>
+                </div>
+              </Transition>
             </template>
             <!-- 唱片模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
-              <AnimatedAppear tag="div" variant="media" rhythm="body" class-name="vinyl-record">
-                <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
-                  <img class="needle" src="/images/needle.png" alt="pointer" />
+              <Transition name="cover-switch" mode="out-in" appear>
+                <div :key="trackId" class="vinyl-record">
+                  <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
+                    <img class="needle" src="/images/needle.png" alt="pointer" />
+                  </div>
+                  <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
+                    <div class="record-cover" :style="coverStyle" />
+                  </div>
                 </div>
-                <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
-                  <div class="record-cover" :style="coverStyle" />
-                </div>
-              </AnimatedAppear>
+              </Transition>
             </template>
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
-              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
+              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name" :key="'sn-'+trackId">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist" :key="'sa-'+trackId">
                 <template v-if="playerStore.currentTrack?.ar?.length">
                   <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
                 </template>
@@ -375,6 +383,26 @@ async function extractPaletteFromCover(url?: string) {
 
 watch(() => playerStore.currentTrack?.al?.picUrl, async (url) => { try { await extractPaletteFromCover(url); } catch { /* keep previous */ } }, { immediate: true });
 
+/* 切歌过渡动画 */
+const prevBg = ref('');
+const bgFadeOpacity = ref(0);
+let transitionTimer: ReturnType<typeof setTimeout> | null = null;
+const trackId = computed(() => playerStore.currentTrack?.id);
+
+watch(trackId, (newId, oldId) => {
+  if (!oldId || newId === oldId) return;
+  // 捕获当前背景作为旧层
+  const curBg = bgStyle.value?.background;
+  if (curBg && curBg !== '#0a0c14') {
+    prevBg.value = curBg;
+    bgFadeOpacity.value = 1;
+    // 旧背景 500ms 淡出
+    if (transitionTimer) clearTimeout(transitionTimer);
+    requestAnimationFrame(() => { bgFadeOpacity.value = 0; });
+    transitionTimer = setTimeout(() => { prevBg.value = ''; }, 600);
+  }
+});
+
 function onVolume(e: Event) { playerStore.setVolume(Number((e.target as HTMLInputElement).value) / 100); }
 async function toggleCurrentLike() {
   if (likeLoading.value || !canToggleCurrentLike.value) return;
@@ -418,8 +446,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 </script>
 
 <style scoped>
-.expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; }
-.cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; }
+.expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; transition: background 0.5s ease; }
+.cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
+.bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
@@ -616,6 +645,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
 .playlist-empty { color: rgba(255,255,255,0.35); text-align: center; padding: var(--space-6) 0; margin: 0; }
 @keyframes seek-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
+/* 切歌过渡 */
+.cover-switch-enter-active, .cover-switch-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+.cover-switch-enter-from { opacity: 0; transform: scale(0.95); }
+.cover-switch-leave-to { opacity: 0; transform: scale(0.95); }
+
 .player-sheet-enter-active, .player-sheet-leave-active {
   transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
