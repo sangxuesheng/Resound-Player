@@ -644,31 +644,25 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   width: min(52vh, 480px);
   aspect-ratio: 1 / 1;
 }
-/* 唱针 */
+/* 唱针 — 与 SPlayer 完全一致 */
 .vinyl-pointer {
   position: absolute;
   width: 30%;
-  aspect-ratio: 1 / 1.8;
   left: 46%;
   top: -22%;
   z-index: 5;
   pointer-events: none;
 }
-/* 指针主体 */
 .needle {
   display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: auto;
   transform: rotate(-25deg);
-  transform-origin: 59.76% 22%;
-  z-index: 9;
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 10% 10%;
+  transition: transform 0.3s;
 }
 .vinyl-pointer.active .needle {
-  transform: rotate(-3deg);
+  transform: rotate(-8deg);
 }
 /* 唱片 */
 .vinyl-disc {
