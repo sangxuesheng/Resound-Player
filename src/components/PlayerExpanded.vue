@@ -659,6 +659,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   height: auto;
   transform: rotate(-25deg);
   transform-origin: 10% 10%;
+  backface-visibility: hidden;
   transition: transform 0.3s;
 }
 .vinyl-pointer.active .needle {
