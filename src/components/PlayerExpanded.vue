@@ -662,7 +662,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   width: 100px;
   height: 160px;
   transform: translateX(-50%) rotate(-25deg);
-  transform-origin: top center;
+  transform-origin: 50% 12%;
   z-index: 9;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   background: url(/images/needle.png) top center/contain no-repeat;
