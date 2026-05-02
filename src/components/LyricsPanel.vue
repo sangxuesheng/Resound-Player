@@ -2,7 +2,7 @@
   <div
     class="right-zone"
     :class="{
-      'l-center': lyricsSettings.showCover ? lyricsSettings.centerAlign : true,
+      'l-center': lyricsSettings.centerAlign,
       'l-no-cover': !lyricsSettings.showCover,
       'l-hidden': !lyricsSettings.showLyrics,
       'l-record': vinylMode,
