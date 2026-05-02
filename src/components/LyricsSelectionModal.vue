@@ -32,6 +32,10 @@
               <button class="sel-btn sel-copy" :disabled="lyricsSelection.selectedIndices.size === 0" @click="onCopy">复制</button>
             </div>
           </template>
+          <!-- 复制成功提示 -->
+          <transition name="copy-toast">
+            <div v-if="copyFeedback" class="sel-toast">已复制选中歌词</div>
+          </transition>
         </div>
       </div>
     </transition>
@@ -73,6 +77,8 @@ watch(() => playerStore.currentTrack?.id, (newId) => {
 });
 
 /* 复制 */
+const copyFeedback = ref(false);
+
 async function onCopy() {
   const lines = lyricLines.value.filter((_, i) => lyricsSelection.selectedIndices.has(i));
   if (!lines.length) return;
@@ -84,6 +90,8 @@ async function onCopy() {
   }).join('\n');
   try {
     await navigator.clipboard.writeText(text);
+    copyFeedback.value = true;
+    setTimeout(() => { copyFeedback.value = false; }, 1500);
   } catch { /* ignore */ }
 }
 </script>
@@ -162,4 +170,13 @@ async function onCopy() {
 .sel-count { color: rgba(255,255,255,0.4); font-size: 12px; }
 .modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s ease; }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
+.sel-toast {
+  position: fixed; bottom: 10%; left: 50%; transform: translateX(-50%);
+  padding: 8px 20px; border-radius: 999px;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+  color: #fff; font-size: 13px; font-weight: 500;
+  pointer-events: none; z-index: 210;
+}
+.copy-toast-enter-active, .copy-toast-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.copy-toast-enter-from, .copy-toast-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>

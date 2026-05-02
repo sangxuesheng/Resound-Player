@@ -117,7 +117,6 @@
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
-          <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
           <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
           <button class="ra-btn" title="多选歌词" @click="onOpenLyricsSelection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></button>
         </div>
