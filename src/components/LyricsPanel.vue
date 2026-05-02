@@ -100,14 +100,13 @@ const lyricVars = computed(() => {
 });
 
 const zoneStyle = computed(() => ({
-  maxHeight: 'calc(100vh - 170px)',
+  paddingBottom: lyricsSettings.showMiniBar ? '85px' : '0',
 }));
 
 const lyricBoxStyle = computed(() => {
   const ratio = getAnchorRatio(lyricsSettings.anchorPos);
   const topPad = lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen' ? '42%' : '0';
-  const consolePad = lyricsSettings.showMiniBar ? '85px' : '0';
-  return { paddingTop: topPad, paddingBottom: `calc(${ratio * 100}vh - 80px + 0px)`, marginBottom: consolePad };
+  return { paddingTop: topPad, paddingBottom: `calc(${ratio * 100}vh - 80px)` };
 });
 
 /* 鼠标悬停或滚动时取消 blur/opacity */
