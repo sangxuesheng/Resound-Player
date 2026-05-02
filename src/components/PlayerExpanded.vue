@@ -8,7 +8,7 @@
       @click.self="playerStore.closeExpanded()"
     >
       <!-- 全屏封面（独立层） -->
-      <AnimatedAppear v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" tag="div" variant="media" rhythm="body" class-name="fullscreen-cover" attrs="{ style: coverStyle }" />
+      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" class="fullscreen-cover" :style="coverStyle"></div>
       <div class="cover-aura" :style="coverAuraStyle"></div>
       <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
       <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
@@ -43,7 +43,7 @@
               </template>
               <template v-else>{{ artistText }}</template>
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-            </p>
+            </AnimatedAppear>
           </div>
           <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
@@ -634,6 +634,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   mask-image: linear-gradient(to right, #000 80%, transparent 100%);
   -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%);
   pointer-events: none;
+  animation: anFadeUp 0.46s ease-out both;
+  animation-delay: 0.1s;
 }
 .expanded-wrap.mode-fullscreen .panel-body {
   grid-template-columns: 1fr !important;
