@@ -6,11 +6,8 @@
       'l-no-cover': !lyricsSettings.showCover,
       'l-hidden': !lyricsSettings.showLyrics,
       'l-record': vinylMode,
-      'no-mask': maskDisabled,
     }"
-    :style="[lyricVars, zoneStyle]"
-    @mouseenter="onZoneEnter"
-    @mouseleave="onZoneLeave"
+    :style="lyricVars"
   >
     <!-- 隐藏歌词时：空占位 -->
     <template v-if="!lyricsSettings.showLyrics">
@@ -98,11 +95,6 @@ const lyricVars = computed(() => {
   };
 });
 
-const zoneStyle = computed(() => {
-  if (maskDisabled.value) return { maskImage: 'none', WebkitMaskImage: 'none' };
-  return {};
-});
-
 const lyricBoxStyle = computed(() => {
   const ratio = getAnchorRatio(lyricsSettings.anchorPos);
   const topPad = lyricsSettings.showCover ? '42%' : '8%';
@@ -111,7 +103,7 @@ const lyricBoxStyle = computed(() => {
 
 /* 用户滚动浏览时取消远端歌词模糊 */
 function lineWrapStyle(idx: number, currentIdx: number) {
-  if ((maskDisabled.value || isUserScrolling.value) && Math.abs(idx - currentIdx) > 3) {
+  if (isUserScrolling.value && Math.abs(idx - currentIdx) > 3) {
     return { opacity: 1, filter: 'none' };
   }
   return getLineWrapStyle(idx, currentIdx);
@@ -145,37 +137,11 @@ watch(() => lyricsSettings.useAmllRenderer, (useAmll) => {
   });
 });
 
-/* 遮罩控制：鼠标悬停 + 滑动时暂时移除渐隐遮罩 */
-const maskDisabled = ref(false);
-let maskTimer: ReturnType<typeof setTimeout> | null = null;
-
-function onZoneEnter() {
-  maskDisabled.value = true;
-  if (maskTimer) { clearTimeout(maskTimer); maskTimer = null; }
-}
-function onZoneLeave() {
-  // 离开时不立即恢复遮罩，延迟 800ms，让滑动期间的滚动也能保持遮罩消失
-  if (maskTimer) clearTimeout(maskTimer);
-  maskTimer = setTimeout(() => {
-    maskDisabled.value = false;
-    maskTimer = null;
-  }, 800);
-}
-
-/* 用户手动滑动歌词时暂停高亮跟随（3s 恢复）+ 遮罩（2s 恢复） */
+/* 用户手动滑动歌词时暂停高亮跟随，3s 无操作恢复 */
 const isUserScrolling = ref(false);
 let scrollTimer: ReturnType<typeof setTimeout> | null = null;
 
 function onLyricScroll() {
-  // 遮罩：滑动时移除，2s 无滑动恢复
-  maskDisabled.value = true;
-  if (maskTimer) clearTimeout(maskTimer);
-  maskTimer = setTimeout(() => {
-    maskDisabled.value = false;
-    maskTimer = null;
-  }, 2000);
-
-  // 高亮跟随：滑动时暂停，3s 恢复
   isUserScrolling.value = true;
   if (scrollTimer) clearTimeout(scrollTimer);
   scrollTimer = setTimeout(() => {
@@ -191,7 +157,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   lyricBoxRef.value?.removeEventListener('scroll', onLyricScroll);
   if (scrollTimer) clearTimeout(scrollTimer);
-  if (maskTimer) clearTimeout(maskTimer);
 });
 
 watch(currentLyricIndex, async (idx, prev) => {
@@ -212,8 +177,7 @@ startTick();
 </script>
 
 <style scoped>
-.right-zone { min-height: 0; display: flex; flex-direction: column; max-height: calc(100vh - 170px); height: 100%; isolation: isolate; mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 12%, #000 88%, transparent 100%); transition: mask-image 0.25s ease, -webkit-mask-image 0.25s ease; }
-.right-zone.no-mask { mask-image: none !important; -webkit-mask-image: none !important; }
+.right-zone { min-height: 0; display: flex; flex-direction: column; max-height: calc(100vh - 170px); height: 100%; isolation: isolate; }
 .right-zone.l-center .line-wrap { text-align: center; }
 .right-zone:not(.l-center) .line-wrap { text-align: left; padding-left: var(--space-4); padding-right: var(--space-4); }
 .right-zone.l-no-cover { max-width: min(700px, 85%); margin: 0 auto; width: 100%; }
