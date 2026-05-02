@@ -14,12 +14,19 @@
           </div>
           <div class="popover-body">
             <div v-show="activeTab === 'display'" class="tab-content">
+              <div class="radio-row">
+                <span class="radio-label">播放器样式</span>
+                <div class="radio-group">
+                  <button v-for="opt in displayModeOptions" :key="opt.value" type="button" class="radio-chip" :class="{ active: s.displayMode === opt.value }" @click="setDisplayMode(opt.value)">{{ opt.label }}</button>
+                </div>
+              </div>
               <div class="sw-row"><span class="sw-label">隐藏封面</span><FancySwitch :model-value="!s.showCover" @update:model-value="setShowCover($event)" /></div>
               <div class="sw-row"><span class="sw-label">居中显示</span><FancySwitch :model-value="s.centerAlign" @update:model-value="set('centerAlign', $event)" /></div>
               <div class="sw-row"><span class="sw-label">隐藏歌词</span><FancySwitch :model-value="!s.showLyrics" @update:model-value="setShowLyrics($event)" /></div>
               <div class="sw-row"><span class="sw-label">播放栏切换</span><FancySwitch :model-value="s.showMiniBar" @update:model-value="set('showMiniBar', $event)" /></div>
               <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>
               <div class="sw-row"><span class="sw-label">AMLL 歌词渲染</span><FancySwitch :model-value="s.useAmllRenderer" @update:model-value="set('useAmllRenderer', $event)" /></div>
+              <p class="custom-hint">AMLL 渲染需要较高性能设备，可能影响续航与发热</p>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
@@ -83,6 +90,13 @@ const localBgCustomMode = ref(s.bgCustomMode);
 function setBgCustomMode(v: string) { s.bgCustomMode = v as any; s.save(); localBgCustomMode.value = v; }
 function setShowCover(v: boolean) { s.showCover = !v; if (v) { s.showLyrics = true; s.showMiniBar = true; } s.save(); }
 function setShowLyrics(v: boolean) { s.showLyrics = !v; if (v) s.showCover = true; s.save(); }
+
+const displayModeOptions = [
+  { value: 'cover', label: '封面模式' },
+  { value: 'record', label: '唱片模式' },
+  { value: 'fullscreen', label: '全屏封面' },
+];
+function setDisplayMode(v: string) { s.displayMode = v as any; s.save(); }
 
 const popoverStyle = computed(() => {
   const a = props.anchor || { top: 80, right: 24 };

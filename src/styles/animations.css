@@ -21,6 +21,12 @@
   --an-rhythm-overlay: 6;
 }
 
+/* 唱片旋转 */
+@keyframes playerCoverRotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes anFadeUp {
   from {
     opacity: 0;
