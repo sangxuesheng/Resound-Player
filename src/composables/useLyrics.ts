@@ -247,28 +247,30 @@ export function getLineStyle(
 }
 
 export function getWordStyle(lineIndex: number, word: LyricWord, currentIndex: number, displayTime: number, opts: LyricStyleOptions = {}) {
+  const baseColor = opts.baseColor || LYRIC_BASE_COLOR;
+  const activeColor = opts.activeColor || '#ffffff';
   const currentMs = displayTime * 1000;
-  // 已播放过的行 → 所有字都是灰色，统一 baseColor
+  // 已播放过的行 → 统一 baseColor
   if (lineIndex < currentIndex) {
-    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
+    return { color: baseColor, backgroundImage: 'none' };
   }
-  // 还未播放的行 → 灰色
+  // 还未播放的行 → baseColor
   if (lineIndex > currentIndex) {
-    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
+    return { color: baseColor, backgroundImage: 'none' };
   }
   // 当前行 → 逐字高亮
   const start = word.startTime;
   const end = word.startTime + Math.max(1, word.duration);
   if (currentMs >= end) {
-    return { color: '#fff', backgroundImage: 'none' };
+    return { color: activeColor, backgroundImage: 'none' };
   }
   if (currentMs <= start) {
-    return { color: LYRIC_BASE_COLOR, backgroundImage: 'none' };
+    return { color: baseColor, backgroundImage: 'none' };
   }
   const percent = Math.min(1, Math.max(0, (currentMs - start) / Math.max(1, end - start)));
   const pct = Math.round(percent * 100);
   return {
-    backgroundImage: `linear-gradient(to right, #fff 0%, #fff ${pct}%, ${LYRIC_BASE_COLOR} ${pct}%, ${LYRIC_BASE_COLOR} 100%)`,
+    backgroundImage: `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${pct}%, ${baseColor} ${pct}%, ${baseColor} 100%)`,
     backgroundClip: 'text', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent',
   };
 }
