@@ -46,7 +46,7 @@
             <div v-for="(line, idx) in lyricLines" :key="`${idx}-${line.time}`" :ref="(el) => setLyricLineRef(el, idx)" class="line-wrap" :class="{ active: idx === currentLyricIndex, 'hide-played': lyricsSettings.hidePlayed && idx < currentLyricIndex }" :style="lineWrapStyle(idx, currentLyricIndex)" @click="seekToLine(idx)">
               <p class="line" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="lineStyle(idx, line)">
                 <template v-if="line.words && line.words.length">
-                  <span v-for="(word, wIdx) in line.words" :key="`${idx}-${wIdx}`" class="word" :style="getWordStyle(idx, word, currentLyricIndex, effectiveTime)">{{ word.text }}<span v-if="word.space">&nbsp;</span></span>
+                  <span v-for="(word, wIdx) in line.words" :key="`${idx}-${wIdx}`" class="word" :style="getWordStyle(idx, word, currentLyricIndex, effectiveTime, lyricColorOpts)">{{ word.text }}<span v-if="word.space">&nbsp;</span></span>
                 </template>
                 <template v-else>{{ line.text || '...' }}</template>
               </p>
@@ -71,7 +71,16 @@ import '@applemusic-like-lyrics/core/style.css';
 const props = defineProps<{
   vinylMode?: boolean;
   fullscreen?: boolean;
+  accentColor?: string;
 }>();
+const lyricColorOpts = computed(() => {
+  if (!lyricsSettings.followCoverColor || !props.accentColor) return {};
+  const accent = props.accentColor;
+  return {
+    baseColor: accent.replace('rgb', 'rgba').replace(')', ',0.35)'),
+    activeColor: accent,
+  };
+});
 
 const { lyricLines, currentLyricIndex, displayTime, effectiveTime, isLoading, lyricBoxRef, setLyricLineRef, startTick, loadLyrics, scrollToCurrentLine, seekToLine: origSeekToLine } = useLyrics();
 
@@ -144,11 +153,11 @@ function lineWrapStyle(idx: number, currentIdx: number) {
 
 function lineStyle(idx: number, line: any) {
   const next = lyricLines.value[idx + 1];
-  return getLineStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next);
+  return getLineStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next, lyricColorOpts.value);
 }
 function translationStyle(idx: number, line: any) {
   const next = lyricLines.value[idx + 1];
-  return getTranslationStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next);
+  return getTranslationStyle(idx, line, currentLyricIndex.value, effectiveTime.value, next, lyricColorOpts.value);
 }
 
 /* ---- AMLL 相关 ---- */

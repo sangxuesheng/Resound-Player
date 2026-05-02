@@ -27,6 +27,7 @@
               <div class="sw-row"><span class="sw-label">隐藏已播歌词</span><FancySwitch :model-value="s.hidePlayed" @update:model-value="set('hidePlayed', $event)" /></div>
               <div class="sw-row"><span class="sw-label">AMLL 歌词渲染</span><FancySwitch :model-value="s.useAmllRenderer" @update:model-value="set('useAmllRenderer', $event)" /></div>
               <p class="custom-hint">AMLL 渲染需要较高性能设备，可能影响续航与发热</p>
+              <div class="sw-row"><span class="sw-label">歌词颜色跟随封面</span><FancySwitch :model-value="s.followCoverColor" @update:model-value="set('followCoverColor', $event)" /></div>
             </div>
             <div v-show="activeTab === 'interface'" class="tab-content">
             </div>
