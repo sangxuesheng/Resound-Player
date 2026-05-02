@@ -10,6 +10,8 @@
     :style="lyricVars"
     @wheel.passive="onLyricScroll"
     @touchmove.passive="onLyricScroll"
+    @mouseenter="isHovering = true"
+    @mouseleave="isHovering = false"
   >
     <!-- 隐藏歌词时：空占位 -->
     <template v-if="!lyricsSettings.showLyrics">
@@ -103,9 +105,11 @@ const lyricBoxStyle = computed(() => {
   return { paddingTop: topPad, paddingBottom: `calc(${ratio * 100}vh - 80px)` };
 });
 
-/* 滚动浏览时全部歌词不模糊（与 AMLL 行为一致） */
+/* 鼠标悬停或滚动时取消 blur/opacity */
+const isHovering = ref(false);
+
 function lineWrapStyle(idx: number, currentIdx: number) {
-  if (isUserScrolling.value) return {};
+  if (isHovering.value || isUserScrolling.value) return {};
   return getLineWrapStyle(idx, currentIdx);
 }
 
