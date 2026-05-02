@@ -616,10 +616,19 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
 .playlist-empty { color: rgba(255,255,255,0.35); text-align: center; padding: var(--space-6) 0; margin: 0; }
 @keyframes seek-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
-.player-sheet-enter-active, .player-sheet-leave-active { transition: opacity 0.24s ease; }
-.player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel { transition: transform 0.28s ease; }
-.player-sheet-enter-from, .player-sheet-leave-to { opacity: 0; }
-.player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
+.player-sheet-enter-active, .player-sheet-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.player-sheet-enter-active .expanded-panel, .player-sheet-leave-active .expanded-panel {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.player-sheet-enter-from, .player-sheet-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
+}
+.player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel {
+  transform: translateY(100%);
+}
 .soft-gradient-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 
 /* ── 全屏封面 ── */
