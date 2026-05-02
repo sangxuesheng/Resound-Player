@@ -101,6 +101,7 @@ const lyricVars = computed(() => {
 
 const zoneStyle = computed(() => ({
   boxSizing: 'border-box',
+  paddingTop: 0,
   paddingBottom: lyricsSettings.showMiniBar ? '85px' : '0',
 }));
 
@@ -215,6 +216,7 @@ startTick();
 .lyric-box { flex: 1; overflow-y: auto; overflow-x: hidden; border-radius: 0; padding: 42% 60px 0; background: transparent; border: 0; box-shadow: none; scroll-behavior: smooth; }
 .lyric-box::-webkit-scrollbar { width: 0; }
 .line-wrap { margin: var(--space-3) 0; text-align: center; cursor: pointer; border-radius: 12px; padding: var(--space-2) var(--space-3); transition: background-color 140ms ease, box-shadow 140ms ease; }
+.line-wrap:first-child { margin-top: 0; }
 .line-wrap:hover { background: rgba(255,255,255,0.1); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2); }
 .line-wrap.hide-played { visibility: hidden; opacity: 0; pointer-events: none; }
 .line { margin: 0; color: rgba(255,255,255,0.55); font-size: var(--l-font-size, 30px); font-weight: var(--l-font-weight, 700); line-height: var(--l-line-height, 1.28); letter-spacing: var(--l-letter-spacing, 0); overflow-wrap: break-word; word-break: break-word; }
