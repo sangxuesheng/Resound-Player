@@ -657,9 +657,10 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 /* 指针主体 */
 .needle {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
   width: 100%;
-  height: 100%;
+  aspect-ratio: 251 / 409;
   transform: rotate(-25deg);
   transform-origin: 59.76% 22%;
   z-index: 9;
