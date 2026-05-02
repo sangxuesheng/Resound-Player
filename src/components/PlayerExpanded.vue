@@ -8,7 +8,7 @@
       @click.self="playerStore.closeExpanded()"
     >
       <!-- 全屏封面（独立层） -->
-      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" class="fullscreen-cover" :style="coverStyle" />
+      <AnimatedAppear v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" tag="div" variant="media" rhythm="body" class-name="fullscreen-cover" attrs="{ style: coverStyle }" />
       <div class="cover-aura" :style="coverAuraStyle"></div>
       <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
       <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
@@ -36,8 +36,8 @@
 
         <div class="panel-body" :style="panelBodyStyle">
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
-            <h2 class="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</h2>
-            <p class="song-artist-center">
+            <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+            <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
                 <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
               </template>
@@ -48,20 +48,20 @@
           <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
-              <div class="album-shell" :class="{ playing: playerStore.isPlaying }">
+              <AnimatedAppear tag="div" variant="media" rhythm="body" class-name="album-shell" :class="{ playing: playerStore.isPlaying }">
                 <div class="album-cover" :style="coverStyle"></div>
-              </div>
+              </AnimatedAppear>
             </template>
             <!-- 唱片模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
-              <div class="vinyl-record">
+              <AnimatedAppear tag="div" variant="media" rhythm="body" class-name="vinyl-record">
                 <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
                   <img class="needle" src="/images/needle.png" alt="pointer" />
                 </div>
                 <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
                   <div class="record-cover" :style="coverStyle" />
                 </div>
-              </div>
+              </AnimatedAppear>
             </template>
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
               <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
@@ -104,14 +104,14 @@
           <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" />
         </div>
 
-        <div class="right-actions">
+        <AnimatedAppear tag="div" variant="content" rhythm="actions" class-name="right-actions">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
           <button class="ra-btn" title="复制歌曲信息" @click="copyTrackInfo"><Copy :size="16" /></button>
           <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
-        </div>
+        </AnimatedAppear>
 
         <Teleport to="body">
           <transition name="offset-fade">
@@ -131,7 +131,7 @@
           </transition>
         </Teleport>
 
-        <div v-if="lyricsSettings.showMiniBar" class="bottom-console">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -160,7 +160,7 @@
               <input class="con-vol-slider" type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
             </div>
           </div>
-        </div>
+        </AnimatedAppear>
 
         <div v-if="showPlaylistPopup" class="playlist-popup-mask" @click.self="showPlaylistPopup = false">
           <aside class="playlist-popup" @click.stop>
