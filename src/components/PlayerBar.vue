@@ -1,7 +1,10 @@
 <template>
   <AnimatedAppear tag="footer" variant="content" rhythm="overlay" class-name="bar">
     <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="left">
-      <AnimatedAppear tag="button" variant="media" rhythm="list" class-name="cover" :style="coverStyle" @click="playerStore.openExpanded()" />
+      <AnimatedAppear tag="div" variant="media" rhythm="list" class-name="cover-wrap">
+        <button class="cover" :style="coverStyle" @click="playerStore.openExpanded()" />
+        <button class="cover-fullscreen-btn" title="全屏" @click="playerStore.openExpanded()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg></button>
+      </AnimatedAppear>
       <div class="meta">
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
@@ -369,8 +372,16 @@ function formatTime(sec: number) {
   overflow-x: clip;
 }
 .left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
+.cover-wrap { position: relative; flex-shrink: 0; }
+.cover-wrap:hover .cover-fullscreen-btn { opacity: 1; pointer-events: auto; }
 .cover { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: #e5e7eb center/cover no-repeat; cursor: pointer; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
 .cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cover-fullscreen-btn {
+  position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 12px;
+  border: none; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer;
+  display: grid; place-items: center; opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease;
+}
 .meta { min-width: 0; max-width: 100%; overflow: hidden; flex: 1; }
 .title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .title { color: #111827; font-weight: 600; }
