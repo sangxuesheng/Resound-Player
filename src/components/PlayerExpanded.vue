@@ -3,9 +3,12 @@
     <div
       v-if="playerStore.expanded"
       class="expanded-wrap"
+      :class="{ 'mode-fullscreen': lyricsSettings.displayMode === 'fullscreen' }"
       :style="bgStyle"
       @click.self="playerStore.closeExpanded()"
     >
+      <!-- 全屏封面（独立层） -->
+      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen'" class="fullscreen-cover" :style="coverStyle" />
       <div class="cover-aura" :style="coverAuraStyle"></div>
       <div v-show="showIridescence" ref="iriContainerRef" class="iri-container"></div>
       <div v-show="showIridescence" class="iri-blur" :style="iriBlurStyle"></div>
@@ -18,9 +21,11 @@
       <div v-show="showAurora" ref="auroraRef" class="aurora-container"></div>
       <div v-show="showAmllFluid" class="amll-fluid-container">
         <BackgroundRender
-          :playing="playerStore.isPlaying"
+          :album="playerStore.currentTrack?.al?.picUrl || ''"
+          :playing="!playerStore.isPlaying"
           :flowSpeed="amllFluidSpeed"
           :fps="30"
+          :has-lyric="true"
         />
       </div>
       <section class="expanded-panel">
@@ -40,10 +45,24 @@
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </p>
           </div>
-          <div v-show="showLeftZone" class="left-zone">
-            <div v-if="lyricsSettings.showCover" class="album-shell">
-              <div class="album-cover" :style="coverStyle"></div>
-            </div>
+          <div v-show="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record' }">
+            <!-- 封面模式 -->
+            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
+              <div class="album-shell" :class="{ playing: playerStore.isPlaying }">
+                <div class="album-cover" :style="coverStyle"></div>
+              </div>
+            </template>
+            <!-- 唱片模式 -->
+            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
+              <div class="vinyl-record">
+                <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
+                  <div class="needle" />
+                </div>
+                <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
+                  <div class="record-cover" :style="coverStyle" />
+                </div>
+              </div>
+            </template>
             <template v-if="lyricsSettings.showCover">
               <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
               <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist">
@@ -82,7 +101,7 @@
               <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
           </div>
-          <LyricsPanel />
+          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" />
         </div>
 
         <div class="right-actions">
@@ -286,11 +305,14 @@ const iriBlurStyle = computed(() => {
 const coverAuraStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
 /* settings-driven */
-const showLeftZone = computed(() => lyricsSettings.showCover);
+const showLeftZone = computed(() => lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen');
 const showLeftControls = computed(() => !lyricsSettings.showMiniBar);
 
+const displayMode = computed(() => lyricsSettings.displayMode);
+
 const panelBodyStyle = computed(() => {
-  if (!lyricsSettings.showLyrics || !lyricsSettings.showCover) return { gridTemplateColumns: '1fr' };
+  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr' };
+  if (!lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
   return { gridTemplateColumns: `${lyricsSettings.contentWidth}% ${100 - lyricsSettings.contentWidth}%` };
 });
 
@@ -409,7 +431,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .artist-inline-btn:focus-visible { outline: none; }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
-.album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; }
+.album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.album-shell.playing { transform: scale(1); }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
 .song-name { width: 480px; margin: var(--space-2) 0 0; color: #ffffff !important; font-size: 36px; font-weight: 700; text-align: center;  }
 .song-artist { width: 480px; margin: 0; color: rgba(255,255,255,0.82); text-align: center;  }
@@ -452,8 +475,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .loom-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .silk-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .aurora-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
-.amll-fluid-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; display: contents; }
-.amll-fluid-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
+.amll-fluid-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+.amll-fluid-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; object-fit: cover; }
 .aurora-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
 /* right actions */
 .right-actions { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: var(--space-3); z-index: 65; }
@@ -597,6 +620,137 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .player-sheet-enter-from, .player-sheet-leave-to { opacity: 0; }
 .player-sheet-enter-from .expanded-panel, .player-sheet-leave-to .expanded-panel { transform: translateY(100%); }
 .soft-gradient-bg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+
+/* ── 全屏封面 ── */
+.fullscreen-cover {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 60vw;
+  height: 100vh;
+  z-index: 0;
+  background: center/cover no-repeat;
+  mask-image: linear-gradient(to right, #000 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, #000 80%, transparent 100%);
+  pointer-events: none;
+}
+.expanded-wrap.mode-fullscreen .panel-body {
+  grid-template-columns: 1fr !important;
+}
+
+/* ── 唱片模式（SPlayer 风格）── */
+.vinyl-record {
+  position: relative;
+  width: min(52vh, 480px);
+  aspect-ratio: 1 / 1;
+}
+/* 唱针 */
+.vinyl-pointer {
+  position: absolute;
+  width: 30%;
+  aspect-ratio: 1 / 1.8;
+  left: 46%;
+  top: -22%;
+  z-index: 5;
+  pointer-events: none;
+}
+/* 指针主体 */
+.needle {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  width: 100px;
+  height: 160px;
+  transform: translateX(-50%) rotate(-25deg);
+  transform-origin: top center;
+  z-index: 9;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  background: url(/images/needle.png) top center/contain no-repeat;
+}
+.vinyl-pointer.active .needle {
+  transform: translateX(-50%) rotate(-3deg);
+  animation: needle-swing 1.5s ease-in-out infinite alternate;
+}
+@keyframes needle-swing {
+  from { transform: translateX(-50%) rotate(-3deg) rotate(-1deg); }
+  to   { transform: translateX(-50%) rotate(-3deg) rotate(1.5deg); }
+}
+/* 唱片 */
+.vinyl-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  /* 黑胶盘面纹理：多层交替同心圆 */
+  background:
+    radial-gradient(circle at center,
+      #000 0%, #000 3%, #222 4%, #222 5%,
+      #0a0a0a 6%, #1a1a1a 7%,
+      #000 8.5%, #222 9.5%,
+      #0a0a0a 10.5%, #1a1a1a 11.5%,
+      #000 13%, #222 14%,
+      #0a0a0a 15%, #1a1a1a 16%,
+      #000 17.5%, #222 18.5%,
+      #0a0a0a 19.5%, #1a1a1a 20.5%,
+      #000 22%, #222 23%,
+      #0a0a0a 24%, #1a1a1a 25%,
+      #000 27%, #222 28%,
+      #0a0a0a 29%, #1a1a1a 30%,
+      #000 32%, #222 33%,
+      #0a0a0a 34%, #1a1a1a 36%,
+      #000 37.5%, #222 38.5%,
+      #0a0a0a 40%, #1a1a1a 42%,
+      #000 43.5%, #222 44.5%,
+      #0a0a0a 46%, #1a1a1a 48%,
+      #000 50%, #222 51%,
+      #0a0a0a 53%, #1a1a1a 55%,
+      #000 57%, #222 58%,
+      #0a0a0a 60%, #1a1a1a 62%,
+      #000 64%, #222 65.5%,
+      #0a0a0a 67%, #1a1a1a 69%,
+      #000 71%, #222 72.5%,
+      #0a0a0a 74%, #1a1a1a 76%,
+      #000 78%, #222 79%,
+      #0a0a0a 81%, #111 100%
+    );
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.6),
+    inset 0 2px 4px rgba(255,255,255,0.05),
+    inset 0 -1px 2px rgba(0,0,0,0.5);
+  animation: playerCoverRotate 40s linear infinite;
+  animation-play-state: paused;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vinyl-disc.playing {
+  animation-play-state: running;
+}
+/* 唱片内侧高光晕 */
+.vinyl-disc::after {
+  content: '';
+  position: absolute;
+  width: 64%;
+  height: 64%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%,
+    rgba(255,255,255,0.06) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+/* 内圈封面（专辑图） */
+.record-cover {
+  width: 64%;
+  height: 64%;
+  border-radius: 50%;
+  background: #d9dee8 center/cover no-repeat;
+  border: 3px solid rgba(255,255,255,0.2);
+  box-shadow:
+    0 0 0 2px rgba(0,0,0,0.3),
+    0 4px 16px rgba(0,0,0,0.5);
+  position: relative;
+  z-index: 1;
+}
 </style>
 <style>
 @property --hue1 { syntax: "<angle>"; inherits: false; initial-value: 0deg; }

@@ -4,8 +4,11 @@ export type BgTheme = 'default' | 'light' | 'dark';
 export type BgMode = 'basic' | 'custom';
 export type BgCustomMode = 'solid' | 'gradient' | 'image' | 'css' | 'iridescence' | 'soft-gradient' | 'three-scene' | 'paper-shaders' | 'mist' | 'digital-loom' | 'silk' | 'aurora' | 'amll-fluid';
 
+export type DisplayMode = 'cover' | 'record' | 'fullscreen';
+
 export type LyricsSettings = {
   showCover: boolean;
+  displayMode: DisplayMode;
   centerAlign: boolean;
   showTranslation: boolean;
   showLyrics: boolean;
@@ -32,6 +35,7 @@ const STORAGE_KEY = 'gm_lyrics_settings_v1';
 
 const defaults: LyricsSettings = {
   showCover: true,
+  displayMode: 'cover',
   centerAlign: false,
   showTranslation: true,
   showLyrics: true,
