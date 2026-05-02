@@ -10,8 +10,8 @@
     :style="lyricVars"
     @wheel.passive="onLyricScroll"
     @touchmove.passive="onLyricScroll"
-    @mouseenter="isHovering = true"
-    @mouseleave="isHovering = false"
+    @mouseenter="onZoneEnter"
+    @mouseleave="onZoneLeave"
   >
     <!-- 隐藏歌词时：空占位 -->
     <template v-if="!lyricsSettings.showLyrics">
@@ -107,6 +107,17 @@ const lyricBoxStyle = computed(() => {
 
 /* 鼠标悬停或滚动时取消 blur/opacity */
 const isHovering = ref(false);
+
+function onZoneEnter() {
+  isHovering.value = true;
+}
+function onZoneLeave() {
+  isHovering.value = false;
+  // 鼠标离开时立即恢复跟随，不等 3s 计时器
+  isUserScrolling.value = false;
+  if (scrollTimer) { clearTimeout(scrollTimer); scrollTimer = null; }
+  nextTick(() => scrollToCurrentLine('smooth'));
+}
 
 function lineWrapStyle(idx: number, currentIdx: number) {
   if (isHovering.value || isUserScrolling.value) return {};
