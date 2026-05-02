@@ -664,7 +664,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   transform-origin: 59.76% 22%;
   z-index: 9;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: url(/images/needle.png) top left/contain no-repeat;
+  background: url(/images/needle.png) center/100% 100% no-repeat;
 }
 .vinyl-pointer.active .needle {
   transform: rotate(-3deg);
