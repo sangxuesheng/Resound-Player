@@ -56,7 +56,7 @@
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
               <div class="vinyl-record">
                 <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
-                  <div class="needle" />
+                  <img class="needle" src="/images/needle.png" alt="pointer" />
                 </div>
                 <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
                   <div class="record-cover" :style="coverStyle" />
@@ -660,12 +660,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   top: 0;
   left: 0;
   width: 100%;
-  aspect-ratio: 251 / 409;
+  height: auto;
   transform: rotate(-25deg);
   transform-origin: 59.76% 22%;
   z-index: 9;
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  background: url(/images/needle.png) center/100% 100% no-repeat;
 }
 .vinyl-pointer.active .needle {
   transform: rotate(-3deg);
