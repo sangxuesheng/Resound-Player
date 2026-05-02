@@ -9,7 +9,7 @@
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
         </div>
-        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist"><template v-if="playerStore.isPlaying && currentLyricText"><span class="lyric-text" :title="currentLyricText">{{ currentLyricText }}</span></template><template v-else>{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></template></AnimatedAppear>
+        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist"><template v-if="playerStore.isPlaying && currentLyricText && lyricsSettings.showBarLyric"><span class="lyric-text" :title="currentLyricText">{{ currentLyricText }}</span></template><template v-else>{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></template></AnimatedAppear>
       </div>
     </AnimatedAppear>
 
@@ -119,6 +119,7 @@ import {
   VolumeX,
 } from 'lucide-vue-next';
 import { uiStore } from '../stores/ui';
+import { lyricsSettings } from '../stores/lyricsSettings';
 import { playerStore } from '../stores/player';
 import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { userStore } from '../stores/user';

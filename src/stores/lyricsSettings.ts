@@ -16,6 +16,7 @@ export type LyricsSettings = {
   useAmllRenderer: boolean;
   autoPlayOnSeek: boolean;
   followCoverColor: boolean;
+  showBarLyric: boolean;
   contentWidth: number;
   fontSize: number;
   letterSpacing: number;
@@ -45,6 +46,7 @@ const defaults: LyricsSettings = {
   useAmllRenderer: false,
   autoPlayOnSeek: true,
   followCoverColor: true,
+  showBarLyric: true,
   contentWidth: 45,
   fontSize: 5,
   letterSpacing: 3,

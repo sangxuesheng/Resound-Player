@@ -185,6 +185,7 @@ import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import { getSourceMeta } from '../config/musicSources';
+import { lyricsSettings } from '../stores/lyricsSettings';
 
 type SettingItem = {
   key: string;
@@ -237,6 +238,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'accentCustomColor', label: '自定义主题色', desc: '在调色盘中选择任意颜色', type: 'action' },
         { key: 'liquidGlass', label: '液态玻璃效果', desc: '开启后使用高透明磨砂玻璃视觉风格', type: 'switch' },
         { key: 'compact', label: '紧凑列表模式', desc: '减少列表行高以显示更多信息', type: 'switch' },
+        { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
         { key: 'fontScale', label: '字体缩放', desc: '调整界面字体大小比例', type: 'range', min: 90, max: 130 },
       ],
     },
@@ -299,6 +301,7 @@ const switchState = reactive<Record<string, boolean>>({
   autoplay: playerStore.autoplayNext,
   liquidGlass: uiStore.liquidGlassEnabled,
   compact: false,
+  barLyric: lyricsSettings.showBarLyric,
 });
 
 const selectState = reactive<Record<string, string>>({
@@ -436,6 +439,14 @@ watch(
   () => switchState.autoplay,
   (enabled) => {
     playerStore.setAutoplayNext(Boolean(enabled));
+  },
+);
+
+watch(
+  () => switchState.barLyric,
+  (enabled) => {
+    lyricsSettings.showBarLyric = Boolean(enabled);
+    lyricsSettings.save();
   },
 );
 
