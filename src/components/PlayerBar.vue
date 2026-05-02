@@ -368,14 +368,14 @@ function formatTime(sec: number) {
   min-width: 0;
   overflow-x: clip;
 }
-.left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
 .cover { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: #e5e7eb center/cover no-repeat; cursor: pointer; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
 .cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
-.meta { min-width: 0; }
+.meta { min-width: 0; max-width: 100%; overflow: hidden; flex: 1; }
 .title-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .title { color: #111827; font-weight: 600; }
-.artist { color: #6b7280; font-size: 12px; display: flex; align-items: center; gap: 4px; overflow: hidden; height: 18px; line-height: 18px; }
-.lyric-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent, #6b7280); font-size: 12px; height: 18px; line-height: 18px; }
+.artist { color: #6b7280; font-size: 12px; display: flex; align-items: center; gap: 4px; overflow: hidden; height: 18px; line-height: 18px; max-width: 100%; }
+.lyric-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--accent, #6b7280); font-size: 12px; height: 18px; line-height: 18px; max-width: 100%; }
 .quality-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
 .source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; margin-left: 4px; }
 .center { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; }
