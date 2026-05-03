@@ -139,22 +139,23 @@
             </AnimatedAppear>
           </AnimatedAppear>
 
-          <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="mv-comment-stats">
-            <span class="stat-chip">点赞 {点赞 {{ formatCount(mvMeta?.likedCount || 0) }}</AnimatedAppear></span>
-            <span class="stat-chip">转发 {转发 {{ formatCount(mvMeta?.shareCount || 0) }}</AnimatedAppear></span>
-            <span class="stat-chip">评论 {评论 {{ formatCount(mvMeta?.commentCount || commentsTotal || comments.length) }}</AnimatedAppear></span>
-          </AnimatedAppear>
+          <div class="comment-stats">
+            <span class="stat-chip">点赞 {{ formatCount(mvMeta?.likedCount || 0) }}</span>
+            <span class="stat-chip">转发 {{ formatCount(mvMeta?.shareCount || 0) }}</span>
+            <span class="stat-chip">评论 {{ formatCount(mvMeta?.commentCount || 0) }}</span>
+          </div>
           <CommentPanel
-            :resource-id="activeMv?.id || 0"
+            :resource-id="(activeMv?.id as number) || 0"
             :resource-type="1"
             title="评论区"
             :fetcher="api.getMvComments"
             :sender="api.sendComment"
             :liker="api.likeComment"
             :deleter="api.deleteMvComment"
-          />  </transition>
-  <transition name="toast-fade">
-    <div v-if="authToast" class="auth-toast">{{ authToast }}</div>
+          />
+        </AnimatedAppear>
+      </AnimatedAppear>
+    </AnimatedAppear>
   </transition>
 </template>
 
@@ -172,10 +173,9 @@ import {
 } from '../api/music';
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
-import { userStore } from '../stores/user';
-import { apiClient } from '../api/client';
 import * as api from '../api/music';
 import CommentPanel from './CommentPanel.vue';
+import { userStore } from '../stores/user';
 
 const props = withDefaults(
   defineProps<{
@@ -269,17 +269,6 @@ type MvCommentResponse = {
 };
 
 const loading = ref(false);
-const authToast = ref('');
-
-function requireAuth(): boolean {
-  if (!userStore.isLogin) { showLoginModal(); return false; }
-  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-    authToast.value = '搜索用户方式登录不支持评论/点赞，请使用扫码或 Cookie 登录';
-    setTimeout(() => { authToast.value = ''; }, 5000);
-    return false;
-  }
-  return true;
-}
 const error = ref('');
 const list = ref<MvItem[]>([]);
 const hasMore = ref(false);
@@ -487,14 +476,11 @@ async function openMv(item: MvItem) {
 async function submitComment() {
   const content = newCommentText.value.trim();
   if (!content || !activeMv.value) return;
-  if (!requireAuth()) return;
 
   try {
-    const cookie = userStore.loginCookie || undefined;
     await sendMvComment({
       id: activeMv.value.id,
       content,
-      cookie,
     });
 
     comments.value.unshift({
@@ -524,24 +510,18 @@ async function loadMoreComments() {
   await fetchMvComments(activeMv.value.id, false);
 }
 
-function canDeleteComment(comment: { user: string; ownerUserId?: number | null }) {
-  const profile = userStore.profile;
-  if (!profile) return false;
-  if (comment.user === '我') return true;
-  if (profile.userId && comment.ownerUserId != null && comment.ownerUserId === profile.userId) return true;
-  if (profile.nickname && comment.user?.toLowerCase() === profile.nickname.toLowerCase()) return true;
-  return false;
+function canDeleteComment(comment: CommentItem) {
+  if (!comment.rawId) return false;
+  const loginUserId = userStore.profile?.userId;
+  if (!loginUserId) return false;
+  return comment.ownerUserId != null ? comment.ownerUserId === loginUserId : comment.user === userStore.profile?.nickname;
 }
 
 async function removeComment(commentId: string) {
   if (!activeMv.value) return;
   const target = comments.value.find((item) => item.id === commentId);
-  if (!target) return;
-
-  // 本地评论（刚发送的）直接移除，不调 API
-  if (!target.rawId) {
-    comments.value = comments.value.filter((item) => item.id !== commentId);
-    commentsTotal.value = Math.max(0, commentsTotal.value - 1);
+  if (!target?.rawId) {
+    commentsError.value = '该评论缺少 commentId，无法删除';
     return;
   }
 
@@ -549,7 +529,6 @@ async function removeComment(commentId: string) {
     await deleteMvComment({
       id: activeMv.value.id,
       commentId: target.rawId,
-      cookie: userStore.loginCookie || undefined,
     });
 
     comments.value = comments.value.filter((item) => item.id !== commentId);
@@ -559,22 +538,16 @@ async function removeComment(commentId: string) {
   }
 }
 
-async function toggleCommentLike(commentId: string) {
-  if (!requireAuth() || !activeMv.value) return;
-  const item = comments.value.find((c) => c.id === commentId);
-  if (!item?.rawId) return;
-  const liked = !item.liked;
-  const cid = item.rawId;
-  const cookie = userStore.loginCookie || undefined;
-  const res = await apiClient.post('/comment/like', null, { params: { id: activeMv.value.id, cid, t: liked ? 1 : 0, type: 1, ...(cookie ? { cookie } : {}), timestamp: Date.now() } }).catch(() => null);
-  if (res?.data?.code === 200) {
-    item.liked = liked;
-    item.likes += liked ? 1 : -1;
-  }
-}
-
-function removeReply(comment: any, replyIdx: number) {
-  comment.replies.splice(replyIdx, 1);
+function toggleCommentLike(commentId: string) {
+  comments.value = comments.value.map((item) => {
+    if (item.id !== commentId) return item;
+    const liked = !item.liked;
+    return {
+      ...item,
+      liked,
+      likes: liked ? item.likes + 1 : Math.max(0, item.likes - 1),
+    };
+  });
 }
 
 function toggleReplyLike(commentId: string, replyId: string) {
@@ -609,7 +582,7 @@ function toggleReplyEditor(commentId: string) {
 }
 
 async function submitReply(commentId: string) {
-  if (!requireAuth() || !activeMv.value) return;
+  if (!activeMv.value) return;
 
   const target = comments.value.find((item) => item.id === commentId);
   if (!target) return;
@@ -623,12 +596,10 @@ async function submitReply(commentId: string) {
   }
 
   try {
-    const cookie = userStore.loginCookie || undefined;
     await sendMvComment({
       id: activeMv.value.id,
       content,
       commentId: target.rawId,
-      cookie,
     });
 
     comments.value = comments.value.map((item) => {
@@ -1327,7 +1298,4 @@ watch(
   .reply-editor { flex-direction: column; }
   .reply-submit { width: 100%; }
 }
-.auth-toast { position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; max-width: 420px; text-align: center; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4; pointer-events: none; z-index: 310; }
-.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
-.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>
