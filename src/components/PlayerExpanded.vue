@@ -41,7 +41,7 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <div class="panel-body" :style="panelBodyStyle">
+        <div class="panel-body" :class="{ 'comments-active': showComments }" :style="panelBodyStyle">
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
             <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
@@ -91,6 +91,9 @@
             </div>
             <div v-show="showLeftControls" class="controls">
               <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
+              <button class="ctrl" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
               <template v-if="isPersonalFmCurrentTrack">
                 <button class="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
                 <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
@@ -115,7 +118,32 @@
           <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
         </div>
 
-        <div class="right-actions">
+        <Transition name="comments-slide">
+          <div v-if="showComments" class="comments-overlay">
+            <div class="comments-head">
+              <div class="comments-head-cover">
+                <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+              </div>
+              <div class="comments-head-info">
+                <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
+                <p v-if="currentArtistList.length" class="comments-head-artist">
+                  歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
+                </p>
+                <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
+              </div>
+            </div>
+            <CommentPanel
+              :resource-id="(playerStore.currentTrack?.id as number) || 0"
+              :resource-type="0"
+              :fetcher="api.getSongComments"
+              :sender="api.sendComment"
+              :liker="api.likeComment"
+              :deleter="api.deleteSongComment"
+            />
+          </div>
+        </Transition>
+
+        <div class="right-actions" :class="{ 'comments-active': showComments }">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
@@ -147,6 +175,9 @@
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
             <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
+            <button class="con-btn" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
           </div>
           <div class="cc-center">
             <template v-if="isPersonalFmCurrentTrack">
@@ -213,6 +244,8 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
 import LyricsSelectionModal from './LyricsSelectionModal.vue';
+import CommentPanel from './CommentPanel.vue';
+import * as api from '../api/music';
 import { openSelection } from '../stores/lyricsSelection';
 
 const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>] }>();
@@ -221,10 +254,15 @@ const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || [
 function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
+const currentCover = computed(() => playerStore.currentTrack?.al?.picUrl || '');
+const currentArtistList = computed(() => playerStore.currentTrack?.ar || []);
+const currentAlbumName = computed(() => playerStore.currentTrack?.al?.name || '');
+
 const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(195, 156, 118)', c4: 'rgb(20, 24, 36)' });
 const showPlaylistPopup = ref(false);
 const showSettings = ref(false);
 const showOffsetPanel = ref(false);
+const showComments = ref(false);
 const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
 
@@ -835,5 +873,121 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 @keyframes anim_bg {
   0% { --hue1: 30deg; --hue2: 180deg; }
   100% { --hue1: 390deg; --hue2: 540deg; }
+}
+
+/* 评论区模式：淡出左区和歌词 */
+.panel-body.comments-active > :not(.comments-overlay) {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* 右侧控制中心隐藏 */
+.right-actions.comments-active {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+/* 评论区浮层 */
+.comments-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--bg-app) 94%, transparent);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: var(--space-4);
+}
+
+.comments-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-shrink: 0;
+}
+
+.comments-head-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.comments-head-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.comments-head-info {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.comments-head-title {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comments-head-artist {
+  margin: 0;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comments-head-album {
+  margin: 0;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.head-link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.head-link:hover { opacity: 0.75; }
+
+/* 评论区滑入动画 */
+.comments-slide-enter-active,
+.comments-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.comments-slide-enter-from {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.comments-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+/* 评论区按钮高亮状态 */
+.con-btn.active,
+.ctrl.active {
+  color: var(--accent);
 }
 </style>
