@@ -140,7 +140,7 @@
     </Teleport>
   </AnimatedAppear>
   <transition name="toast-fade">
-    <div v-if="likeToast" class="like-toast">{{ likeToast }}</div>
+    <div v-if="authToast" class="like-toast">{{ authToast }}</div>
   </transition>
 </template>
 
@@ -152,7 +152,7 @@ import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylis
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
-import { showLoginModal } from '../stores/loginModal';
+import { useAuthAction } from '../composables/useAuthAction';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
@@ -619,18 +619,16 @@ watch(
 );
 
 /* 操作按钮 */
+const { authToast, checkAuth } = useAuthAction(
+  '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录',
+  'like',
+);
 const likeLoading = ref<Set<number>>(new Set());
-const likeToast = ref('');
 function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
 async function toggleLike(song: any) {
   const id = Number(song.id || 0);
   if (!id || likeLoading.value.has(id)) return;
-  if (!userStore.isLogin) { showLoginModal('like'); return; }
-  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-    likeToast.value = '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录';
-    setTimeout(() => { likeToast.value = ''; }, 5000);
-    return;
-  }
+  if (!checkAuth()) return;
   likeLoading.value = new Set([...likeLoading.value, id]);
   try {
     await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
@@ -647,12 +645,7 @@ const showPlaylistPicker = ref(false);
 const playlistPickerList = ref<any[]>([]);
 const pickerTargetSong = ref<any>(null);
 async function showAddToPlaylist(song: any) {
-  if (!userStore.isLogin) { showLoginModal('playlist'); return; }
-  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-    likeToast.value = '搜索用户方式登录不支持收藏至歌单，请使用扫码或 Cookie 登录';
-    setTimeout(() => { likeToast.value = ''; }, 5000);
-    return;
-  }
+  if (!checkAuth()) return;
   pickerTargetSong.value = song;
   try {
     const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
