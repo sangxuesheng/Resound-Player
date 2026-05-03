@@ -34,6 +34,7 @@
                 <span class="comment-time">{{ formatTime(item.time) }}</span>
                 <button class="text-btn" @click="toggleLike(item)">{{ item._liked ? '取消赞' : '点赞' }}({{ item._likes }})</button>
                 <button class="text-btn" @click="toggleReply(item)">{{ item._showReply ? '取消回复' : '回复' }}</button>
+                <button v-if="canDelete(item)" class="text-btn danger" @click="removeComment(item)">删除</button>
               </AnimatedAppear>
             </AnimatedAppear>
             <AnimatedAppear v-if="item._showReply" tag="div" variant="content" rhythm="body" class-name="reply-editor">
@@ -47,6 +48,7 @@
                 <div class="comment-actions">
                   <span class="comment-time">{{ reply.time }}</span>
                   <button class="text-btn" @click="toggleReplyLike(item, rIdx)">{{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})</button>
+                  <button v-if="canDeleteReply(reply)" class="text-btn danger" @click="removeReply(item, rIdx)">删除</button>
                 </div>
               </AnimatedAppear>
             </AnimatedAppear>
@@ -62,7 +64,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { getSongComments, getSongDetail, likeComment, sendComment } from '../api/music';
+import { getSongComments, getSongDetail, likeComment, sendComment, deleteSongComment } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -111,6 +113,29 @@ async function toggleLike(item: any) {
     item._liked = liked;
     item._likes += liked ? 1 : -1;
   }
+}
+
+function canDelete(item: any) {
+  const uid = userStore.profile?.userId;
+  if (!uid) return false;
+  return item.user?.userId === uid || item.user?.nickname === userStore.profile?.nickname;
+}
+
+async function removeComment(item: any) {
+  const cid = item.commentId;
+  if (!cid) return;
+  const res = await deleteSongComment({ id: props.songId, commentId: cid, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  if (res?.data?.code === 200) {
+    comments.value = comments.value.filter((c: any) => c.commentId !== cid);
+    total.value = Math.max(0, total.value - 1);
+  }
+}
+
+function canDeleteReply(reply: any) {
+  return reply.user === userStore.profile?.nickname;
+}
+function removeReply(item: any, rIdx: number) {
+  item.replies.splice(rIdx, 1);
 }
 
 function toggleReplyLike(item: any, rIdx: number) {
@@ -218,6 +243,7 @@ onMounted(async () => {
 .comment-time { font-size: 12px; color: var(--text-sub); }
 .text-btn { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 0; font-size: 12px; }
 .text-btn:hover { opacity: 0.75; }
+.text-btn.danger { color: #ef4444; }
 .reply-editor { margin-top: 8px; display: flex; gap: 8px; }
 .reply-input { flex: 1; min-width: 0; height: 32px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; background: var(--bg-surface); color: var(--text-main); font-size: 13px; }
 .reply-input:focus { outline: none; border-color: var(--accent); }
