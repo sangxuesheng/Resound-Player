@@ -44,7 +44,7 @@
         <div class="panel-body" :style="panelBodyStyle">
           <Transition name="comments-switch" mode="out-in">
             <!-- 正常模式 -->
-            <div v-if="!showComments" key="normal" style="display: contents">
+            <div v-if="!showComments" key="normal" class="panel-body-normal" :style="panelBodyStyle">
               <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
                 <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
                 <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
@@ -532,6 +532,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
 .panel-body { min-height: 0; height: 100%; box-sizing: border-box; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body-normal { grid-column: 1 / -1; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; min-height: 0; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
