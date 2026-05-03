@@ -122,20 +122,18 @@ onMounted(async () => {
 .comment-submit { padding: 6px 16px; border-radius: 999px; border: none; background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; transition: opacity 0.12s ease; }
 .comment-submit:disabled { opacity: 0.4; cursor: default; }
 .comment-submit:not(:disabled):hover { opacity: 0.85; }
-.comment-list { display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
-.comment-item { list-style: none; }
-.comment-main { padding: 10px; border-radius: 10px; transition: background 0.12s ease; }
-.comment-main:hover { background: var(--bg-muted); }
-.comment-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.comment-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
-.comment-user { font-size: 13px; font-weight: 600; color: var(--accent); }
-.comment-content { margin: 4px 0; color: var(--text-main); font-size: 14px; line-height: 1.5; word-break: break-word; }
-.comment-reply { padding: 6px 10px; border-radius: 8px; background: var(--bg-muted); font-size: 13px; margin: 4px 0; }
-.reply-user { color: var(--accent); }
+.comment-list { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; }
+.comment-item { border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; background: var(--bg-muted); list-style: none; }
+.comment-user-row { display: flex; align-items: center; gap: 8px; }
+.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.comment-user { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.comment-content { margin: 6px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); word-break: break-word; }
+.comment-reply { margin: 6px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
+.reply-user { font-weight: 600; color: var(--text-main); }
 .reply-text { color: var(--text-sub); }
-.comment-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-.comment-time { color: var(--text-sub); font-size: 12px; }
-.comment-likes { color: var(--text-sub); font-size: 12px; }
+.comment-actions { display: flex; align-items: center; gap: 10px; }
+.comment-time { font-size: 12px; color: var(--text-sub); }
+.comment-likes { font-size: 12px; color: var(--text-sub); }
 .comment-more-wrap { text-align: center; padding-top: 12px; }
 .comment-more-btn { padding: 6px 20px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--bg-muted); color: var(--accent); font-size: 13px; cursor: pointer; transition: all 0.12s ease; }
 .comment-more-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg-muted)); }
