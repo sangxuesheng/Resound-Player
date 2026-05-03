@@ -967,12 +967,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .panel-body.comments-mode .cover-hidden-head,
 .panel-body.comments-mode .left-zone,
 .panel-body.comments-mode .right-zone {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-.panel-body.comments-mode .comments-overlay {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  display: none;
 }
 
 /* 评论区按钮高亮状态 */
