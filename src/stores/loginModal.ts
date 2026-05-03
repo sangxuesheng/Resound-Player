@@ -1,16 +1,19 @@
 import { reactive } from 'vue';
 
+export type LoginIntent = 'like' | 'playlist' | 'none';
+
 export const loginModalState = reactive({
   visible: false,
-  callback: null as (() => void) | null,
+  intent: 'none' as LoginIntent,
+  toastMessage: '',
 });
 
-export function showLoginModal(callback?: () => void) {
+export function showLoginModal(intent: LoginIntent = 'none') {
   loginModalState.visible = true;
-  loginModalState.callback = callback ?? null;
+  loginModalState.intent = intent;
 }
 
 export function hideLoginModal() {
   loginModalState.visible = false;
-  loginModalState.callback = null;
+  loginModalState.intent = 'none';
 }

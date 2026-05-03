@@ -621,7 +621,7 @@ function isLiked(songId: number) { return userStore.likedSongIds.includes(Number
 async function toggleLike(song: any) {
   const id = Number(song.id || 0);
   if (!id || likeLoading.value.has(id)) return;
-  if (!userStore.isLogin) { showLoginModal(); return; }
+  if (!userStore.isLogin) { showLoginModal('like'); return; }
   likeLoading.value = new Set([...likeLoading.value, id]);
   try {
     await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
@@ -638,7 +638,7 @@ const showPlaylistPicker = ref(false);
 const playlistPickerList = ref<any[]>([]);
 const pickerTargetSong = ref<any>(null);
 async function showAddToPlaylist(song: any) {
-  if (!userStore.isLogin) { showLoginModal(); return; }
+  if (!userStore.isLogin) { showLoginModal('playlist'); return; }
   pickerTargetSong.value = song;
   try {
     const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
