@@ -81,11 +81,24 @@ const LIMIT = 20;
 const hasMore = computed(() => comments.value.length < total.value);
 
 async function submitComment() {
-  if (!newComment.value.trim()) return;
+  const text = newComment.value.trim();
+  if (!text) return;
   if (!userStore.isLogin) return;
-  const res = await sendComment({ id: props.songId, t: 1, content: newComment.value, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  const res = await sendComment({ id: props.songId, t: 1, content: text, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     newComment.value = '';
+    comments.value.unshift({
+      commentId: `local-${Date.now()}`,
+      content: text,
+      time: Date.now(),
+      likedCount: 0,
+      user: { nickname: userStore.profile?.nickname || '我', avatarUrl: userStore.profile?.avatarUrl || '' },
+      _liked: false,
+      _likes: 0,
+      _showReply: false,
+      _replyDraft: '',
+    });
+    total.value += 1;
   }
 }
 
