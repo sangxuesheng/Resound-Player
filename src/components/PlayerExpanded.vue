@@ -117,7 +117,7 @@
               </div>
               <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
 
-          <div class="comments-overlay" :class="{ 'comments-visible': showComments }">
+          <div v-if="showComments" class="comments-overlay">
               <div class="comments-head">
                 <div class="comments-head-cover">
                   <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
@@ -972,11 +972,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   transition: opacity 0.2s ease;
 }
 .panel-body.comments-mode .comments-overlay {
-  opacity: 1;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.comments-overlay {
-  opacity: 0;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
