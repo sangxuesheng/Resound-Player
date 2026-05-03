@@ -517,8 +517,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
-.expanded-panel.comments-open { padding-bottom: 0; gap: 0; grid-template-rows: 0 1fr auto; }
-.bottom-console.grid-item { position: static; }
+.expanded-panel.comments-open { padding-bottom: 0; gap: 0; grid-template-rows: auto 1fr auto; }
+.expanded-panel.comments-open .panel-body { grid-row: 2; }
+.bottom-console.grid-item { position: static; grid-row: 3; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
