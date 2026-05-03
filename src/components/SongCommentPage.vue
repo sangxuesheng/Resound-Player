@@ -6,6 +6,14 @@
         <span class="comment-count">{{ total }} 条</span>
       </div>
 
+      <div class="comment-editor">
+        <textarea v-model="newComment" class="comment-input" maxlength="300" placeholder="写下你的评论..." />
+        <div class="comment-editor-actions">
+          <span class="comment-limit">{{ newComment.length }}/300</span>
+          <button type="button" class="comment-submit" :disabled="!newComment.trim()" @click="submitComment">发表评论</button>
+        </div>
+      </div>
+
       <div v-if="loading" class="comment-loading">评论加载中…</div>
       <div v-else-if="!comments.length" class="comment-empty">暂无评论</div>
 
@@ -46,6 +54,7 @@ const props = defineProps<{ songId: number }>();
 defineEmits<{ (e: 'back'): void }>();
 
 const song = ref<any>(null);
+const newComment = ref('');
 const comments = ref<any[]>([]);
 const total = ref(0);
 const loading = ref(true);
@@ -54,6 +63,12 @@ const offset = ref(0);
 const LIMIT = 20;
 
 const hasMore = computed(() => comments.value.length < total.value);
+
+function submitComment() {
+  if (!newComment.value.trim()) return;
+  // 评论功能由评论区独立组件提供，此处仅展示 UI
+  newComment.value = '';
+}
 
 async function fetchComments(append = false) {
   if (!append) { loading.value = true; offset.value = 0; } else loadingMore.value = true;
@@ -99,6 +114,14 @@ onMounted(async () => {
 .comment-title { margin: 0; font-size: 16px; color: var(--text-main); }
 .comment-count { font-size: 12px; color: var(--text-sub); }
 .comment-loading, .comment-empty { padding: 32px 0; text-align: center; color: var(--text-sub); font-size: 14px; }
+.comment-editor { border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; background: var(--bg-muted); margin-bottom: 12px; }
+.comment-input { width: 100%; min-height: 76px; resize: vertical; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; box-sizing: border-box; background: var(--bg-surface); color: var(--text-main); font-family: inherit; font-size: 13px; }
+.comment-input:focus { outline: none; border-color: var(--accent); }
+.comment-editor-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.comment-limit { font-size: 12px; color: var(--text-sub); }
+.comment-submit { padding: 6px 16px; border-radius: 999px; border: none; background: var(--accent); color: #fff; font-size: 13px; cursor: pointer; transition: opacity 0.12s ease; }
+.comment-submit:disabled { opacity: 0.4; cursor: default; }
+.comment-submit:not(:disabled):hover { opacity: 0.85; }
 .comment-list { display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
 .comment-item { list-style: none; }
 .comment-main { padding: 10px; border-radius: 10px; transition: background 0.12s ease; }
