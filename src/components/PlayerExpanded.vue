@@ -511,7 +511,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; transition: background 0.5s ease; }
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
-.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
+.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) 0; box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto; gap: 0; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
@@ -520,7 +520,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body { min-height: 0; height: 100%; box-sizing: border-box; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -642,10 +642,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .offset-fade-enter-from, .offset-fade-leave-to { opacity: 0; }
 /* bottom console */
 .bottom-console {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  margin-top: auto;
   display: grid;
   gap: 2px;
   grid-template-columns: 1fr auto 1fr;
@@ -876,7 +873,12 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 
 /* 评论区浮层 */
 .comments-overlay {
+  grid-column: 1 / -1;
+  align-self: stretch;
+  min-height: 0;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(6px);
   display: flex;
