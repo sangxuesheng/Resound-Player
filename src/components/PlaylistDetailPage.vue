@@ -648,6 +648,11 @@ const playlistPickerList = ref<any[]>([]);
 const pickerTargetSong = ref<any>(null);
 async function showAddToPlaylist(song: any) {
   if (!userStore.isLogin) { showLoginModal('playlist'); return; }
+  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
+    likeToast.value = '搜索用户方式登录不支持收藏至歌单，请使用扫码或 Cookie 登录';
+    setTimeout(() => { likeToast.value = ''; }, 5000);
+    return;
+  }
   pickerTargetSong.value = song;
   try {
     const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
