@@ -626,7 +626,7 @@ async function toggleLike(song: any) {
   const id = Number(song.id || 0);
   if (!id || likeLoading.value.has(id)) return;
   if (!userStore.isLogin) { showLoginModal('like'); return; }
-  if (userStore.loginMode === 'uid') {
+  if (userStore.loginMode === 'uid' || !userStore.loginCookie?.startsWith('MUSIC_U')) {
     likeToast.value = '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录';
     setTimeout(() => { likeToast.value = ''; }, 4000);
     return;
