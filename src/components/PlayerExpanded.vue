@@ -117,7 +117,8 @@
             </div>
             <LyricsPanel v-show="!showComments" :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
 
-          <div v-show="showComments" class="comments-overlay">
+          <Transition name="comments-slide">
+            <div v-if="showComments" class="comments-overlay">
               <div class="comments-head">
                 <div class="comments-head-cover">
                   <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
@@ -139,6 +140,7 @@
               :deleter="api.deleteSongComment"
             />
           </div>
+          </Transition>
         </div>
 
         <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
