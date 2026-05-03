@@ -608,9 +608,10 @@ async function loadMoreComments() {
 function canDeleteComment(comment: CommentItem) {
   const loginUserId = userStore.profile?.userId;
   if (!loginUserId) return false;
-  if (comment.deletable) return true;
-  if (!comment.rawId) return false;
-  return comment.ownerUserId != null ? comment.ownerUserId === loginUserId : comment.user === userStore.profile?.nickname;
+  if (comment.rawId) {
+    return comment.ownerUserId != null ? comment.ownerUserId === loginUserId : comment.user === userStore.profile?.nickname;
+  }
+  return comment.user === '我';
 }
 
 async function removeComment(commentId: string) {
