@@ -229,7 +229,7 @@
                       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="replyIdx" type="button" class-name="text-btn" @click="toggleReplyLike(comment.id, reply.id)">
                         {{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})
                       </AnimatedAppear>
-                      <button v-if="reply.user === userStore.profile?.nickname" class="text-btn danger" @click="removeReply(comment, replyIdx)">删除</button>
+                      <button v-if="reply.user?.trim().toLowerCase() === userStore.profile?.nickname?.trim().toLowerCase()" class="text-btn danger" @click="removeReply(comment, replyIdx)">删除</button>
                     </AnimatedAppear>
                   </AnimatedAppear>
                 </AnimatedAppear>
@@ -607,11 +607,11 @@ async function loadMoreComments() {
 
 function canDeleteComment(comment: CommentItem) {
   const uid = userStore.profile?.userId;
-  const nickname = userStore.profile?.nickname;
-  if (!uid && !nickname) return false;
-  if (comment.user === '我') return true;
-  if (uid && comment.ownerUserId === uid) return true;
-  if (nickname && comment.user === nickname) return true;
+  const nickname = userStore.profile?.nickname?.trim().toLowerCase();
+  const commentUser = comment.user?.trim().toLowerCase();
+  if (commentUser === '我') return true;
+  if (uid && comment.ownerUserId != null && comment.ownerUserId === uid) return true;
+  if (nickname && commentUser === nickname) return true;
   return false;
 }
 
