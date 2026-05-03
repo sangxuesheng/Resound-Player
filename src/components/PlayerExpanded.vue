@@ -891,6 +891,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   display: flex;
   flex-direction: column;
   padding: var(--space-4);
+  padding-bottom: 55px;
 }
 
 .comments-head {
