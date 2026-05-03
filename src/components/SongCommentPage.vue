@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { getSongComments, getSongDetail } from '../api/music';
+import { getSongComments, getSongDetail, likeComment } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -85,9 +85,15 @@ function submitComment() {
   newComment.value = '';
 }
 
-function toggleLike(item: any) {
-  item._liked = !item._liked;
-  item._likes += item._liked ? 1 : -1;
+async function toggleLike(item: any) {
+  if (!userStore.isLogin) return;
+  const liked = !item._liked;
+  const cid = item.commentId;
+  const res = await likeComment({ id: props.songId, cid, t: liked ? 1 : 0, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  if (res?.data?.code === 200) {
+    item._liked = liked;
+    item._likes += liked ? 1 : -1;
+  }
 }
 
 function toggleReplyLike(item: any, rIdx: number) {

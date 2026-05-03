@@ -701,6 +701,10 @@ export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?:
   return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
 
+export async function likeComment(params: { id: number; cid: number; t: number; type: number; cookie?: string }) {
+  return apiClient.get('/comment/like', { params: { ...params, timestamp: Date.now() } });
+}
+
 export async function toggleDjSubscribe(params: { rid: number; subscribe: boolean; cookie?: string }) {
   return apiClient.get('/dj/sub', {
     params: {

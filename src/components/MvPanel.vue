@@ -629,16 +629,17 @@ async function removeComment(commentId: string) {
   }
 }
 
-function toggleCommentLike(commentId: string) {
-  comments.value = comments.value.map((item) => {
-    if (item.id !== commentId) return item;
-    const liked = !item.liked;
-    return {
-      ...item,
-      liked,
-      likes: liked ? item.likes + 1 : Math.max(0, item.likes - 1),
-    };
-  });
+async function toggleCommentLike(commentId: string) {
+  if (!userStore.isLogin || !activeMv.value) return;
+  const item = comments.value.find((c) => c.id === commentId);
+  if (!item?.rawId) return;
+  const liked = !item.liked;
+  const cid = item.rawId;
+  const res = await apiClient.get('/comment/like', { params: { id: activeMv.value.id, cid, t: liked ? 1 : 0, type: 1, timestamp: Date.now() } }).catch(() => null);
+  if (res?.data?.code === 200) {
+    item.liked = liked;
+    item.likes += liked ? 1 : -1;
+  }
 }
 
 function toggleReplyLike(commentId: string, replyId: string) {
