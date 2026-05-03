@@ -79,6 +79,7 @@
             @back="backToRank"
             @open-artist="openArtistFromRank"
           />
+          <MvPlayPage v-else-if="activePage === 'mv-play'" :mv="activeMvItem" :back-label="mvBackLabel" @back="goBackFromMvPlay" @open-user="openUserFromComment" />
           <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" @open-user="openUserFromComment" />
           <UserPanel
             v-else-if="activePage === 'user'"
@@ -140,7 +141,6 @@
 
     <PlayerBar v-show="!playerStore.expanded" />
     <PlayerExpanded @open-artist="openArtistFromPlayer" />
-    <MvPlayerModal :mv="activeMvItem" @close="activeMvItem = null" />
     <LoginModal />
   </div>
 </template>
@@ -162,7 +162,7 @@ import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
 import SongCommentPage from './components/SongCommentPage.vue';
 import LoginModal from './components/LoginModal.vue';
-import MvPlayerModal from './components/MvPlayerModal.vue';
+import MvPlayPage from './components/MvPlayPage.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
 import PodcastDetailPage from './components/PodcastDetailPage.vue';
@@ -190,6 +190,7 @@ const activeUserId = ref(0);
 const activeUserReturnPage = ref('search');
 const activeRankId = ref(0);
 const activeMvItem = ref<any>(null);
+const activeMvReturnPage = ref('playlist');
 const activePlaylistReturnPage = ref('playlist');
 const activeAlbumReturnPage = ref('home');
 const activeArtistReturnPage = ref('search');
@@ -310,9 +311,15 @@ const artistBackLabel = computed(() => {
   return '返回搜索结果';
 });
 
+const mvBackLabel = computed(() => {
+  if (activeMvReturnPage.value === 'search') return '返回搜索结果';
+  if (activeMvReturnPage.value === 'artist-detail') return '返回歌手详情';
+  return '返回 MV 列表';
+});
+
 const userBackLabel = computed(() => {
   if (activeUserReturnPage.value === 'song-comment') return '返回歌曲评论';
-  if (activeUserReturnPage.value === 'mv') return '返回 MV';
+  if (activeUserReturnPage.value === 'mv' || activeUserReturnPage.value === 'mv-play') return '返回 MV 播放';
   if (activeUserReturnPage.value === 'home') return '返回首页';
   return '返回搜索结果';
 });
@@ -823,8 +830,14 @@ function backToUserDetail() {
   activePage.value = activeUserReturnPage.value || 'search';
 }
 
+function goBackFromMvPlay() {
+  activePage.value = activeMvReturnPage.value || 'playlist';
+}
+
 function openMvFromSearch(item: any) {
   activeMvItem.value = item || null;
+  activeMvReturnPage.value = activePage.value;
+  activePage.value = 'mv-play';
 }
 
 watch(
