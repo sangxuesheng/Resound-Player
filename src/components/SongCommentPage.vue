@@ -108,7 +108,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.comment-page { padding: var(--space-4); max-width: 700px; margin: 0 auto; }
+.comment-page { padding: var(--space-4); width: 100%; max-width: 100%; box-sizing: border-box; }
 .comment-panel { border-radius: 16px; border: 1px solid var(--border-soft); background: var(--bg-solid); padding: 16px; box-sizing: border-box; width: 100%; }
 .comment-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .comment-title { margin: 0; font-size: 16px; color: var(--text-main); }
