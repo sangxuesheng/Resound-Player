@@ -690,15 +690,15 @@ export async function toggleAlbumSubscribe(params: { id: number; subscribe: bool
 }
 
 export async function getUserPlaylist(uid: number, cookie?: string) {
-  return client.get('/user/playlist', { params: { uid, ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
+  return apiClient.get('/user/playlist', { params: { uid, ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function getSongComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
-  return client.get('/comment/music', { params: { ...params, timestamp: Date.now() } });
+  return apiClient.get('/comment/music', { params: { ...params, timestamp: Date.now() } });
 }
 
 export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?: string) {
-  return client.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
+  return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function toggleDjSubscribe(params: { rid: number; subscribe: boolean; cookie?: string }) {
