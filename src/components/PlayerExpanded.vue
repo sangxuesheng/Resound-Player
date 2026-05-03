@@ -41,11 +41,8 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <div class="panel-body" :style="panelBodyStyle">
-          <Transition name="comments-switch" mode="out-in">
-            <!-- 正常模式 -->
-            <div v-if="!showComments" key="normal" class="panel-body-normal" :style="panelBodyStyle">
-              <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
+        <div class="panel-body" :class="{ 'comments-mode': showComments }" :style="panelBodyStyle">
+          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
                 <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
                 <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
                   <template v-if="playerStore.currentTrack?.ar?.length">
@@ -119,10 +116,8 @@
                 </div>
               </div>
               <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
-            </div>
 
-            <!-- 评论区模式 -->
-            <div v-else key="comments" class="comments-overlay">
+          <div class="comments-overlay" :class="{ 'comments-visible': showComments }">
               <div class="comments-head">
                 <div class="comments-head-cover">
                   <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
@@ -144,7 +139,6 @@
               :deleter="api.deleteSongComment"
             />
           </div>
-          </Transition>
         </div>
 
         <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
@@ -532,7 +526,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
 .panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
-.panel-body-normal { grid-column: 1 / -1; display: grid; grid-template-columns: inherit; gap: inherit; align-items: start; min-height: 0; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -967,17 +960,21 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .head-link:hover { opacity: 0.75; }
 
 /* 评论区滑入动画 */
-.comments-switch-enter-active,
-.comments-switch-leave-active {
-  transition: opacity 0.22s ease, transform 0.22s ease;
-}
-.comments-switch-enter-from {
+/* 评论区切换动画 */
+.panel-body.comments-mode .cover-hidden-head,
+.panel-body.comments-mode .left-zone,
+.panel-body.comments-mode .right-zone {
   opacity: 0;
-  transform: translateY(20px);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.comments-switch-leave-to {
+.panel-body.comments-mode .comments-overlay {
+  opacity: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.comments-overlay {
   opacity: 0;
-  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 /* 评论区按钮高亮状态 */
