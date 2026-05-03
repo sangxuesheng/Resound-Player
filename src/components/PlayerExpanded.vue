@@ -33,7 +33,7 @@
         />
       </div>
       <section class="expanded-panel">
-        <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
+        <AnimatedAppear v-show="!showComments" tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
           <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
             <svg v-if="isFullscreen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
@@ -116,32 +116,32 @@
             </div>
           </div>
           <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
-        </div>
 
-        <Transition name="comments-slide">
-          <div v-if="showComments" class="comments-overlay">
-            <div class="comments-head">
-              <div class="comments-head-cover">
-                <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+          <Transition name="comments-slide">
+            <div v-if="showComments" class="comments-overlay">
+              <div class="comments-head">
+                <div class="comments-head-cover">
+                  <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+                </div>
+                <div class="comments-head-info">
+                  <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
+                  <p v-if="currentArtistList.length" class="comments-head-artist">
+                    歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
+                  </p>
+                  <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
+                </div>
               </div>
-              <div class="comments-head-info">
-                <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
-                <p v-if="currentArtistList.length" class="comments-head-artist">
-                  歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
-                </p>
-                <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
-              </div>
+              <CommentPanel
+                :resource-id="(playerStore.currentTrack?.id as number) || 0"
+                :resource-type="0"
+                :fetcher="api.getSongComments"
+                :sender="api.sendComment"
+                :liker="api.likeComment"
+                :deleter="api.deleteSongComment"
+              />
             </div>
-            <CommentPanel
-              :resource-id="(playerStore.currentTrack?.id as number) || 0"
-              :resource-type="0"
-              :fetcher="api.getSongComments"
-              :sender="api.sendComment"
-              :liker="api.likeComment"
-              :deleter="api.deleteSongComment"
-            />
-          </div>
-        </Transition>
+          </Transition>
+        </div>
 
         <div class="right-actions" :class="{ 'comments-active': showComments }">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
@@ -522,7 +522,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body { position: relative; min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
