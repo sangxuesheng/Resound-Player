@@ -32,7 +32,22 @@
               </div>
               <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="idx" class-name="comment-actions">
                 <span class="comment-time">{{ formatTime(item.time) }}</span>
-                <span class="comment-likes">❤ {{ item.likedCount || 0 }}</span>
+                <button class="text-btn" @click="toggleLike(item)">{{ item._liked ? '取消赞' : '点赞' }}({{ item._likes }})</button>
+                <button class="text-btn" @click="toggleReply(item)">{{ item._showReply ? '取消回复' : '回复' }}</button>
+              </AnimatedAppear>
+            </AnimatedAppear>
+            <AnimatedAppear v-if="item._showReply" tag="div" variant="content" rhythm="body" class-name="reply-editor">
+              <input v-model="item._replyDraft" class="reply-input" type="text" maxlength="200" placeholder="回复这条评论..." />
+              <button type="button" class="reply-submit" :disabled="!item._replyDraft?.trim()" @click="submitReply(item)">发送</button>
+            </AnimatedAppear>
+            <AnimatedAppear v-if="item.replies?.length" tag="ul" variant="content" rhythm="list" class-name="reply-list">
+              <AnimatedAppear v-for="(reply, rIdx) in item.replies" :key="reply.id" tag="li" variant="text" rhythm="list" :index="rIdx" class-name="reply-item">
+                <div class="reply-user">{{ reply.user }}</div>
+                <p class="reply-content">{{ reply.content }}</p>
+                <div class="comment-actions">
+                  <span class="comment-time">{{ reply.time }}</span>
+                  <button class="text-btn" @click="toggleReplyLike(item, rIdx)">{{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})</button>
+                </div>
               </AnimatedAppear>
             </AnimatedAppear>
           </AnimatedAppear>
@@ -48,6 +63,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { getSongComments, getSongDetail } from '../api/music';
+import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 const props = defineProps<{ songId: number }>();
@@ -66,8 +82,39 @@ const hasMore = computed(() => comments.value.length < total.value);
 
 function submitComment() {
   if (!newComment.value.trim()) return;
-  // 评论功能由评论区独立组件提供，此处仅展示 UI
   newComment.value = '';
+}
+
+function toggleLike(item: any) {
+  item._liked = !item._liked;
+  item._likes += item._liked ? 1 : -1;
+}
+
+function toggleReplyLike(item: any, rIdx: number) {
+  const r = item.replies[rIdx];
+  if (!r) return;
+  r.liked = !r.liked;
+  r.likes += r.liked ? 1 : -1;
+}
+
+function toggleReply(item: any) {
+  item._showReply = !item._showReply;
+  if (!item._showReply) item._replyDraft = '';
+}
+
+function submitReply(item: any) {
+  if (!item._replyDraft?.trim()) return;
+  item.replies = item.replies || [];
+  item.replies.push({
+    id: `reply-${Date.now()}`,
+    user: userStore.profile?.nickname || '我',
+    content: item._replyDraft,
+    time: '刚刚',
+    liked: false,
+    likes: 0,
+  });
+  item._replyDraft = '';
+  item._showReply = false;
 }
 
 async function fetchComments(append = false) {
@@ -77,8 +124,15 @@ async function fetchComments(append = false) {
     const body = res.data;
     const data = body?.data || body || {};
     total.value = data?.total || data?.totalCount || 0;
-    const newComments = data?.comments || [];
-    comments.value = append ? [...comments.value, ...newComments] : newComments;
+    const raw = data?.comments || [];
+    const normalized = raw.map((c: any) => ({
+      ...c,
+      _liked: false,
+      _likes: c.likedCount || 0,
+      _showReply: false,
+      _replyDraft: '',
+    }));
+    comments.value = append ? [...comments.value, ...normalized] : normalized;
   } catch { console.error('[comment] fetch failed'); }
   finally { loading.value = false; loadingMore.value = false; }
 }
@@ -133,7 +187,18 @@ onMounted(async () => {
 .reply-text { color: var(--text-sub); }
 .comment-actions { display: flex; align-items: center; gap: 10px; }
 .comment-time { font-size: 12px; color: var(--text-sub); }
-.comment-likes { font-size: 12px; color: var(--text-sub); }
+.text-btn { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 0; font-size: 12px; }
+.text-btn:hover { opacity: 0.75; }
+.reply-editor { margin-top: 8px; display: flex; gap: 8px; }
+.reply-input { flex: 1; min-width: 0; height: 32px; border-radius: 8px; border: 1px solid var(--border); padding: 0 10px; background: var(--bg-surface); color: var(--text-main); font-size: 13px; }
+.reply-input:focus { outline: none; border-color: var(--accent); }
+.reply-submit { height: 32px; padding: 0 14px; border-radius: 8px; border: none; background: var(--accent); color: #fff; font-size: 12px; cursor: pointer; }
+.reply-submit:disabled { opacity: 0.4; cursor: default; }
+.reply-list { margin-top: 8px; display: grid; gap: 6px; list-style: none; padding: 0; }
+.reply-item { padding: 8px 10px; border-radius: 8px; background: var(--bg-surface); }
+.reply-item .comment-actions { margin-top: 4px; }
+.reply-user { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.reply-content { margin: 2px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 .comment-more-wrap { text-align: center; padding-top: 12px; }
 .comment-more-btn { padding: 6px 20px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--bg-muted); color: var(--accent); font-size: 13px; cursor: pointer; transition: all 0.12s ease; }
 .comment-more-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg-muted)); }
