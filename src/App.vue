@@ -44,6 +44,7 @@
             :back-label="playlistBackLabel"
             @back="backToPlaylist"
             @open-artist="openArtistFromDetail"
+            @open-comment="openSongComment"
           />
           <AlbumDetailPage
             v-else-if="activePage === 'album-detail'"
@@ -130,6 +131,7 @@
             @play-item="playPodcastItem"
             @play-all="playPodcastAll"
           />
+          <SongCommentPage v-else-if="activePage === 'song-comment'" :song-id="activeSongId" @back="goBackFromComment" />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
@@ -157,6 +159,7 @@ import SearchPage from './components/SearchPage.vue';
 import SettingsPage from './components/SettingsPage.vue';
 import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
+import SongCommentPage from './components/SongCommentPage.vue';
 import MvPlayerModal from './components/MvPlayerModal.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
@@ -177,6 +180,7 @@ const SIDEBAR_COLLAPSED_KEY = 'tm_sidebar_collapsed';
 
 const activePage = ref('home');
 const activePlaylistId = ref(0);
+const activeSongId = ref(0);
 const activeAlbumId = ref(0);
 const activeArtistId = ref(0);
 const artistActiveTabState = ref('songs');
@@ -746,6 +750,14 @@ function openUserFromHome(userId: number) {
 
 function openUserLogin() {
   activePage.value = 'user';
+}
+
+function openSongComment(songId: number) {
+  activeSongId.value = songId;
+  activePage.value = 'song-comment';
+}
+function goBackFromComment() {
+  activePage.value = 'playlist-detail';
 }
 
 function openSettings(tab: 'playback' | 'appearance' | 'account' = 'appearance') {

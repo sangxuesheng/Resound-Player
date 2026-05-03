@@ -108,9 +108,36 @@
               <span v-if="!getSongArtists(song).length">未知歌手</span>
             </AnimatedAppear>
           </AnimatedAppear>
+          <div class="song-actions">
+            <button class="sa-btn" :class="{ liked: isLiked(song.id) }" title="收藏" @click.stop="toggleLike(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </button>
+            <button class="sa-btn" title="下一首播放" @click.stop="playNext(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+            </button>
+            <button class="sa-btn" title="收藏至歌单" @click.stop="showAddToPlaylist(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <button class="sa-btn" title="查看评论" @click.stop="openComment(song.id)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
         </AnimatedAppear>
       </AnimatedAppear>
     </AnimatedAppear>
+    <!-- 收藏至歌单选择器 -->
+    <Teleport to="body">
+      <div v-if="showPlaylistPicker" class="pp-mask" @click.self="showPlaylistPicker = false">
+        <div class="pp-popup">
+          <h3 class="pp-title">选择歌单</h3>
+          <ul class="pp-list">
+            <li v-for="p in playlistPickerList" :key="p.id" class="pp-item" @click="confirmAddToPlaylist(p.id)">{{ p.name }}</li>
+            <li v-if="!playlistPickerList.length" class="pp-empty">暂无可用歌单</li>
+          </ul>
+          <button class="pp-close" @click="showPlaylistPicker = false">取消</button>
+        </div>
+      </div>
+    </Teleport>
   </AnimatedAppear>
 </template>
 
@@ -118,7 +145,7 @@
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs } from '../api/music';
+import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs, toggleSongLike, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
@@ -154,6 +181,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'open-artist', artist: any): void;
+  (e: 'open-comment', songId: number): void;
 }>();
 
 const detailLoading = ref(false);
@@ -555,6 +583,49 @@ async function playOne(index: number) {
   try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
   playerStore.setPlaylist(tracks.value, index);
   await playerStore.playByIndex(index);
+}
+
+/* 操作按钮 */
+const likeLoading = ref<Set<number>>(new Set());
+function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
+async function toggleLike(song: any) {
+  const id = Number(song.id || 0);
+  if (!id || likeLoading.value.has(id)) return;
+  likeLoading.value = new Set([...likeLoading.value, id]);
+  try {
+    await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
+    if (isLiked(id)) userStore.likedSongIds = userStore.likedSongIds.filter((x) => x !== id);
+    else userStore.likedSongIds = [...userStore.likedSongIds, id];
+  } catch {}
+  finally { const s = new Set(likeLoading.value); s.delete(id); likeLoading.value = s; }
+}
+
+function playNext(song: any) {
+  const idx = playerStore.currentIndex + 1;
+  playerStore.playlist.splice(idx, 0, { ...song });
+}
+
+const showPlaylistPicker = ref(false);
+const playlistPickerList = ref<any[]>([]);
+const pickerTargetSong = ref<any>(null);
+async function showAddToPlaylist(song: any) {
+  pickerTargetSong.value = song;
+  try {
+    const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
+    playlistPickerList.value = (res.data?.playlist || []).filter((p: any) => !p.subscribed);
+  } catch { playlistPickerList.value = []; }
+  showPlaylistPicker.value = true;
+}
+async function confirmAddToPlaylist(pid: number) {
+  const song = pickerTargetSong.value;
+  if (!song) return;
+  try {
+    await addTrackToPlaylist(pid, [Number(song.id || 0)], userStore.loginCookie || undefined);
+  } catch {}
+  showPlaylistPicker.value = false;
+}
+function openComment(songId: number) {
+  emit('open-comment', songId);
 }
 
 onMounted(() => {
@@ -1035,4 +1106,21 @@ watch(
     font-size: 14px;
   }
 }
-</style>
+/* 操作按钮 */
+.song-item { position: relative; }
+.song-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 2px; }
+.song-item:hover .song-actions { display: flex; }
+.sa-btn { width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: rgba(255,255,255,0.45); cursor: pointer; display: grid; place-items: center; transition: all 0.12s ease; }
+.sa-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.sa-btn.liked { color: #ff6b8a; }
+.sa-btn.liked svg { fill: currentColor; }
+/* 歌单选择器 */
+.pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
+.pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-surface, rgba(26,28,40,0.97)); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.pp-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; padding: var(--space-1) var(--space-2); }
+.pp-list { overflow-y: auto; display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.pp-item { padding: var(--space-2) var(--space-3); border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.82); font-size: 13px; transition: background 0.12s ease; }
+.pp-item:hover { background: rgba(255,255,255,0.06); }
+.pp-empty { padding: var(--space-4); text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
+.pp-close { padding: 8px; border: none; border-radius: 10px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; }
+.pp-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
