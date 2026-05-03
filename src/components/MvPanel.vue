@@ -607,8 +607,12 @@ async function loadMoreComments() {
 
 function canDeleteComment(comment: CommentItem) {
   const uid = userStore.profile?.userId;
-  if (!uid) return false;
-  return comment.user === '我' || comment.ownerUserId === uid;
+  const nickname = userStore.profile?.nickname;
+  if (!uid && !nickname) return false;
+  if (comment.user === '我') return true;
+  if (uid && comment.ownerUserId === uid) return true;
+  if (nickname && comment.user === nickname) return true;
+  return false;
 }
 
 async function removeComment(commentId: string) {
