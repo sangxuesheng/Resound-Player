@@ -124,6 +124,12 @@ function canDelete(item: any) {
 async function removeComment(item: any) {
   const cid = item.commentId;
   if (!cid) return;
+  // 本地评论（刚发送的）直接移除，不调 API
+  if (typeof cid === 'string' && cid.startsWith('local-')) {
+    comments.value = comments.value.filter((c: any) => c.commentId !== cid);
+    total.value = Math.max(0, total.value - 1);
+    return;
+  }
   const res = await deleteSongComment({ id: props.songId, commentId: cid, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     comments.value = comments.value.filter((c: any) => c.commentId !== cid);

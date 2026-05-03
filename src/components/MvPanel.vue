@@ -606,17 +606,22 @@ async function loadMoreComments() {
 }
 
 function canDeleteComment(comment: CommentItem) {
-  if (!comment.rawId) return false;
   const loginUserId = userStore.profile?.userId;
   if (!loginUserId) return false;
+  if (comment.deletable) return true;
+  if (!comment.rawId) return false;
   return comment.ownerUserId != null ? comment.ownerUserId === loginUserId : comment.user === userStore.profile?.nickname;
 }
 
 async function removeComment(commentId: string) {
   if (!activeMv.value) return;
   const target = comments.value.find((item) => item.id === commentId);
-  if (!target?.rawId) {
-    commentsError.value = '该评论缺少 commentId，无法删除';
+  if (!target) return;
+
+  // 本地评论（刚发送的）直接移除，不调 API
+  if (!target.rawId) {
+    comments.value = comments.value.filter((item) => item.id !== commentId);
+    commentsTotal.value = Math.max(0, commentsTotal.value - 1);
     return;
   }
 
