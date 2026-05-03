@@ -142,7 +142,7 @@ async function loadMore() {
 async function submitComment() {
   const text = newComment.value.trim();
   if (!text || !requireAuth()) return;
-  const res = await props.sender({ id: props.resourceId, t: 1, content: text, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  const res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     newComment.value = '';
     comments.value.unshift({
@@ -187,7 +187,7 @@ async function submitReply(item: any) {
   if (!item.replyDraft?.trim() || !requireAuth()) return;
   const cid = item.rawId;
   if (!cid) return;
-  const res = await props.sender({ id: props.resourceId, t: 2, content: item.replyDraft, commentId: cid, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  const res = await props.sender({ id: props.resourceId, t: 2, content: item.replyDraft, commentId: cid, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     item.replies = item.replies || [];
     item.replies.push({ id: `r-${Date.now()}`, user: userStore.profile?.nickname || '我', content: item.replyDraft, time: '刚刚', liked: false, likes: 0 });
