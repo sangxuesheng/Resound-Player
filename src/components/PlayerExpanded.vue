@@ -877,13 +877,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   align-self: stretch;
   min-height: 0;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  scrollbar-width: none;
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   padding: var(--space-4);
 }
 
