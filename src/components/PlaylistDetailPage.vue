@@ -138,6 +138,9 @@
         </div>
       </div>
     </Teleport>
+    <transition name="toast-fade">
+      <div v-if="likeToast" class="like-toast">{{ likeToast }}</div>
+    </transition>
   </AnimatedAppear>
 </template>
 
@@ -617,11 +620,17 @@ watch(
 
 /* 操作按钮 */
 const likeLoading = ref<Set<number>>(new Set());
+const likeToast = ref('');
 function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
 async function toggleLike(song: any) {
   const id = Number(song.id || 0);
   if (!id || likeLoading.value.has(id)) return;
   if (!userStore.isLogin) { showLoginModal('like'); return; }
+  if (userStore.loginMode === 'uid') {
+    likeToast.value = '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录';
+    setTimeout(() => { likeToast.value = ''; }, 4000);
+    return;
+  }
   likeLoading.value = new Set([...likeLoading.value, id]);
   try {
     await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
@@ -1129,4 +1138,13 @@ function openComment(songId: number) {
 .pp-empty { padding: var(--space-4); text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
 .pp-close { padding: 8px; border: none; border-radius: 10px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; }
 .pp-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.like-toast {
+  position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%);
+  padding: 10px 20px; border-radius: 999px; max-width: 420px; text-align: center;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+  color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4;
+  pointer-events: none; z-index: 310;
+}
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>
