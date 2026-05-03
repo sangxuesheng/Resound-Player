@@ -32,87 +32,116 @@
           :has-lyric="true"
         />
       </div>
-      <section class="expanded-panel">
-        <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
+      <section class="expanded-panel" :class="{ 'comments-open': showComments }">
+        <AnimatedAppear v-show="!showComments" tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost" @click="playerStore.closeExpanded()">关闭</AnimatedAppear>
+          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
+            <svg v-if="isFullscreen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+          </AnimatedAppear>
         </AnimatedAppear>
 
-        <div class="panel-body" :style="panelBodyStyle">
+        <div class="panel-body" :class="{ 'comments-mode': showComments }" :style="panelBodyStyle">
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
-            <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-            <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
-              <template v-if="playerStore.currentTrack?.ar?.length">
-                <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
-              </template>
-              <template v-else>{{ artistText }}</template>
-              <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-            </AnimatedAppear>
-          </div>
-          <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
-            <!-- 封面模式 -->
-            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
-              <Transition name="cover-switch" mode="out-in" appear>
-                <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
-                  <div class="album-cover" :style="coverStyle"></div>
-                </div>
-              </Transition>
-            </template>
-            <!-- 唱片模式 -->
-            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
-              <Transition name="cover-switch" mode="out-in" appear>
-                <div :key="trackId" class="vinyl-record">
-                  <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
-                    <img class="needle" src="/images/needle.png" alt="pointer" />
-                  </div>
-                  <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
-                    <div class="record-cover" :style="coverStyle" />
-                  </div>
-                </div>
-              </Transition>
-            </template>
-            <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
-              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name" :key="'sn-'+trackId">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist" :key="'sa-'+trackId">
-                <template v-if="playerStore.currentTrack?.ar?.length">
-                  <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
-                </template>
-                <template v-else>{{ artistText }}</template>
-                <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-              </AnimatedAppear>
-            </template>
-            <div v-show="showLeftControls" class="progress-wrap">
-              <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
-              <div v-if="isSeeking" class="seek-preview">{{ formatTime(seekPreviewTime) }}</div>
-              <div class="times"><span class="time">{{ formatTime(playerStore.currentTime) }}</span><span class="time">{{ formatTime(playerStore.duration) }}</span></div>
-            </div>
-            <div v-show="showLeftControls" class="controls">
-              <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
-              <template v-if="isPersonalFmCurrentTrack">
-                <button class="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
-                <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
-                <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
-                <button class="ctrl ctrl-fm-indicator" type="button" aria-label="当前为私人 FM" disabled>FM</button>
-              </template>
-              <template v-else>
-                <button class="ctrl" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="16" /></button>
-                <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
-                <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
-                <button class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="16" /></button>
-              </template>
-            </div>
-            <div v-show="showLeftControls" class="volume-wrap">
-              <div class="volume-control">
-                <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" /><Volume v-else-if="playerStore.volume < 0.33" :size="18" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="18" /><Volume2 v-else :size="18" /></button>
-                <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
+                <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+                <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
+                  <template v-if="playerStore.currentTrack?.ar?.length">
+                    <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
+                  </template>
+                  <template v-else>{{ artistText }}</template>
+                  <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
+                </AnimatedAppear>
               </div>
-              <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
-            </div>
+              <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
+                <!-- 封面模式 -->
+                <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
+                  <Transition name="cover-switch" mode="out-in" appear>
+                    <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
+                      <div class="album-cover" :style="coverStyle"></div>
+                    </div>
+                  </Transition>
+                </template>
+                <!-- 唱片模式 -->
+                <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'record'">
+                  <Transition name="cover-switch" mode="out-in" appear>
+                    <div :key="trackId" class="vinyl-record">
+                      <div class="vinyl-pointer" :class="{ active: playerStore.isPlaying }">
+                        <img class="needle" src="/images/needle.png" alt="pointer" />
+                      </div>
+                      <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
+                        <div class="record-cover" :style="coverStyle" />
+                      </div>
+                    </div>
+                  </Transition>
+                </template>
+                <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
+                  <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name" :key="'sn-'+trackId">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+                  <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist" :key="'sa-'+trackId">
+                    <template v-if="playerStore.currentTrack?.ar?.length">
+                      <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
+                    </template>
+                    <template v-else>{{ artistText }}</template>
+                    <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
+                  </AnimatedAppear>
+                </template>
+                <div v-show="showLeftControls" class="progress-wrap">
+                  <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
+                  <div v-if="isSeeking" class="seek-preview">{{ formatTime(seekPreviewTime) }}</div>
+                  <div class="times"><span class="time">{{ formatTime(playerStore.currentTime) }}</span><span class="time">{{ formatTime(playerStore.duration) }}</span></div>
+                </div>
+                <div v-show="showLeftControls" class="controls">
+                  <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
+                  <button class="ctrl" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+                  <template v-if="isPersonalFmCurrentTrack">
+                    <button class="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
+                    <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+                    <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
+                    <button class="ctrl ctrl-fm-indicator" type="button" aria-label="当前为私人 FM" disabled>FM</button>
+                  </template>
+                  <template v-else>
+                    <button class="ctrl" @click="playerStore.prev()" aria-label="上一首"><SkipBack :size="16" /></button>
+                    <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
+                    <button class="ctrl" @click="playerStore.next()" aria-label="下一首"><SkipForward :size="16" /></button>
+                    <button class="ctrl" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="16" /></button>
+                  </template>
+                </div>
+                <div v-show="showLeftControls" class="volume-wrap">
+                  <div class="volume-control">
+                    <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" /><Volume v-else-if="playerStore.volume < 0.33" :size="18" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="18" /><Volume2 v-else :size="18" /></button>
+                    <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
+                  </div>
+                  <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
+                </div>
+              </div>
+              <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
+
+          <div v-if="showComments" class="comments-overlay">
+              <div class="comments-head">
+                <div class="comments-head-cover">
+                  <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+                </div>
+                <div class="comments-head-info">
+                  <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
+                  <p v-if="currentArtistList.length" class="comments-head-artist">
+                    歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
+                  </p>
+                  <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(currentAlbumId)">{{ currentAlbumName }}</button></p>
+                </div>
+              </div>
+            <CommentPanel
+              :resource-id="(playerStore.currentTrack?.id as number) || 0"
+              :resource-type="0"
+              :fetcher="api.getSongComments"
+              :sender="api.sendComment"
+              :liker="api.likeComment"
+              :deleter="api.deleteSongComment"
+            />
           </div>
-          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
         </div>
 
-        <div class="right-actions">
+        <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
@@ -139,11 +168,14 @@
           </transition>
         </Teleport>
 
-        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console" :attrs="showComments ? { 'data-grid-item': '' } : {}" :class="{ 'grid-item': showComments }">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
             <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
+            <button class="con-btn" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
           </div>
           <div class="cc-center">
             <template v-if="isPersonalFmCurrentTrack">
@@ -193,7 +225,7 @@
 
 <script setup lang="ts">
 import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
@@ -210,20 +242,50 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';
 import LyricsSelectionModal from './LyricsSelectionModal.vue';
+import CommentPanel from './CommentPanel.vue';
+import * as api from '../api/music';
 import { openSelection } from '../stores/lyricsSelection';
 
-const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>] }>();
+const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number] }>();
 
 const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist'; });
 function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
+function openAlbum(albumId: number | undefined | null) {
+  const id = Number(albumId || 0);
+  if (id > 0) emit('open-album', id);
+}
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
+
+const currentCover = computed(() => playerStore.currentTrack?.al?.picUrl || '');
+const currentArtistList = computed(() => playerStore.currentTrack?.ar || []);
+const currentAlbumName = computed(() => playerStore.currentTrack?.al?.name || '');
+const currentAlbumId = computed(() => { const al: any = playerStore.currentTrack?.al; return al?.id ? Number(al.id) : 0; });
 
 const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(195, 156, 118)', c4: 'rgb(20, 24, 36)' });
 const showPlaylistPopup = ref(false);
 const showSettings = ref(false);
 const showOffsetPanel = ref(false);
+const showComments = ref(false);
 const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
+
+const isFullscreen = ref(false);
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => { isFullscreen.value = true; }).catch(() => {});
+  } else {
+    document.exitFullscreen().then(() => { isFullscreen.value = false; }).catch(() => {});
+  }
+}
+onMounted(() => {
+  document.addEventListener('fullscreenchange', onFsChange);
+  document.addEventListener('webkitfullscreenchange', onFsChange);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFsChange);
+  document.removeEventListener('webkitfullscreenchange', onFsChange);
+});
+function onFsChange() { isFullscreen.value = !!document.fullscreenElement; }
 
 function onOpenSettings() {
   const btn = gearBtnRef.value;
@@ -455,6 +517,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
+.expanded-panel.comments-open { padding-bottom: 0; gap: 0; grid-template-rows: auto 1fr auto; }
+.expanded-panel.comments-open .panel-body { grid-row: 2; }
+.bottom-console.grid-item { position: static; grid-row: 3; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
@@ -791,7 +856,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   height: 64%;
   border-radius: 50%;
   background: #d9dee8 center/cover no-repeat;
-  border: 3px solid rgba(255,255,255,0.2);
   box-shadow:
     0 0 0 2px rgba(0,0,0,0.3),
     0 4px 16px rgba(0,0,0,0.5);
@@ -815,5 +879,104 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 @keyframes anim_bg {
   0% { --hue1: 30deg; --hue2: 180deg; }
   100% { --hue1: 390deg; --hue2: 540deg; }
+}
+
+
+/* 评论区浮层 */
+.comments-overlay {
+  grid-column: 1 / -1;
+  align-self: stretch;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: color-mix(in srgb, var(--bg-app) 94%, transparent);
+  backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  padding-bottom: 70px;
+}
+
+.comments-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-shrink: 0;
+}
+
+.comments-head-cover {
+  width: 80px;
+  height: 80px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.comments-head-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.comments-head-info {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.comments-head-title {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comments-head-artist {
+  margin: 0;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comments-head-album {
+  margin: 0;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.head-link {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.head-link:hover { opacity: 0.75; }
+
+/* 评论区滑入动画 */
+/* 评论区切换动画 */
+.panel-body.comments-mode .cover-hidden-head,
+.panel-body.comments-mode .left-zone,
+.panel-body.comments-mode .right-zone {
+  display: none;
+}
+
+/* 评论区按钮高亮状态 */
+.con-btn.active,
+.ctrl.active {
+  color: var(--accent);
 }
 </style>

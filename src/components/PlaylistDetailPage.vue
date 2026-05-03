@@ -108,20 +108,51 @@
               <span v-if="!getSongArtists(song).length">未知歌手</span>
             </AnimatedAppear>
           </AnimatedAppear>
+          <div class="song-actions">
+            <button class="sa-btn" :class="{ liked: isLiked(song.id) }" title="收藏" @click.stop="toggleLike(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            </button>
+            <button class="sa-btn" title="下一首播放" @click.stop="playNext(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
+            </button>
+            <button class="sa-btn" title="收藏至歌单" @click.stop="showAddToPlaylist(song)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <button class="sa-btn" title="查看评论" @click.stop="openComment(song.id)">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+          </div>
         </AnimatedAppear>
       </AnimatedAppear>
     </AnimatedAppear>
+    <!-- 收藏至歌单选择器 -->
+    <Teleport to="body">
+      <div v-if="showPlaylistPicker" class="pp-mask" @click.self="showPlaylistPicker = false">
+        <div class="pp-popup">
+          <h3 class="pp-title">选择歌单</h3>
+          <ul class="pp-list">
+            <li v-for="p in playlistPickerList" :key="p.id" class="pp-item" @click="confirmAddToPlaylist(p.id)">{{ p.name }}</li>
+            <li v-if="!playlistPickerList.length" class="pp-empty">暂无可用歌单</li>
+          </ul>
+          <button class="pp-close" @click="showPlaylistPicker = false">取消</button>
+        </div>
+      </div>
+    </Teleport>
   </AnimatedAppear>
+  <transition name="toast-fade">
+    <div v-if="authToast" class="like-toast" :class="{ success: toastType === 'success' }">{{ authToast }}</div>
+  </transition>
 </template>
 
 <script setup lang="ts">
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs } from '../api/music';
+import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs, toggleSongLike, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
+import { useAuthAction } from '../composables/useAuthAction';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
@@ -154,6 +185,7 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'open-artist', artist: any): void;
+  (e: 'open-comment', songId: number): void;
 }>();
 
 const detailLoading = ref(false);
@@ -585,6 +617,54 @@ watch(
   },
   { deep: true },
 );
+
+/* 操作按钮 */
+const { authToast, toastType, checkAuth, showToast } = useAuthAction(
+  '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录',
+  'like',
+);
+const likeLoading = ref<Set<number>>(new Set());
+function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
+async function toggleLike(song: any) {
+  const id = Number(song.id || 0);
+  if (!id || likeLoading.value.has(id)) return;
+  if (!checkAuth()) return;
+  likeLoading.value = new Set([...likeLoading.value, id]);
+  try {
+    await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
+    if (isLiked(id)) userStore.likedSongIds = userStore.likedSongIds.filter((x) => x !== id);
+    else userStore.likedSongIds = [...userStore.likedSongIds, id];
+  } catch {}
+  finally { const s = new Set(likeLoading.value); s.delete(id); likeLoading.value = s; }
+}
+function playNext(song: any) {
+  const idx = playerStore.currentIndex + 1;
+  playerStore.playlist.splice(idx, 0, { ...song });
+  showToast('已添加至播放列表', 'success', 3000);
+}
+const showPlaylistPicker = ref(false);
+const playlistPickerList = ref<any[]>([]);
+const pickerTargetSong = ref<any>(null);
+async function showAddToPlaylist(song: any) {
+  if (!checkAuth()) return;
+  pickerTargetSong.value = song;
+  try {
+    const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
+    playlistPickerList.value = (res.data?.playlist || []).filter((p: any) => !p.subscribed);
+  } catch { playlistPickerList.value = []; }
+  showPlaylistPicker.value = true;
+}
+async function confirmAddToPlaylist(pid: number) {
+  const song = pickerTargetSong.value;
+  if (!song) return;
+  try {
+    await addTrackToPlaylist(pid, [Number(song.id || 0)], userStore.loginCookie || undefined);
+  } catch {}
+  showPlaylistPicker.value = false;
+}
+function openComment(songId: number) {
+  emit('open-comment', songId);
+}
 </script>
 
 <style scoped>
@@ -1035,4 +1115,36 @@ watch(
     font-size: 14px;
   }
 }
+/* 操作按钮 */
+.song-item { position: relative; }
+.song-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 4px; }
+.song-item:hover .song-actions { display: flex; }
+.sa-btn { width: 34px; height: 34px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-surface); color: var(--text-soft); cursor: pointer; display: grid; place-items: center; transition: color 0.12s ease, background 0.12s ease, transform 0.12s ease; box-shadow: var(--glass-highlight); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.sa-btn:hover { background: var(--bg-muted); color: var(--text-main); transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); }
+.sa-btn:active { transform: translateY(0); }
+.sa-btn.liked { color: #ff6b8a; }
+.sa-btn.liked svg { fill: currentColor; }
+.sa-btn:active { transform: translateY(0); }
+.sa-btn.liked { color: #ff6b8a; }
+.sa-btn.liked svg { fill: currentColor; }
+/* 歌单选择器 */
+.pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
+.pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-surface, rgba(26,28,40,0.97)); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.pp-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; padding: var(--space-1) var(--space-2); }
+.pp-list { overflow-y: auto; display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.pp-item { padding: var(--space-2) var(--space-3); border-radius: 8px; cursor: pointer; color: rgba(255,255,255,0.82); font-size: 13px; transition: background 0.12s ease; }
+.pp-item:hover { background: rgba(255,255,255,0.06); }
+.pp-empty { padding: var(--space-4); text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
+.pp-close { padding: 8px; border: none; border-radius: 10px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; }
+.pp-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.like-toast {
+  position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%);
+  padding: 10px 20px; border-radius: 999px; max-width: 420px; text-align: center;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
+  color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4;
+  pointer-events: none; z-index: 310;
+}
+.like-toast.success { color: #4ade80; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>

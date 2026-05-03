@@ -44,6 +44,7 @@
             :back-label="playlistBackLabel"
             @back="backToPlaylist"
             @open-artist="openArtistFromDetail"
+            @open-comment="openSongComment"
           />
           <AlbumDetailPage
             v-else-if="activePage === 'album-detail'"
@@ -66,7 +67,7 @@
           <UserDetailPage
             v-else-if="activePage === 'user-detail'"
             :user-id="activeUserId"
-            back-label="返回搜索结果"
+            :back-label="userBackLabel"
             @back="backToUserDetail"
             @open-playlist-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, 'user-detail')"
           />
@@ -78,7 +79,8 @@
             @back="backToRank"
             @open-artist="openArtistFromRank"
           />
-          <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" />
+          <MvPlayPage v-else-if="activePage === 'mv-play'" :mv="activeMvItem" :back-label="mvBackLabel" @back="goBackFromMvPlay" @open-user="openUserFromComment" />
+          <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" @open-user="openUserFromComment" @play-mv="openMvFromSearch" />
           <UserPanel
             v-else-if="activePage === 'user'"
             class="user-page-host"
@@ -130,6 +132,7 @@
             @play-item="playPodcastItem"
             @play-all="playPodcastAll"
           />
+          <SongCommentPage v-else-if="activePage === 'song-comment'" :song-id="activeSongId" @back="goBackFromComment" @open-artist="openArtistFromComment" @open-album="(albumId) => openAlbumDetail(albumId, 'song-comment')" @play-song="playSongFromComment" @open-user="openUserFromComment" />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
@@ -137,8 +140,8 @@
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
-    <PlayerExpanded @open-artist="openArtistFromPlayer" />
-    <MvPlayerModal :mv="activeMvItem" @close="activeMvItem = null" />
+    <PlayerExpanded @open-artist="openArtistFromPlayer" @open-album="(albumId) => { playerStore.closeExpanded(); openAlbumDetail(albumId, activePage.value); }" />
+    <LoginModal />
   </div>
 </template>
 
@@ -157,7 +160,9 @@ import SearchPage from './components/SearchPage.vue';
 import SettingsPage from './components/SettingsPage.vue';
 import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
-import MvPlayerModal from './components/MvPlayerModal.vue';
+import SongCommentPage from './components/SongCommentPage.vue';
+import LoginModal from './components/LoginModal.vue';
+import MvPlayPage from './components/MvPlayPage.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
 import PodcastDetailPage from './components/PodcastDetailPage.vue';
@@ -167,7 +172,7 @@ import HistoryPanel from './components/HistoryPanel.vue';
 import Sidebar from './components/Sidebar.vue';
 import TopBar from './components/TopBar.vue';
 import { waitForApiReady } from './api/client';
-import { getDjCategoryRecommend, getDjDetail, getDjProgram, getDjRecommend, getDjRecommendType, getDjSublist, getRecentDj, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
+import { getDjCategoryRecommend, getDjDetail, getDjProgram, getDjRecommend, getDjRecommendType, getDjSublist, getRecentDj, getSongDetail, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
 import { playerStore } from './stores/player';
 import { uiStore } from './stores/ui';
 import { userStore } from './stores/user';
@@ -177,12 +182,15 @@ const SIDEBAR_COLLAPSED_KEY = 'tm_sidebar_collapsed';
 
 const activePage = ref('home');
 const activePlaylistId = ref(0);
+const activeSongId = ref(0);
 const activeAlbumId = ref(0);
 const activeArtistId = ref(0);
 const artistActiveTabState = ref('songs');
 const activeUserId = ref(0);
+const activeUserReturnPage = ref('search');
 const activeRankId = ref(0);
 const activeMvItem = ref<any>(null);
+const activeMvReturnPage = ref('playlist');
 const activePlaylistReturnPage = ref('playlist');
 const activeAlbumReturnPage = ref('home');
 const activeArtistReturnPage = ref('search');
@@ -299,6 +307,20 @@ const artistBackLabel = computed(() => {
   if (activeArtistReturnPage.value === 'home') return '返回首页';
   if (activeArtistReturnPage.value === 'rank-detail') return '返回榜单详情';
   if (activeArtistReturnPage.value === 'rank') return '返回排行榜';
+  if (activeArtistReturnPage.value === 'song-comment') return '返回歌曲评论';
+  return '返回搜索结果';
+});
+
+const mvBackLabel = computed(() => {
+  if (activeMvReturnPage.value === 'search') return '返回搜索结果';
+  if (activeMvReturnPage.value === 'artist-detail') return '返回歌手详情';
+  return '返回 MV 列表';
+});
+
+const userBackLabel = computed(() => {
+  if (activeUserReturnPage.value === 'song-comment') return '返回歌曲评论';
+  if (activeUserReturnPage.value === 'mv' || activeUserReturnPage.value === 'mv-play') return '返回 MV 播放';
+  if (activeUserReturnPage.value === 'home') return '返回首页';
   return '返回搜索结果';
 });
 
@@ -330,6 +352,10 @@ function backToAlbum() {
   }
   if (activeAlbumReturnPage.value === 'history') {
     activePage.value = 'history';
+    return;
+  }
+  if (activeAlbumReturnPage.value === 'song-comment') {
+    activePage.value = 'song-comment';
     return;
   }
   activePage.value = 'home';
@@ -710,9 +736,14 @@ function openSearchPage(keyword: string) {
   activePage.value = 'search';
 }
 
-function openUserFromSearch(userId: number) {
+function openUserDetail(userId: number, returnPage = 'search') {
   activeUserId.value = Number(userId || 0);
+  activeUserReturnPage.value = returnPage;
   activePage.value = 'user-detail';
+}
+
+function openUserFromSearch(userId: number) {
+  openUserDetail(userId, 'search');
 }
 
 function resolveArtistId(artist: any) {
@@ -740,17 +771,43 @@ function openArtistFromPlayer(artist: any) {
 }
 
 function openUserFromHome(userId: number) {
-  activeUserId.value = Number(userId || 0);
-  activePage.value = 'user-detail';
+  openUserDetail(userId, 'home');
 }
 
 function openUserLogin() {
   activePage.value = 'user';
 }
 
+function openSongComment(songId: number) {
+  activeSongId.value = songId;
+  activePage.value = 'song-comment';
+}
+function goBackFromComment() {
+  activePage.value = 'playlist-detail';
+}
+
+async function playSongFromComment(songId: number) {
+  try {
+    const detail = await getSongDetail(songId);
+    const song = detail.data?.songs?.[0];
+    if (!song) return;
+    const track = { id: song.id, name: song.name, ar: song.ar || [], al: song.al || {} };
+    playerStore.setPlaylist([track], 0);
+    await playerStore.playByIndex(0);
+  } catch {}
+}
+
+function openUserFromComment(userId: number) {
+  openUserDetail(userId, activePage.value);
+}
+
 function openSettings(tab: 'playback' | 'appearance' | 'account' = 'appearance') {
   settingsInitialTab.value = tab;
   activePage.value = 'settings';
+}
+
+function openArtistFromComment(artist: any) {
+  openArtistDetail(artist, 'song-comment');
 }
 
 function openArtistFromRank(artist: any) {
@@ -770,11 +827,17 @@ function backToArtist() {
 }
 
 function backToUserDetail() {
-  activePage.value = 'search';
+  activePage.value = activeUserReturnPage.value || 'search';
+}
+
+function goBackFromMvPlay() {
+  activePage.value = activeMvReturnPage.value || 'playlist';
 }
 
 function openMvFromSearch(item: any) {
   activeMvItem.value = item || null;
+  activeMvReturnPage.value = activePage.value;
+  activePage.value = 'mv-play';
 }
 
 watch(

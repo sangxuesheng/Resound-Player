@@ -630,26 +630,33 @@ export async function sendMvComment(params: {
   id: number;
   content: string;
   commentId?: number;
+  cookie?: string;
 }) {
-  return apiClient.get('/comment', {
+  return apiClient.post('/comment', null, {
     params: {
       t: params.commentId ? 2 : 1,
       type: 1,
       id: params.id,
       content: params.content,
       ...(params.commentId ? { commentId: params.commentId } : {}),
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
 }
 
-export async function deleteMvComment(params: { id: number; commentId: number }) {
-  return apiClient.get('/comment', {
+export async function deleteSongComment(params: { id: number; commentId: number; cookie?: string }) {
+  return apiClient.post('/comment', null, { params: { t: 0, type: 0, id: params.id, commentId: params.commentId, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
+}
+
+export async function deleteMvComment(params: { id: number; commentId: number; cookie?: string }) {
+  return apiClient.post('/comment', null, {
     params: {
       t: 0,
       type: 1,
       id: params.id,
       commentId: params.commentId,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
@@ -687,6 +694,26 @@ export async function toggleAlbumSubscribe(params: { id: number; subscribe: bool
       timestamp: Date.now(),
     },
   });
+}
+
+export async function getUserPlaylist(uid: number, cookie?: string) {
+  return apiClient.get('/user/playlist', { params: { uid, ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
+}
+
+export async function getSongComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/music', { params: { ...params, timestamp: Date.now() } });
+}
+
+export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?: string) {
+  return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
+}
+
+export async function sendComment(params: { id: number; t: number; content: string; type?: number; commentId?: number; cookie?: string }) {
+  return apiClient.get('/comment', { params: { t: params.t, type: params.type ?? 0, id: params.id, content: params.content, ...(params.commentId ? { commentId: params.commentId } : {}), ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
+}
+
+export async function likeComment(params: { id: number; cid: number; t: number; type: number; cookie?: string }) {
+  return apiClient.post('/comment/like', null, { params: { id: params.id, cid: params.cid, t: params.t, type: params.type, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function toggleDjSubscribe(params: { rid: number; subscribe: boolean; cookie?: string }) {
