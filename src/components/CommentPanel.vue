@@ -67,7 +67,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { userStore } from '../stores/user';
 import { showLoginModal } from '../stores/loginModal';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -264,7 +264,7 @@ function formatTime(ms: number) {
   return `${date.getMonth() + 1}-${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-onMounted(() => fetchComments());
+watch(() => props.resourceId, (id) => { if (id > 0) fetchComments(); }, { immediate: true });
 </script>
 
 <style scoped>
