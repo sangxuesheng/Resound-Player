@@ -19,7 +19,7 @@
 
     <template v-else>
       <ul class="comment-list">
-        <li v-for="(item, idx) in comments" :key="item.id" class="comment-item">
+        <AnimatedAppear v-for="(item, idx) in comments" :key="item.id" tag="li" variant="text" rhythm="list" :index="idx" class-name="comment-item">
           <div class="comment-main">
             <div class="comment-user-row">
               <img class="comment-avatar" :src="item.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user" @click="openUser(item)" />
@@ -53,7 +53,7 @@
               </div>
             </li>
           </ul>
-        </li>
+        </AnimatedAppear>
       </ul>
       <div v-if="hasMore" class="comment-more-wrap">
         <button class="comment-more-btn" @click="loadMore" :disabled="loadingMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
@@ -70,6 +70,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { userStore } from '../stores/user';
 import { showLoginModal } from '../stores/loginModal';
+import AnimatedAppear from './AnimatedAppear.vue';
 
 const props = defineProps<{
   resourceId: number;
