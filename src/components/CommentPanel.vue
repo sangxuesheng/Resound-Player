@@ -96,11 +96,6 @@ const myNickname = computed(() => userStore.profile?.nickname || '');
 /* 鉴权 */
 function requireAuth(): boolean {
   if (!userStore.isLogin) { showLoginModal(); return false; }
-  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-    toast.value = '搜索用户方式登录不支持评论/点赞，请使用扫码或 Cookie 登录';
-    setTimeout(() => { toast.value = ''; }, 5000);
-    return false;
-  }
   return true;
 }
 
