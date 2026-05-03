@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { getSongComments, getSongDetail, likeComment } from '../api/music';
+import { getSongComments, getSongDetail, likeComment, replyComment } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -108,19 +108,25 @@ function toggleReply(item: any) {
   if (!item._showReply) item._replyDraft = '';
 }
 
-function submitReply(item: any) {
+async function submitReply(item: any) {
   if (!item._replyDraft?.trim()) return;
-  item.replies = item.replies || [];
-  item.replies.push({
-    id: `reply-${Date.now()}`,
-    user: userStore.profile?.nickname || '我',
-    content: item._replyDraft,
-    time: '刚刚',
-    liked: false,
-    likes: 0,
-  });
-  item._replyDraft = '';
-  item._showReply = false;
+  if (!userStore.isLogin) return;
+  const cid = item.commentId;
+  if (!cid) return;
+  const res = await replyComment({ id: props.songId, commentId: cid, content: item._replyDraft, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  if (res?.data?.code === 200) {
+    item.replies = item.replies || [];
+    item.replies.push({
+      id: `reply-${Date.now()}`,
+      user: userStore.profile?.nickname || '我',
+      content: item._replyDraft,
+      time: '刚刚',
+      liked: false,
+      likes: 0,
+    });
+    item._replyDraft = '';
+    item._showReply = false;
+  }
 }
 
 async function fetchComments(append = false) {

@@ -701,6 +701,10 @@ export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?:
   return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
 
+export async function replyComment(params: { id: number; commentId: number; content: string; type?: number; cookie?: string }) {
+  return apiClient.post('/comment/reply', null, { params: { id: params.id, commentId: params.commentId, content: params.content, type: params.type ?? 0, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
+}
+
 export async function likeComment(params: { id: number; cid: number; t: number; type: number; cookie?: string }) {
   return apiClient.post('/comment/like', null, { params: { id: params.id, cid: params.cid, t: params.t, type: params.type, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
