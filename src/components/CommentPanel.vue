@@ -147,7 +147,7 @@ async function submitComment() {
     console.error('[comment] submit ERROR', e, e?.response?.data);
     return;
   }
-  if (res?.data?.code === 200) {
+  if (res?.data?.code === 200 || res?.data?.code === 250) {
     newComment.value = '';
     comments.value.unshift({
       id: `c-local-${Date.now()}`,
@@ -175,7 +175,7 @@ async function toggleLike(item: any) {
   const cid = item.rawId;
   if (!cid) return;
   const res = await props.liker({ id: props.resourceId, cid, t: liked ? 1 : 0, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch(() => null);
-  if (res?.data?.code === 200) {
+  if (res?.data?.code === 200 || res?.data?.code === 250) {
     item.liked = liked;
     item.likes += liked ? 1 : -1;
   }
@@ -190,9 +190,17 @@ function toggleReply(item: any) {
 async function submitReply(item: any) {
   if (!item.replyDraft?.trim() || !requireAuth()) return;
   const cid = item.rawId;
+  console.log('[reply] cid', cid);
   if (!cid) return;
-  const res = await props.sender({ id: props.resourceId, t: 2, content: item.replyDraft, commentId: cid, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch(() => null);
-  if (res?.data?.code === 200) {
+  let res: any;
+  try {
+    res = await props.sender({ id: props.resourceId, t: 2, content: item.replyDraft, commentId: cid, type: props.resourceType, cookie: userStore.loginCookie || undefined });
+    console.log('[reply] response', res?.data?.code, res?.data);
+  } catch (e: any) {
+    console.error('[reply] ERROR', e, e?.response?.data);
+    return;
+  }
+  if (res?.data?.code === 200 || res?.data?.code === 250) {
     item.replies = item.replies || [];
     item.replies.push({ id: `r-${Date.now()}`, user: userStore.profile?.nickname || '我', content: item.replyDraft, time: '刚刚', liked: false, likes: 0 });
     item.replyDraft = '';
@@ -226,7 +234,7 @@ async function removeComment(item: any) {
     return;
   }
   const res = await props.deleter({ id: props.resourceId, commentId: cid, cookie: userStore.loginCookie || undefined }).catch(() => null);
-  if (res?.data?.code === 200) {
+  if (res?.data?.code === 200 || res?.data?.code === 250) {
     comments.value = comments.value.filter((c: any) => c.id !== item.id);
     total.value = Math.max(0, total.value - 1);
   }
