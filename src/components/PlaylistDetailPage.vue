@@ -138,10 +138,10 @@
         </div>
       </div>
     </Teleport>
-    <transition name="toast-fade">
-      <div v-if="likeToast" class="like-toast">{{ likeToast }}</div>
-    </transition>
   </AnimatedAppear>
+  <transition name="toast-fade">
+    <div v-if="likeToast" class="like-toast">{{ likeToast }}</div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -627,7 +627,8 @@ async function toggleLike(song: any) {
   if (!id || likeLoading.value.has(id)) return;
   if (!userStore.isLogin) { showLoginModal('like'); return; }
   if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-    window.alert('搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录');
+    likeToast.value = '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录';
+    setTimeout(() => { likeToast.value = ''; }, 5000);
     return;
   }
   likeLoading.value = new Set([...likeLoading.value, id]);
