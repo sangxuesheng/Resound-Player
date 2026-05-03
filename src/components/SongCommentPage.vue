@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { getSongComments, getSongDetail, likeComment, replyComment } from '../api/music';
+import { getSongComments, getSongDetail, likeComment, sendComment } from '../api/music';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -80,9 +80,13 @@ const LIMIT = 20;
 
 const hasMore = computed(() => comments.value.length < total.value);
 
-function submitComment() {
+async function submitComment() {
   if (!newComment.value.trim()) return;
-  newComment.value = '';
+  if (!userStore.isLogin) return;
+  const res = await sendComment({ id: props.songId, t: 1, content: newComment.value, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  if (res?.data?.code === 200) {
+    newComment.value = '';
+  }
 }
 
 async function toggleLike(item: any) {
@@ -113,7 +117,7 @@ async function submitReply(item: any) {
   if (!userStore.isLogin) return;
   const cid = item.commentId;
   if (!cid) return;
-  const res = await replyComment({ id: props.songId, commentId: cid, content: item._replyDraft, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  const res = await sendComment({ id: props.songId, t: 2, content: item._replyDraft, commentId: cid, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     item.replies = item.replies || [];
     item.replies.push({

@@ -690,9 +690,11 @@ async function submitReply(commentId: string) {
   }
 
   try {
-    const cookie = userStore.loginCookie || undefined;
-    const res = await apiClient.get('/comment/reply', { params: { id: activeMv.value.id, commentId: target.rawId, content, type: 1, ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
-    if (res?.data?.code !== 200) throw new Error('回复失败');
+    await sendMvComment({
+      id: activeMv.value.id,
+      content,
+      commentId: target.rawId,
+    });
 
     comments.value = comments.value.map((item) => {
       if (item.id !== commentId) return item;

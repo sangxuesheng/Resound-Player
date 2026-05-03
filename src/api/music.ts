@@ -701,8 +701,8 @@ export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?:
   return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
 
-export async function replyComment(params: { id: number; commentId: number; content: string; type?: number; cookie?: string }) {
-  return apiClient.get('/comment/reply', { params: { id: params.id, commentId: params.commentId, content: params.content, type: params.type ?? 0, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
+export async function sendComment(params: { id: number; t: number; content: string; type?: number; commentId?: number; cookie?: string }) {
+  return apiClient.get('/comment', { params: { t: params.t, type: params.type ?? 0, id: params.id, content: params.content, ...(params.commentId ? { commentId: params.commentId } : {}), ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function likeComment(params: { id: number; cid: number; t: number; type: number; cookie?: string }) {
