@@ -187,7 +187,7 @@
                     <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="idx" type="button" class-name="text-btn" @click="toggleReplyEditor(comment.id)">
                       {{ comment.showReplyEditor ? '取消回复' : '回复' }}
                     </AnimatedAppear>
-                    <button type="button" class="text-btn danger" @click="removeComment(comment.id)">删除</button>
+                    <button v-if="canDeleteComment(comment)" type="button" class="text-btn danger" @click="removeComment(comment.id)">删除</button>
                   </AnimatedAppear>
                 </AnimatedAppear>
 
@@ -594,13 +594,12 @@ async function loadMoreComments() {
   await fetchMvComments(activeMv.value.id, false);
 }
 
-function canDeleteComment(comment: CommentItem) {
-  const uid = userStore.profile?.userId;
-  const nickname = userStore.profile?.nickname?.trim().toLowerCase();
-  const commentUser = comment.user?.trim().toLowerCase();
-  if (commentUser === '我') return true;
-  if (uid && comment.ownerUserId != null && comment.ownerUserId === uid) return true;
-  if (nickname && commentUser === nickname) return true;
+function canDeleteComment(comment: { user: string; ownerUserId?: number | null }) {
+  const profile = userStore.profile;
+  if (!profile) return false;
+  if (comment.user === '我') return true;
+  if (profile.userId && comment.ownerUserId != null && comment.ownerUserId === profile.userId) return true;
+  if (profile.nickname && comment.user?.toLowerCase() === profile.nickname.toLowerCase()) return true;
   return false;
 }
 
@@ -620,6 +619,7 @@ async function removeComment(commentId: string) {
     await deleteMvComment({
       id: activeMv.value.id,
       commentId: target.rawId,
+      cookie: userStore.loginCookie || undefined,
     });
 
     comments.value = comments.value.filter((item) => item.id !== commentId);

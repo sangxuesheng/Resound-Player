@@ -649,13 +649,14 @@ export async function deleteSongComment(params: { id: number; commentId: number;
   return apiClient.get('/comment', { params: { t: 0, type: 0, id: params.id, commentId: params.commentId, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
 
-export async function deleteMvComment(params: { id: number; commentId: number }) {
+export async function deleteMvComment(params: { id: number; commentId: number; cookie?: string }) {
   return apiClient.get('/comment', {
     params: {
       t: 0,
       type: 1,
       id: params.id,
       commentId: params.commentId,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
