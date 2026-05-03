@@ -525,8 +525,10 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: stretch; transition: grid-template-columns 0.3s ease; }
 .panel-body .right-zone { align-self: stretch; }
+.panel-body .left-zone { align-self: center; }
+.panel-body .comments-overlay { align-self: stretch; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
