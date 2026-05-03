@@ -59,6 +59,9 @@
         </div>
       </template>
     </AnimatedAppear>
+    <transition name="toast-fade">
+      <div v-if="authToast" class="auth-toast">{{ authToast }}</div>
+    </transition>
   </AnimatedAppear>
 </template>
 
@@ -66,6 +69,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { getSongComments, getSongDetail, likeComment, sendComment, deleteSongComment } from '../api/music';
 import { userStore } from '../stores/user';
+import { showLoginModal } from '../stores/loginModal';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 const props = defineProps<{ songId: number }>();
@@ -74,6 +78,17 @@ defineEmits<{ (e: 'back'): void }>();
 const song = ref<any>(null);
 const newComment = ref('');
 const comments = ref<any[]>([]);
+const authToast = ref('');
+
+function requireAuth(): boolean {
+  if (!userStore.isLogin) { showLoginModal(); return false; }
+  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
+    authToast.value = '搜索用户方式登录不支持评论/点赞，请使用扫码或 Cookie 登录';
+    setTimeout(() => { authToast.value = ''; }, 5000);
+    return false;
+  }
+  return true;
+}
 const total = ref(0);
 const loading = ref(true);
 const loadingMore = ref(false);
@@ -85,7 +100,7 @@ const hasMore = computed(() => comments.value.length < total.value);
 async function submitComment() {
   const text = newComment.value.trim();
   if (!text) return;
-  if (!userStore.isLogin) return;
+  if (!requireAuth()) return;
   const res = await sendComment({ id: props.songId, t: 1, content: text, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
   if (res?.data?.code === 200) {
     newComment.value = '';
@@ -105,7 +120,7 @@ async function submitComment() {
 }
 
 async function toggleLike(item: any) {
-  if (!userStore.isLogin) return;
+  if (!requireAuth()) return;
   const liked = !item._liked;
   const cid = item.commentId;
   const res = await likeComment({ id: props.songId, cid, t: liked ? 1 : 0, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
@@ -158,7 +173,7 @@ function toggleReply(item: any) {
 
 async function submitReply(item: any) {
   if (!item._replyDraft?.trim()) return;
-  if (!userStore.isLogin) return;
+  if (!requireAuth()) return;
   const cid = item.commentId;
   if (!cid) return;
   const res = await sendComment({ id: props.songId, t: 2, content: item._replyDraft, commentId: cid, type: 0, cookie: userStore.loginCookie || undefined }).catch(() => null);
@@ -264,4 +279,7 @@ onMounted(async () => {
 .comment-more-btn { padding: 6px 20px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--bg-muted); color: var(--accent); font-size: 13px; cursor: pointer; transition: all 0.12s ease; }
 .comment-more-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg-muted)); }
 .comment-more-btn:disabled { opacity: 0.5; cursor: default; }
+.auth-toast { position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; max-width: 420px; text-align: center; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4; pointer-events: none; z-index: 310; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>

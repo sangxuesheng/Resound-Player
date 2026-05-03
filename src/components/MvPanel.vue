@@ -240,6 +240,9 @@
       </AnimatedAppear>
     </AnimatedAppear>
   </transition>
+  <transition name="toast-fade">
+    <div v-if="authToast" class="auth-toast">{{ authToast }}</div>
+  </transition>
 </template>
 
 <script setup lang="ts">
@@ -257,6 +260,7 @@ import {
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import { userStore } from '../stores/user';
+import { showLoginModal } from '../stores/loginModal';
 import { apiClient } from '../api/client';
 
 const props = withDefaults(
@@ -351,6 +355,17 @@ type MvCommentResponse = {
 };
 
 const loading = ref(false);
+const authToast = ref('');
+
+function requireAuth(): boolean {
+  if (!userStore.isLogin) { showLoginModal(); return false; }
+  if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
+    authToast.value = '搜索用户方式登录不支持评论/点赞，请使用扫码或 Cookie 登录';
+    setTimeout(() => { authToast.value = ''; }, 5000);
+    return false;
+  }
+  return true;
+}
 const error = ref('');
 const list = ref<MvItem[]>([]);
 const hasMore = ref(false);
@@ -558,6 +573,7 @@ async function openMv(item: MvItem) {
 async function submitComment() {
   const content = newCommentText.value.trim();
   if (!content || !activeMv.value) return;
+  if (!requireAuth()) return;
 
   try {
     const cookie = userStore.loginCookie || undefined;
@@ -630,7 +646,7 @@ async function removeComment(commentId: string) {
 }
 
 async function toggleCommentLike(commentId: string) {
-  if (!userStore.isLogin || !activeMv.value) return;
+  if (!requireAuth() || !activeMv.value) return;
   const item = comments.value.find((c) => c.id === commentId);
   if (!item?.rawId) return;
   const liked = !item.liked;
@@ -679,7 +695,7 @@ function toggleReplyEditor(commentId: string) {
 }
 
 async function submitReply(commentId: string) {
-  if (!activeMv.value) return;
+  if (!requireAuth() || !activeMv.value) return;
 
   const target = comments.value.find((item) => item.id === commentId);
   if (!target) return;
@@ -1397,4 +1413,7 @@ watch(
   .reply-editor { flex-direction: column; }
   .reply-submit { width: 100%; }
 }
+.auth-toast { position: fixed; bottom: 12%; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 999px; max-width: 420px; text-align: center; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4; pointer-events: none; z-index: 310; }
+.toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>
