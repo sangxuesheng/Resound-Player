@@ -141,6 +141,7 @@
     <PlayerBar v-show="!playerStore.expanded" />
     <PlayerExpanded @open-artist="openArtistFromPlayer" />
     <MvPlayerModal :mv="activeMvItem" @close="activeMvItem = null" />
+    <LoginModal />
   </div>
 </template>
 
@@ -160,6 +161,7 @@ import SettingsPage from './components/SettingsPage.vue';
 import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
 import SongCommentPage from './components/SongCommentPage.vue';
+import LoginModal from './components/LoginModal.vue';
 import MvPlayerModal from './components/MvPlayerModal.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';

@@ -149,6 +149,7 @@ import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylis
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
+import { showLoginModal } from '../stores/loginModal';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
@@ -620,8 +621,7 @@ function isLiked(songId: number) { return userStore.likedSongIds.includes(Number
 async function toggleLike(song: any) {
   const id = Number(song.id || 0);
   if (!id || likeLoading.value.has(id)) return;
-  // 未登录时不操作
-  if (!userStore.isLogin) return;
+  if (!userStore.isLogin) { showLoginModal(); return; }
   likeLoading.value = new Set([...likeLoading.value, id]);
   try {
     await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
@@ -638,6 +638,7 @@ const showPlaylistPicker = ref(false);
 const playlistPickerList = ref<any[]>([]);
 const pickerTargetSong = ref<any>(null);
 async function showAddToPlaylist(song: any) {
+  if (!userStore.isLogin) { showLoginModal(); return; }
   pickerTargetSong.value = song;
   try {
     const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
