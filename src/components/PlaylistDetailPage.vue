@@ -1108,10 +1108,11 @@ watch(
 }
 /* 操作按钮 */
 .song-item { position: relative; }
-.song-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 2px; }
+.song-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 4px; }
 .song-item:hover .song-actions { display: flex; }
-.sa-btn { width: 32px; height: 32px; border: none; border-radius: 8px; background: transparent; color: rgba(255,255,255,0.45); cursor: pointer; display: grid; place-items: center; transition: all 0.12s ease; }
-.sa-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.sa-btn { width: 34px; height: 34px; border: none; border-radius: 10px; background: var(--card-bg-2); color: rgba(255,255,255,0.5); cursor: pointer; display: grid; place-items: center; transition: color 0.12s ease, background 0.12s ease, transform 0.12s ease; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+.sa-btn:hover { background: var(--card-bg-2); color: #fff; transform: translateY(-1px); }
+.sa-btn:active { transform: translateY(0); }
 .sa-btn.liked { color: #ff6b8a; }
 .sa-btn.liked svg { fill: currentColor; }
 /* 歌单选择器 */
