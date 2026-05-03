@@ -267,6 +267,7 @@ import {
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import { userStore } from '../stores/user';
+import { apiClient } from '../api/client';
 
 const props = withDefaults(
   defineProps<{
@@ -635,7 +636,7 @@ async function toggleCommentLike(commentId: string) {
   if (!item?.rawId) return;
   const liked = !item.liked;
   const cid = item.rawId;
-  const res = await apiClient.get('/comment/like', { params: { id: activeMv.value.id, cid, t: liked ? 1 : 0, type: 1, timestamp: Date.now() } }).catch(() => null);
+  const res = await apiClient.post('/comment/like', null, { params: { id: activeMv.value.id, cid, t: liked ? 1 : 0, type: 1, timestamp: Date.now() } }).catch(() => null);
   if (res?.data?.code === 200) {
     item.liked = liked;
     item.likes += liked ? 1 : -1;
