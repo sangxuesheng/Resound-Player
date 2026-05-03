@@ -136,8 +136,17 @@ async function loadMore() {
 /* 发送评论 */
 async function submitComment() {
   const text = newComment.value.trim();
-  if (!text || !requireAuth()) return;
-  const res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch((e: any) => { console.error('[comment] submit failed', e); return null; });
+  if (!text) return;
+  console.log('[comment] auth', userStore.isLogin, userStore.loginMode);
+  if (!requireAuth()) return;
+  let res: any;
+  try {
+    res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined });
+    console.log('[comment] submit OK', res?.data?.code, res?.data);
+  } catch (e: any) {
+    console.error('[comment] submit ERROR', e, e?.response?.data);
+    return;
+  }
   if (res?.data?.code === 200) {
     newComment.value = '';
     comments.value.unshift({
