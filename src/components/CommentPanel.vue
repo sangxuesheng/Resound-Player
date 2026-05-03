@@ -142,7 +142,7 @@ async function loadMore() {
 async function submitComment() {
   const text = newComment.value.trim();
   if (!text || !requireAuth()) return;
-  const res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch(() => null);
+  const res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined }).catch((e: any) => { console.error('[comment] submit failed', e); return null; });
   if (res?.data?.code === 200) {
     newComment.value = '';
     comments.value.unshift({
