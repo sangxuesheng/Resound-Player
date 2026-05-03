@@ -22,12 +22,13 @@
         <li v-for="(item, idx) in comments" :key="item.id" class="comment-item">
           <div class="comment-main">
             <div class="comment-user-row">
-              <img class="comment-avatar" :src="item.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user" />
-              <span class="comment-user">{{ item.user }}</span>
+              <img class="comment-avatar" :src="item.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user" @click="openUser(item)" />
+              <button class="comment-user" @click="openUser(item)">{{ item.user }}</button>
             </div>
             <p class="comment-content">{{ item.content }}</p>
             <div v-if="item.replyTo" class="comment-reply">
-              <span class="reply-user">@{{ item.replyTo.user }}：</span>
+              <button v-if="item.replyTo.userId" class="reply-user" @click="openUser(item.replyTo)">@{{ item.replyTo.user }}：</button>
+              <span v-else class="reply-user">@{{ item.replyTo.user }}：</span>
               <span class="reply-text">{{ item.replyTo.content }}</span>
             </div>
             <div class="comment-actions">
@@ -93,6 +94,14 @@ const toast = ref('');
 const hasMore = computed(() => comments.value.length < total.value);
 const myNickname = computed(() => userStore.profile?.nickname || '');
 
+/* 用户跳转 */
+const emit = defineEmits<{ (e: 'open-user', userId: number): void }>();
+
+function openUser(item: any) {
+  const uid = item.ownerUserId ?? item.userId;
+  if (uid) emit('open-user', uid);
+}
+
 /* 鉴权 */
 function requireAuth(): boolean {
   if (!userStore.isLogin) { showLoginModal(); return false; }
@@ -118,7 +127,7 @@ async function fetchComments(append = false) {
       likes: c.likedCount ?? 0,
       liked: !!c.liked,
       ownerUserId: c.user?.userId ?? null,
-      replyTo: c.beReplied?.[0] ? { user: c.beReplied[0].user?.nickname, content: c.beReplied[0].content } : null,
+      replyTo: c.beReplied?.[0] ? { user: c.beReplied[0].user?.nickname, content: c.beReplied[0].content, userId: c.beReplied[0].user?.userId ?? null } : null,
       showReply: false,
       replyDraft: '',
       replies: [],
@@ -275,11 +284,15 @@ onMounted(() => fetchComments());
 .comment-list { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; }
 .comment-item { border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; background: var(--bg-muted); list-style: none; }
 .comment-user-row { display: flex; align-items: center; gap: 8px; }
-.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-.comment-user { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.comment-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; flex-shrink: 0; cursor: pointer; }
+.comment-avatar:hover { opacity: 0.8; }
+.comment-user { border: 0; background: transparent; padding: 0; font-size: 13px; font-weight: 600; color: var(--text-main); cursor: pointer; font-family: inherit; }
+.comment-user:hover { color: var(--accent); }
 .comment-content { margin: 6px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); word-break: break-word; }
 .comment-reply { margin: 6px 0; font-size: 13px; line-height: 1.5; color: var(--text-sub); }
 .reply-user { font-weight: 600; color: var(--text-main); }
+.reply-user:is(button) { border: 0; background: transparent; padding: 0; font-size: inherit; font-family: inherit; cursor: pointer; }
+.reply-user:is(button):hover { color: var(--accent); }
 .reply-text { color: var(--text-sub); }
 .comment-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .comment-time { font-size: 12px; color: var(--text-sub); }

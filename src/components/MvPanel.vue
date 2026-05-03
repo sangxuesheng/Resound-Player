@@ -152,6 +152,7 @@
             :sender="api.sendComment"
             :liker="api.likeComment"
             :deleter="api.deleteMvComment"
+            @open-user="(uid) => $emit('open-user', uid)"
           />
         </AnimatedAppear>
       </AnimatedAppear>
@@ -176,6 +177,8 @@ import MvHoverPoster from './MvHoverPoster.vue';
 import * as api from '../api/music';
 import CommentPanel from './CommentPanel.vue';
 import { userStore } from '../stores/user';
+
+defineEmits<{ (e: 'open-user', userId: number): void }>();
 
 const props = withDefaults(
   defineProps<{
