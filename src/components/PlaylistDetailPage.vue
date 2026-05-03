@@ -640,7 +640,7 @@ async function toggleLike(song: any) {
 function playNext(song: any) {
   const idx = playerStore.currentIndex + 1;
   playerStore.playlist.splice(idx, 0, { ...song });
-  showToast('✓ 已添加至播放列表', 'success', 3000);
+  showToast('已添加至播放列表', 'success', 3000);
 }
 const showPlaylistPicker = ref(false);
 const playlistPickerList = ref<any[]>([]);
