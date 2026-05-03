@@ -127,7 +127,7 @@
                   <p v-if="currentArtistList.length" class="comments-head-artist">
                     歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
                   </p>
-                  <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(playerStore.currentTrack?.al?.id)">{{ currentAlbumName }}</button></p>
+                  <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(currentAlbumId)">{{ currentAlbumName }}</button></p>
                 </div>
               </div>
             <CommentPanel
@@ -250,12 +250,16 @@ const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-a
 
 const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist'; });
 function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
-function openAlbum(albumId: number | undefined) { if (albumId) emit('open-album', albumId); }
+function openAlbum(albumId: number | undefined | null) {
+  const id = Number(albumId || 0);
+  if (id > 0) emit('open-album', id);
+}
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
 const currentCover = computed(() => playerStore.currentTrack?.al?.picUrl || '');
 const currentArtistList = computed(() => playerStore.currentTrack?.ar || []);
 const currentAlbumName = computed(() => playerStore.currentTrack?.al?.name || '');
+const currentAlbumId = computed(() => { const al: any = playerStore.currentTrack?.al; return al?.id ? Number(al.id) : 0; });
 
 const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(195, 156, 118)', c4: 'rgb(20, 24, 36)' });
 const showPlaylistPopup = ref(false);
