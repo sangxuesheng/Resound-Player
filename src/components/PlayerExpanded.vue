@@ -41,20 +41,18 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <!-- 正常模式 -->
-        <template v-if="!showComments">
-          <div class="panel-body" :style="panelBodyStyle">
-            <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
-              <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
-              <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
-                <template v-if="playerStore.currentTrack?.ar?.length">
-                  <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
-                </template>
-                <template v-else>{{ artistText }}</template>
-                <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
-              </AnimatedAppear>
-            </div>
-            <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
+        <div class="panel-body" :style="panelBodyStyle">
+          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" v-show="!showComments" class="cover-hidden-head">
+            <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
+            <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
+              <template v-if="playerStore.currentTrack?.ar?.length">
+                <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
+              </template>
+              <template v-else>{{ artistText }}</template>
+              <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
+            </AnimatedAppear>
+          </div>
+          <div v-show="!showComments && showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
               <!-- 封面模式 -->
               <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
                 <Transition name="cover-switch" mode="out-in" appear>
@@ -117,25 +115,21 @@
                 <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
               </div>
             </div>
-            <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
-          </div>
-        </template>
+            <LyricsPanel v-show="!showComments" :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
 
-        <!-- 评论区模式 -->
-        <template v-else>
-          <div class="comments-fullpage">
-            <div class="comments-head">
-              <div class="comments-head-cover">
-                <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+          <div v-show="showComments" class="comments-overlay">
+              <div class="comments-head">
+                <div class="comments-head-cover">
+                  <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
+                </div>
+                <div class="comments-head-info">
+                  <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
+                  <p v-if="currentArtistList.length" class="comments-head-artist">
+                    歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
+                  </p>
+                  <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
+                </div>
               </div>
-              <div class="comments-head-info">
-                <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
-                <p v-if="currentArtistList.length" class="comments-head-artist">
-                  歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
-                </p>
-                <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
-              </div>
-            </div>
             <CommentPanel
               :resource-id="(playerStore.currentTrack?.id as number) || 0"
               :resource-type="0"
@@ -145,7 +139,7 @@
               :deleter="api.deleteSongComment"
             />
           </div>
-        </template>
+        </div>
 
         <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
@@ -174,7 +168,7 @@
           </transition>
         </Teleport>
 
-        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console" :class="{ 'grid-item': showComments }">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -517,9 +511,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; transition: background 0.5s ease; }
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
-.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-3); }
-.bottom-console.grid-item { position: static; }
-.expanded-panel:has(.bottom-console.grid-item) { gap: 0; }
+.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
@@ -528,7 +520,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; grid-template-rows: 1fr; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -883,7 +875,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 
 
 /* 评论区浮层 */
-.comments-fullpage {
+.comments-overlay {
+  overflow-y: auto;
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(6px);
   display: flex;
