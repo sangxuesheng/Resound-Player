@@ -14,6 +14,13 @@ import { showLoginModal } from '../stores/loginModal';
  */
 export function useAuthAction(toastMsg: string, loginIntent: 'like' | 'playlist' = 'like') {
   const authToast = ref('');
+  const toastType = ref<'warning' | 'success'>('warning');
+
+  function showToast(msg: string, type: 'warning' | 'success' = 'warning', duration = 5000) {
+    authToast.value = msg;
+    toastType.value = type;
+    setTimeout(() => { authToast.value = ''; }, duration);
+  }
 
   function checkAuth(): boolean {
     if (!userStore.isLogin) {
@@ -21,12 +28,11 @@ export function useAuthAction(toastMsg: string, loginIntent: 'like' | 'playlist'
       return false;
     }
     if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-      authToast.value = toastMsg;
-      setTimeout(() => { authToast.value = ''; }, 5000);
+      showToast(toastMsg, 'warning', 5000);
       return false;
     }
     return true;
   }
 
-  return { authToast, checkAuth };
+  return { authToast, toastType, checkAuth, showToast };
 }

@@ -140,7 +140,7 @@
     </Teleport>
   </AnimatedAppear>
   <transition name="toast-fade">
-    <div v-if="authToast" class="like-toast">{{ authToast }}</div>
+    <div v-if="authToast" class="like-toast" :class="{ success: toastType === 'success' }">{{ authToast }}</div>
   </transition>
 </template>
 
@@ -619,7 +619,7 @@ watch(
 );
 
 /* 操作按钮 */
-const { authToast, checkAuth } = useAuthAction(
+const { authToast, toastType, checkAuth, showToast } = useAuthAction(
   '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录',
   'like',
 );
@@ -640,8 +640,7 @@ async function toggleLike(song: any) {
 function playNext(song: any) {
   const idx = playerStore.currentIndex + 1;
   playerStore.playlist.splice(idx, 0, { ...song });
-  authToast.value = '已添加至播放列表';
-  setTimeout(() => { authToast.value = ''; }, 3000);
+  showToast('✓ 已添加至播放列表', 'success', 3000);
 }
 const showPlaylistPicker = ref(false);
 const playlistPickerList = ref<any[]>([]);
@@ -1145,6 +1144,7 @@ function openComment(songId: number) {
   color: #fbbf24; font-size: 13px; font-weight: 500; line-height: 1.4;
   pointer-events: none; z-index: 310;
 }
+.like-toast.success { color: #4ade80; }
 .toast-fade-enter-active, .toast-fade-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
 .toast-fade-enter-from, .toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 </style>
