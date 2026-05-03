@@ -570,9 +570,11 @@ async function submitComment() {
   if (!content || !activeMv.value) return;
 
   try {
+    const cookie = userStore.loginCookie || undefined;
     await sendMvComment({
       id: activeMv.value.id,
       content,
+      cookie,
     });
 
     comments.value.unshift({
@@ -690,10 +692,12 @@ async function submitReply(commentId: string) {
   }
 
   try {
+    const cookie = userStore.loginCookie || undefined;
     await sendMvComment({
       id: activeMv.value.id,
       content,
       commentId: target.rawId,
+      cookie,
     });
 
     comments.value = comments.value.map((item) => {

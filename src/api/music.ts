@@ -630,6 +630,7 @@ export async function sendMvComment(params: {
   id: number;
   content: string;
   commentId?: number;
+  cookie?: string;
 }) {
   return apiClient.get('/comment', {
     params: {
@@ -638,6 +639,7 @@ export async function sendMvComment(params: {
       id: params.id,
       content: params.content,
       ...(params.commentId ? { commentId: params.commentId } : {}),
+      ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },
   });
