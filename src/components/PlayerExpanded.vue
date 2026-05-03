@@ -41,8 +41,8 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <div class="panel-body" :class="{ 'comments-active': showComments }" :style="panelBodyStyle">
-          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
+        <div class="panel-body" :style="panelBodyStyle">
+          <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" v-show="!showComments" class="cover-hidden-head">
             <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
               <template v-if="playerStore.currentTrack?.ar?.length">
@@ -52,7 +52,7 @@
               <span v-if="playerStore.playbackRate !== 1" class="rate-badge">{{ playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0') }}x</span>
             </AnimatedAppear>
           </div>
-          <div v-if="showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
+          <div v-show="!showComments && showLeftZone" class="left-zone" :class="{ 'mode-cover': lyricsSettings.displayMode === 'cover', 'mode-record': lyricsSettings.displayMode === 'record', 'l-only-cover': !lyricsSettings.showLyrics }">
             <!-- 封面模式 -->
             <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
               <Transition name="cover-switch" mode="out-in" appear>
@@ -115,7 +115,7 @@
               <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
             </div>
           </div>
-          <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
+          <LyricsPanel v-show="!showComments" :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
 
           <Transition name="comments-slide">
             <div v-if="showComments" class="comments-overlay">
@@ -143,7 +143,7 @@
           </Transition>
         </div>
 
-        <div class="right-actions" :class="{ 'comments-active': showComments }">
+        <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
@@ -514,7 +514,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
-.expanded-panel.comments-panel-open { padding-bottom: 0; }
+.expanded-panel.comments-panel-open { padding-bottom: 0; grid-template-rows: auto 1fr; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
@@ -523,7 +523,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { position: relative; min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
+.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; grid-template-rows: 1fr; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
 .left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
 .left-zone.l-only-cover { padding: var(--space-2) 0; }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
@@ -876,25 +876,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   100% { --hue1: 390deg; --hue2: 540deg; }
 }
 
-/* 评论区模式：淡出左区和歌词 */
-.panel-body.comments-active > :not(.comments-overlay) {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-/* 右侧控制中心隐藏 */
-.right-actions.comments-active {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
 
 /* 评论区浮层 */
 .comments-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
+  grid-column: 1 / -1;
+  align-self: stretch;
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
   backdrop-filter: blur(6px);
   display: flex;
