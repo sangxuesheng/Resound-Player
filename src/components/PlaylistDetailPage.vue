@@ -585,49 +585,6 @@ async function playOne(index: number) {
   await playerStore.playByIndex(index);
 }
 
-/* 操作按钮 */
-const likeLoading = ref<Set<number>>(new Set());
-function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
-async function toggleLike(song: any) {
-  const id = Number(song.id || 0);
-  if (!id || likeLoading.value.has(id)) return;
-  likeLoading.value = new Set([...likeLoading.value, id]);
-  try {
-    await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
-    if (isLiked(id)) userStore.likedSongIds = userStore.likedSongIds.filter((x) => x !== id);
-    else userStore.likedSongIds = [...userStore.likedSongIds, id];
-  } catch {}
-  finally { const s = new Set(likeLoading.value); s.delete(id); likeLoading.value = s; }
-}
-
-function playNext(song: any) {
-  const idx = playerStore.currentIndex + 1;
-  playerStore.playlist.splice(idx, 0, { ...song });
-}
-
-const showPlaylistPicker = ref(false);
-const playlistPickerList = ref<any[]>([]);
-const pickerTargetSong = ref<any>(null);
-async function showAddToPlaylist(song: any) {
-  pickerTargetSong.value = song;
-  try {
-    const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
-    playlistPickerList.value = (res.data?.playlist || []).filter((p: any) => !p.subscribed);
-  } catch { playlistPickerList.value = []; }
-  showPlaylistPicker.value = true;
-}
-async function confirmAddToPlaylist(pid: number) {
-  const song = pickerTargetSong.value;
-  if (!song) return;
-  try {
-    await addTrackToPlaylist(pid, [Number(song.id || 0)], userStore.loginCookie || undefined);
-  } catch {}
-  showPlaylistPicker.value = false;
-}
-function openComment(songId: number) {
-  emit('open-comment', songId);
-}
-
 onMounted(() => {
   fetchDetail(props.playlistId);
   void loadHistoryDates();
@@ -656,6 +613,47 @@ watch(
   },
   { deep: true },
 );
+
+/* 操作按钮 */
+const likeLoading = ref<Set<number>>(new Set());
+function isLiked(songId: number) { return userStore.likedSongIds.includes(Number(songId)); }
+async function toggleLike(song: any) {
+  const id = Number(song.id || 0);
+  if (!id || likeLoading.value.has(id)) return;
+  likeLoading.value = new Set([...likeLoading.value, id]);
+  try {
+    await toggleSongLike({ id, like: !isLiked(id), uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
+    if (isLiked(id)) userStore.likedSongIds = userStore.likedSongIds.filter((x) => x !== id);
+    else userStore.likedSongIds = [...userStore.likedSongIds, id];
+  } catch {}
+  finally { const s = new Set(likeLoading.value); s.delete(id); likeLoading.value = s; }
+}
+function playNext(song: any) {
+  const idx = playerStore.currentIndex + 1;
+  playerStore.playlist.splice(idx, 0, { ...song });
+}
+const showPlaylistPicker = ref(false);
+const playlistPickerList = ref<any[]>([]);
+const pickerTargetSong = ref<any>(null);
+async function showAddToPlaylist(song: any) {
+  pickerTargetSong.value = song;
+  try {
+    const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
+    playlistPickerList.value = (res.data?.playlist || []).filter((p: any) => !p.subscribed);
+  } catch { playlistPickerList.value = []; }
+  showPlaylistPicker.value = true;
+}
+async function confirmAddToPlaylist(pid: number) {
+  const song = pickerTargetSong.value;
+  if (!song) return;
+  try {
+    await addTrackToPlaylist(pid, [Number(song.id || 0)], userStore.loginCookie || undefined);
+  } catch {}
+  showPlaylistPicker.value = false;
+}
+function openComment(songId: number) {
+  emit('open-comment', songId);
+}
 </script>
 
 <style scoped>
@@ -1125,3 +1123,4 @@ watch(
 .pp-empty { padding: var(--space-4); text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
 .pp-close { padding: 8px; border: none; border-radius: 10px; background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); cursor: pointer; font-size: 13px; }
 .pp-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+</style>
