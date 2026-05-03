@@ -1,33 +1,39 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="comment-page">
-    <header class="comment-head">
-      <button class="ghost" @click="$emit('back')">返回</button>
-      <h2 class="comment-title">{{ song?.name || '歌曲评论' }}</h2>
-      <span class="comment-count">{{ total }} 条评论</span>
-    </header>
+    <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="comment-panel">
+      <div class="comment-head">
+        <h4 class="comment-title">{{ song?.name || '歌曲评论' }}</h4>
+        <span class="comment-count">{{ total }} 条</span>
+      </div>
 
-    <div v-if="loading" class="comment-status">评论加载中…</div>
-    <div v-else-if="!comments.length" class="comment-status">暂无评论</div>
-    <ul v-else class="comment-list">
-      <li v-for="item in comments" :key="item.commentId" class="comment-item">
-        <img class="comment-avatar" :src="item.user?.avatarUrl + '?param=40y40'" :alt="item.user?.nickname" />
-        <div class="comment-body">
-          <div class="comment-user">{{ item.user?.nickname }}</div>
-          <div class="comment-content">{{ item.content }}</div>
-          <div v-if="item.beReplied?.length" class="comment-reply">
-            <span class="reply-user">{{ item.beReplied[0].user?.nickname }}：</span>
-            <span class="reply-text">{{ item.beReplied[0].content }}</span>
-          </div>
-          <div class="comment-meta">
-            <span class="comment-time">{{ formatTime(item.time) }}</span>
-            <span class="comment-liked">❤ {{ item.likedCount || 0 }}</span>
-          </div>
+      <div v-if="loading" class="comment-loading">评论加载中…</div>
+      <div v-else-if="!comments.length" class="comment-empty">暂无评论</div>
+
+      <template v-else>
+        <AnimatedAppear tag="ul" variant="content" rhythm="list" class-name="comment-list">
+          <AnimatedAppear v-for="(item, idx) in comments" :key="item.commentId" tag="li" variant="text" rhythm="list" :index="idx" class-name="comment-item">
+            <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="comment-main">
+              <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="comment-user-row">
+                <img class="comment-avatar" :src="item.user?.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user?.nickname" />
+                <AnimatedAppear tag="div" variant="text" rhythm="list" :index="idx" class-name="comment-user">{{ item.user?.nickname }}</AnimatedAppear>
+              </AnimatedAppear>
+              <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="comment-content">{{ item.content }}</AnimatedAppear>
+              <div v-if="item.beReplied?.length" class="comment-reply">
+                <span class="reply-user">@{{ item.beReplied[0].user?.nickname }}：</span>
+                <span class="reply-text">{{ item.beReplied[0].content }}</span>
+              </div>
+              <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="idx" class-name="comment-actions">
+                <span class="comment-time">{{ formatTime(item.time) }}</span>
+                <span class="comment-likes">❤ {{ item.likedCount || 0 }}</span>
+              </AnimatedAppear>
+            </AnimatedAppear>
+          </AnimatedAppear>
+        </AnimatedAppear>
+        <div v-if="hasMore" class="comment-more-wrap">
+          <button class="comment-more-btn" @click="loadMore" :disabled="loadingMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
         </div>
-      </li>
-    </ul>
-    <div v-if="hasMore" class="comment-more">
-      <button class="ghost" @click="loadMore" :disabled="loadingMore">加载更多</button>
-    </div>
+      </template>
+    </AnimatedAppear>
   </AnimatedAppear>
 </template>
 
@@ -58,7 +64,7 @@ async function fetchComments(append = false) {
     total.value = data?.total || data?.totalCount || 0;
     const newComments = data?.comments || [];
     comments.value = append ? [...comments.value, ...newComments] : newComments;
-  } catch {}
+  } catch { console.error('[comment] fetch failed'); }
   finally { loading.value = false; loadingMore.value = false; }
 }
 
@@ -70,7 +76,11 @@ async function loadMore() {
 function formatTime(ms: number) {
   if (!ms) return '';
   const date = new Date(ms);
-  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+  const now = Date.now();
+  const diff = now - ms;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
 onMounted(async () => {
@@ -83,23 +93,28 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.comment-page { padding: var(--space-4); max-width: 800px; margin: 0 auto; }
-.comment-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
-.comment-title { margin: 0; color: #fff; font-size: 20px; font-weight: 700; }
-.comment-count { color: rgba(255,255,255,0.4); font-size: 13px; }
-.comment-status { text-align: center; padding: var(--space-6); color: rgba(255,255,255,0.4); font-size: 14px; }
-.comment-list { display: grid; gap: var(--space-3); list-style: none; margin: 0; padding: 0; }
-.comment-item { display: flex; gap: var(--space-3); padding: var(--space-3); border-radius: 12px; background: rgba(255,255,255,0.03); }
-.comment-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; }
-.comment-body { min-width: 0; display: grid; gap: 4px; }
-.comment-user { color: var(--accent); font-size: 13px; font-weight: 600; }
-.comment-content { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; word-break: break-word; }
-.comment-reply { padding: var(--space-2); border-radius: 8px; background: rgba(255,255,255,0.04); font-size: 13px; }
+.comment-page { padding: var(--space-4); max-width: 700px; margin: 0 auto; }
+.comment-panel { border-radius: 16px; border: 1px solid var(--border-soft); background: var(--bg-solid); padding: 16px; box-sizing: border-box; width: 100%; }
+.comment-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.comment-title { margin: 0; font-size: 16px; color: var(--text-main); }
+.comment-count { font-size: 12px; color: var(--text-sub); }
+.comment-loading, .comment-empty { padding: 32px 0; text-align: center; color: var(--text-sub); font-size: 14px; }
+.comment-list { display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; }
+.comment-item { list-style: none; }
+.comment-main { padding: 10px; border-radius: 10px; transition: background 0.12s ease; }
+.comment-main:hover { background: var(--bg-muted); }
+.comment-user-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.comment-avatar { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; }
+.comment-user { font-size: 13px; font-weight: 600; color: var(--accent); }
+.comment-content { margin: 4px 0; color: var(--text-main); font-size: 14px; line-height: 1.5; word-break: break-word; }
+.comment-reply { padding: 6px 10px; border-radius: 8px; background: var(--bg-muted); font-size: 13px; margin: 4px 0; }
 .reply-user { color: var(--accent); }
-.reply-text { color: rgba(255,255,255,0.55); }
-.comment-meta { display: flex; align-items: center; gap: var(--space-3); color: rgba(255,255,255,0.3); font-size: 12px; }
-.comment-time { }
-.comment-liked { }
-.comment-more { text-align: center; padding: var(--space-4); }
-.ghost { height: 32px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #fff; padding: 0 var(--space-3); cursor: pointer; }
+.reply-text { color: var(--text-sub); }
+.comment-actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.comment-time { color: var(--text-sub); font-size: 12px; }
+.comment-likes { color: var(--text-sub); font-size: 12px; }
+.comment-more-wrap { text-align: center; padding-top: 12px; }
+.comment-more-btn { padding: 6px 20px; border-radius: 999px; border: 1px solid var(--border-soft); background: var(--bg-muted); color: var(--accent); font-size: 13px; cursor: pointer; transition: all 0.12s ease; }
+.comment-more-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--bg-muted)); }
+.comment-more-btn:disabled { opacity: 0.5; cursor: default; }
 </style>
