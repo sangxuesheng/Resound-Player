@@ -702,7 +702,7 @@ export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?:
 }
 
 export async function likeComment(params: { id: number; cid: number; t: number; type: number; cookie?: string }) {
-  return apiClient.get('/comment/like', { params: { ...params, timestamp: Date.now() } });
+  return apiClient.post('/comment/like', null, { params: { id: params.id, cid: params.cid, t: params.t, type: params.type, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function toggleDjSubscribe(params: { rid: number; subscribe: boolean; cookie?: string }) {
