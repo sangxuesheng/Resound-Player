@@ -127,7 +127,7 @@
                   <p v-if="currentArtistList.length" class="comments-head-artist">
                     歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
                   </p>
-                  <p v-if="currentAlbumName" class="comments-head-album">专辑：{{ currentAlbumName }}</p>
+                  <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(playerStore.currentTrack?.al?.id)">{{ currentAlbumName }}</button></p>
                 </div>
               </div>
             <CommentPanel
@@ -246,10 +246,11 @@ import CommentPanel from './CommentPanel.vue';
 import * as api from '../api/music';
 import { openSelection } from '../stores/lyricsSelection';
 
-const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>] }>();
+const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number] }>();
 
 const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist'; });
 function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
+function openAlbum(albumId: number | undefined) { if (albumId) emit('open-album', albumId); }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 
 const currentCover = computed(() => playerStore.currentTrack?.al?.picUrl || '');

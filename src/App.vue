@@ -140,7 +140,7 @@
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
-    <PlayerExpanded @open-artist="openArtistFromPlayer" />
+    <PlayerExpanded @open-artist="openArtistFromPlayer" @open-album="(albumId) => openAlbumDetail(albumId, activePage.value)" />
     <LoginModal />
   </div>
 </template>
