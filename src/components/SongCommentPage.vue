@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { getSongComments, getSongDetail } from '../api/music';
 import AnimatedAppear from './AnimatedAppear.vue';
 
@@ -53,11 +53,12 @@ async function fetchComments(append = false) {
   if (!append) { loading.value = true; offset.value = 0; } else loadingMore.value = true;
   try {
     const res = await getSongComments({ id: props.songId, limit: LIMIT, offset: offset.value });
-    const data = res.data;
-    total.value = data?.total || 0;
+    const body = res.data;
+    const data = body?.data || body || {};
+    total.value = data?.total || data?.totalCount || 0;
     const newComments = data?.comments || [];
     comments.value = append ? [...comments.value, ...newComments] : newComments;
-  } catch { /* ignore */ }
+  } catch {}
   finally { loading.value = false; loadingMore.value = false; }
 }
 
