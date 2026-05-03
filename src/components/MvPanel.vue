@@ -606,12 +606,9 @@ async function loadMoreComments() {
 }
 
 function canDeleteComment(comment: CommentItem) {
-  const loginUserId = userStore.profile?.userId;
-  if (!loginUserId) return false;
-  if (comment.rawId) {
-    return comment.ownerUserId != null ? comment.ownerUserId === loginUserId : comment.user === userStore.profile?.nickname;
-  }
-  return comment.user === '我';
+  const uid = userStore.profile?.userId;
+  if (!uid) return false;
+  return comment.user === '我' || comment.ownerUserId === uid;
 }
 
 async function removeComment(commentId: string) {
