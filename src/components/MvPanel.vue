@@ -139,107 +139,20 @@
             </AnimatedAppear>
           </AnimatedAppear>
 
-          <AnimatedAppear tag="section" variant="content" rhythm="body" class-name="comment-panel">
-            <div class="comment-head">
-              <h4 class="comment-title">评论区</h4>
-              <span class="comment-count">{{ commentsTotal || comments.length }} 条</span>
-            </div>
-
-            <AnimatedAppear tag="div" variant="content" rhythm="actions" class-name="comment-stats">
-              <AnimatedAppear tag="span" variant="control" rhythm="actions" class-name="stat-chip">点赞 {{ formatCount(mvMeta?.likedCount || 0) }}</AnimatedAppear>
-              <AnimatedAppear tag="span" variant="control" rhythm="actions" class-name="stat-chip">转发 {{ formatCount(mvMeta?.shareCount || 0) }}</AnimatedAppear>
-              <AnimatedAppear tag="span" variant="control" rhythm="actions" class-name="stat-chip">评论 {{ formatCount(mvMeta?.commentCount || commentsTotal || comments.length) }}</AnimatedAppear>
-            </AnimatedAppear>
-
-            <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="comment-editor">
-              <textarea
-                v-model="newCommentText"
-                class="comment-input"
-                maxlength="300"
-                placeholder="写下你的评论..."
-              />
-              <div class="comment-editor-actions">
-                <span class="comment-limit">{{ newCommentText.length }}/300</span>
-                <button type="button" class="comment-submit" :disabled="!newCommentText.trim()" @click="submitComment">
-                  发表评论
-                </button>
-              </div>
-            </AnimatedAppear>
-
-            <AnimatedAppear v-if="commentsError" tag="p" variant="text" rhythm="body" class-name="comment-error">{{ commentsError }}</AnimatedAppear>
-            <AnimatedAppear v-else-if="commentsLoading && !comments.length" tag="p" variant="text" rhythm="body" class-name="comment-loading">评论加载中…</AnimatedAppear>
-            <AnimatedAppear v-else-if="!comments.length" tag="p" variant="text" rhythm="body" class-name="comment-empty">暂无评论</AnimatedAppear>
-
-            <AnimatedAppear v-if="comments.length" tag="ul" variant="content" rhythm="list" class-name="comment-list">
-              <AnimatedAppear v-for="(comment, idx) in comments" :key="comment.id" tag="li" variant="text" rhythm="list" :index="idx" class-name="comment-item">
-                <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="comment-main">
-                  <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="comment-user-row">
-                    <AnimatedAppear v-if="comment.avatarUrl" tag="img" variant="media" rhythm="list" :index="idx" :src="comment.avatarUrl" class-name="comment-avatar" alt="头像" />
-                    <AnimatedAppear v-else tag="div" variant="text" rhythm="list" :index="idx" class-name="comment-avatar fallback">{{ comment.user.charAt(0) }}</AnimatedAppear>
-                    <AnimatedAppear tag="div" variant="text" rhythm="list" :index="idx" class-name="comment-user">{{ comment.user }}</AnimatedAppear>
-                  </AnimatedAppear>
-                  <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="comment-content">{{ comment.content }}</AnimatedAppear>
-                  <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="idx" class-name="comment-actions">
-                    <AnimatedAppear tag="span" variant="text" rhythm="body" :index="idx" class-name="comment-time">{{ comment.time }}</AnimatedAppear>
-                    <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="idx" type="button" class-name="text-btn" @click="toggleCommentLike(comment.id)">
-                      {{ comment.liked ? '取消赞' : '点赞' }}({{ comment.likes }})
-                    </AnimatedAppear>
-                    <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="idx" type="button" class-name="text-btn" @click="toggleReplyEditor(comment.id)">
-                      {{ comment.showReplyEditor ? '取消回复' : '回复' }}
-                    </AnimatedAppear>
-                    <button v-if="canDeleteComment(comment)" type="button" class="text-btn danger" @click="removeComment(comment.id)">删除</button>
-                  </AnimatedAppear>
-                </AnimatedAppear>
-
-                <AnimatedAppear v-if="comment.showReplyEditor" tag="div" variant="content" rhythm="body" class-name="reply-editor">
-                  <input
-                    v-model="comment.replyDraft"
-                    class="reply-input"
-                    type="text"
-                    maxlength="200"
-                    placeholder="回复这条评论..."
-                  />
-                  <button
-                    type="button"
-                    class="reply-submit"
-                    :disabled="!(comment.replyDraft || '').trim()"
-                    @click="submitReply(comment.id)"
-                  >
-                    发送
-                  </button>
-                </AnimatedAppear>
-
-                <AnimatedAppear v-if="comment.replies.length" tag="ul" variant="content" rhythm="list" class-name="reply-list">
-                  <AnimatedAppear v-for="(reply, replyIdx) in comment.replies" :key="reply.id" tag="li" variant="text" rhythm="list" :index="replyIdx" class-name="reply-item">
-                    <AnimatedAppear tag="div" variant="text" rhythm="list" :index="replyIdx" class-name="reply-user">{{ reply.user }}</AnimatedAppear>
-                    <AnimatedAppear tag="p" variant="text" rhythm="list" :index="replyIdx" class-name="reply-content">{{ reply.content }}</AnimatedAppear>
-                    <AnimatedAppear tag="div" variant="content" rhythm="actions" :index="replyIdx" class-name="comment-actions">
-                      <AnimatedAppear tag="span" variant="text" rhythm="body" :index="replyIdx" class-name="comment-time">{{ reply.time }}</AnimatedAppear>
-                      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="replyIdx" type="button" class-name="text-btn" @click="toggleReplyLike(comment.id, reply.id)">
-                        {{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})
-                      </AnimatedAppear>
-                      <button v-if="reply.user?.trim().toLowerCase() === userStore.profile?.nickname?.trim().toLowerCase()" class="text-btn danger" @click="removeReply(comment, replyIdx)">删除</button>
-                    </AnimatedAppear>
-                  </AnimatedAppear>
-                </AnimatedAppear>
-              </AnimatedAppear>
-            </AnimatedAppear>
-
-            <AnimatedAppear tag="div" variant="content" rhythm="actions" class-name="comment-footer">
-              <button
-                type="button"
-                class="comment-more"
-                :disabled="commentsLoading || !commentsHasMore || !activeMv"
-                @click="loadMoreComments"
-              >
-                {{ commentsLoading && comments.length ? '加载中…' : commentsHasMore ? '加载更多评论' : '没有更多评论了' }}
-              </button>
-            </AnimatedAppear>
+          <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="mv-comment-stats">
+            <span class="stat-chip">点赞 {点赞 {{ formatCount(mvMeta?.likedCount || 0) }}</AnimatedAppear></span>
+            <span class="stat-chip">转发 {转发 {{ formatCount(mvMeta?.shareCount || 0) }}</AnimatedAppear></span>
+            <span class="stat-chip">评论 {评论 {{ formatCount(mvMeta?.commentCount || commentsTotal || comments.length) }}</AnimatedAppear></span>
           </AnimatedAppear>
-        </AnimatedAppear>
-      </AnimatedAppear>
-    </AnimatedAppear>
-  </transition>
+          <CommentPanel
+            :resource-id="activeMv?.id || 0"
+            :resource-type="1"
+            title="评论区"
+            :fetcher="api.getMvComments"
+            :sender="api.sendComment"
+            :liker="api.likeComment"
+            :deleter="api.deleteMvComment"
+          />  </transition>
   <transition name="toast-fade">
     <div v-if="authToast" class="auth-toast">{{ authToast }}</div>
   </transition>
@@ -260,8 +173,9 @@ import {
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import { userStore } from '../stores/user';
-import { showLoginModal } from '../stores/loginModal';
 import { apiClient } from '../api/client';
+import * as api from '../api/music';
+import CommentPanel from './CommentPanel.vue';
 
 const props = withDefaults(
   defineProps<{
