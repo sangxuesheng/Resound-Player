@@ -80,7 +80,7 @@
             @open-artist="openArtistFromRank"
           />
           <MvPlayPage v-else-if="activePage === 'mv-play'" :mv="activeMvItem" :back-label="mvBackLabel" @back="goBackFromMvPlay" @open-user="openUserFromComment" />
-          <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" @open-user="openUserFromComment" />
+          <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" @open-user="openUserFromComment" @play-mv="openMvFromSearch" />
           <UserPanel
             v-else-if="activePage === 'user'"
             class="user-page-host"

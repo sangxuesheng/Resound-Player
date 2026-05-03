@@ -70,7 +70,7 @@
 
     <AnimatedAppear v-if="list.length" tag="div" variant="content" rhythm="list" class-name="list-wrap">
       <AnimatedAppear v-for="(item, idx) in list" :key="item.id" tag="article" variant="media" rhythm="list" :index="idx" class-name="card">
-        <MvHoverPoster :src="item.cover" :alt="item.name" :count="item.playCount" @click="openMv(item)" />
+        <MvHoverPoster :src="item.cover" :alt="item.name" :count="item.playCount" @click="playMv(item)" />
         <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="info">
           <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="name" :title="item.name">{{ item.name }}</AnimatedAppear>
           <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="sub">{{ item.artistName || '未知歌手' }}</AnimatedAppear>
@@ -178,7 +178,11 @@ import * as api from '../api/music';
 import CommentPanel from './CommentPanel.vue';
 import { userStore } from '../stores/user';
 
-defineEmits<{ (e: 'open-user', userId: number): void }>();
+const emit = defineEmits<{ (e: 'open-user', userId: number): void; (e: 'play-mv', item: any): void }>();
+
+function playMv(item: any) {
+  emit('play-mv', item);
+}
 
 const props = withDefaults(
   defineProps<{
