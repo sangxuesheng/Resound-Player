@@ -32,7 +32,7 @@
           :has-lyric="true"
         />
       </div>
-      <section class="expanded-panel">
+      <section class="expanded-panel" :class="{ 'comments-open': showComments }">
         <AnimatedAppear v-show="!showComments" tag="header" variant="content" rhythm="head" class-name="panel-head">
           <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
           <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
@@ -168,7 +168,7 @@
           </transition>
         </Teleport>
 
-        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console" :attrs="showComments ? { 'data-grid-item': '' } : {}" :class="{ 'grid-item': showComments }">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -517,6 +517,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
+.expanded-panel.comments-open { padding-bottom: 0; gap: 0; grid-template-rows: 0 1fr auto; }
+.bottom-console.grid-item { position: static; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
