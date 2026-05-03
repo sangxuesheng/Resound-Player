@@ -229,6 +229,7 @@
                       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="replyIdx" type="button" class-name="text-btn" @click="toggleReplyLike(comment.id, reply.id)">
                         {{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})
                       </AnimatedAppear>
+                      <button v-if="reply.user === userStore.profile?.nickname" class="text-btn danger" @click="removeReply(comment, replyIdx)">删除</button>
                     </AnimatedAppear>
                   </AnimatedAppear>
                 </AnimatedAppear>
@@ -644,6 +645,10 @@ async function toggleCommentLike(commentId: string) {
     item.liked = liked;
     item.likes += liked ? 1 : -1;
   }
+}
+
+function removeReply(comment: any, replyIdx: number) {
+  comment.replies.splice(replyIdx, 1);
 }
 
 function toggleReplyLike(commentId: string, replyId: string) {
