@@ -187,18 +187,7 @@
                     <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="idx" type="button" class-name="text-btn" @click="toggleReplyEditor(comment.id)">
                       {{ comment.showReplyEditor ? '取消回复' : '回复' }}
                     </AnimatedAppear>
-                    <AnimatedAppear
-                      v-if="canDeleteComment(comment)"
-                      tag="button"
-                      variant="control"
-                      rhythm="actions"
-                      :index="idx"
-                      type="button"
-                      class-name="text-btn danger"
-                      @click="removeComment(comment.id)"
-                    >
-                      删除
-                    </AnimatedAppear>
+                    <button type="button" class="text-btn danger" @click="removeComment(comment.id)">删除</button>
                   </AnimatedAppear>
                 </AnimatedAppear>
 
