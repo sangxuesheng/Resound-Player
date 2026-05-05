@@ -13,6 +13,7 @@ desktop-dist/
 .npm-cache/
 .electron-cache/
 .electron-builder-cache/
+.pnpm-store/
 
 # local env
 .env
@@ -23,10 +24,14 @@ desktop-dist/
 .cursor/
 .lingma/
 .claude/
+.codeartsdoer/
 .codex
 
 # OS files
 .DS_Store
+
+# project generated assets
+.arts/
 
 # reference materials not for repository
 播放页相关/
