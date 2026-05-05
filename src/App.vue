@@ -277,6 +277,7 @@ function onSelectMenu(key: string) {
 }
 
 function openPlaylistDetail(playlistId: number, _coverUrl?: string, returnPage = 'playlist') {
+  dailyInjectedPlaylist.value = null;
   activePlaylistId.value = playlistId;
   activePlaylistReturnPage.value = returnPage;
   activePage.value = 'playlist-detail';

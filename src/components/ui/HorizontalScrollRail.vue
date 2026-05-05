@@ -19,7 +19,7 @@
       class="horizontal-scroll-rail__content ui-safe-rail"
       :class="[contentClass, `horizontal-scroll-rail__content--${contentLayout}`]"
       @scroll.passive="emitScroll"
-      @wheel.passive="emitWheel"
+      @wheel="onWheel"
     >
       <slot />
     </div>
@@ -96,9 +96,22 @@ function emitScroll(event: Event) {
   emit('rail-scroll', event, root);
 }
 
-function emitWheel(event: WheelEvent) {
+function onWheel(event: WheelEvent) {
   const root = railRef.value;
   if (!root) return;
+
+  const canScroll = root.scrollWidth > root.clientWidth;
+  if (!canScroll) return;
+
+  const absDeltaX = Math.abs(event.deltaX);
+  const absDeltaY = Math.abs(event.deltaY);
+  if (absDeltaY <= absDeltaX) {
+    emit('rail-wheel', event, root);
+    return;
+  }
+
+  event.preventDefault();
+  root.scrollBy({ left: event.deltaY, behavior: 'auto' });
   emit('rail-wheel', event, root);
 }
 

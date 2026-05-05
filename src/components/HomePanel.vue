@@ -233,31 +233,30 @@
             <AnimatedAppear
               v-for="(item, idx) in visibleAlbums"
               :key="item.id"
-              tag="button"
               variant="media"
               rhythm="list"
               :index="idx"
-              class-name="album album-gradient-card hover-play-button-trigger"
-              :style="{ '--album-cover': `url(${item.pic || ''})` }"
-              @click="openAlbumDetail(item.id)"
             >
-              <div class="album-media-shell album-cover" :style="{ backgroundImage: `url(${item.pic})` }">
-                <div class="album-cover-motion-shell"></div>
-                <HoverPlayButton class="hover-play-button--sm" />
-              </div>
-              <div class="album-name">{{ item.name }}</div>
-              <div class="album-artist">
-                <button
-                  v-for="artist in getAlbumArtists(item)"
-                  :key="`${item.id}-${artist.id || artist.name}`"
-                  type="button"
-                  class="artist-inline-btn"
-                  @click.stop="openArtistDetail(artist)"
-                >
-                  {{ artist.name || '未知歌手' }}
-                </button>
-                <span v-if="!getAlbumArtists(item).length">{{ item.artist }}</span>
-              </div>
+              <GradientCard
+                tag="button"
+                :cover="item.pic"
+                :name="item.name"
+                hover-play-size="sm"
+                @click="openAlbumDetail(item.id)"
+              >
+                <template #subtitle>
+                  <button
+                    v-for="artist in getAlbumArtists(item)"
+                    :key="`${item.id}-${artist.id || artist.name}`"
+                    type="button"
+                    class="artist-inline-btn"
+                    @click.stop="openArtistDetail(artist)"
+                  >
+                    {{ artist.name || '未知歌手' }}
+                  </button>
+                  <span v-if="!getAlbumArtists(item).length">{{ item.artist }}</span>
+                </template>
+              </GradientCard>
             </AnimatedAppear>
           </div>
           <p v-if="albums.length && visibleAlbumCount >= albums.length" class="list-hint">已经到底啦</p>
@@ -378,6 +377,7 @@ import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
 import GridLayoutEditor from './GridLayoutEditor.vue';
+import GradientCard from './ui/GradientCard.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
 import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
@@ -1577,86 +1577,6 @@ async function playLatestSong(index: number) {
 .ops { display: flex; gap: 8px; }
 .icon-btn-wrap { display: inline-flex; align-items: center; }
 .album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.album {
-  border: none;
-  background: transparent;
-  padding: 0;
-  text-align: left;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-}
-.album-gradient-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: var(--album-cover);
-  background-size: cover;
-  background-position: center;
-  opacity: 0.9;
-  filter: saturate(0.92) contrast(0.96);
-}
-.album-gradient-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.2) 28%,
-    rgba(255, 255, 255, 0.52) 62%,
-    rgba(255, 255, 255, 0.92) 100%
-  );
-}
-.album-gradient-card .album-cover,
-.album-gradient-card .album-name,
-.album-gradient-card .album-artist {
-  position: relative;
-  z-index: 2;
-}
-.album-cover { --hover-play-button-size: 30px; --hover-play-button-offset: 8px; position: relative; overflow: hidden; width: 100%; aspect-ratio: 1; border-radius: 12px; background: var(--bg-soft) center/cover no-repeat; }
-.album-media-shell {
-  transform: translateZ(0);
-}
-.album-cover-motion-shell {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background-image: inherit;
-  background-size: cover;
-  background-position: center;
-  transition:
-    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
-    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
-  transform: scale(1);
-  transform-origin: center center;
-  will-change: transform;
-}
-@media (hover: hover) and (pointer: fine) {
-  .album-media-shell:hover .album-cover-motion-shell,
-  .album-media-shell:focus-within .album-cover-motion-shell {
-    transform: scale(var(--image-hover-scale, 1.04));
-    filter: saturate(var(--image-hover-saturate, 1.04));
-  }
-}
-.album-name {
-  margin: 8px var(--space-2) 0;
-  color: var(--text-main);
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.42;
-}
-.album-artist {
-  margin: 2px var(--space-2) var(--space-2);
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.35;
-}
 :deep(.latest-scroll) {
   --horizontal-scroll-gap: 0;
   --horizontal-scroll-padding-bottom: 0;

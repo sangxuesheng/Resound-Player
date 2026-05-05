@@ -17,21 +17,24 @@
       :class="{ 'cat-header--fixed': stickyFallbackActive }"
       :style="{ '--playlist-panel-sticky-top': `${stickyTopOffset}px` }"
     >
-      <div class="cat-header-inner" :class="{ 'cat-header-inner--fixed': stickyFallbackActive }">
-        <div class="cat-tags ui-safe-rail" role="tablist" aria-label="歌单分类">
-          <button
-            v-for="cat in allCatsFlat"
-            :key="cat"
-            class="tag"
-            :class="{ active: activeCat === cat }"
-            role="tab"
-            :aria-selected="activeCat === cat"
-            @click="setCat(cat)"
-          >
-            {{ cat }}
-          </button>
-        </div>
-      </div>
+      <HorizontalScrollRail
+        aria-label="歌单分类"
+        content-layout="flex"
+        content-class="cat-tags"
+        :style="{ '--horizontal-scroll-gap': 'var(--space-2)' }"
+      >
+        <button
+          v-for="cat in allCatsFlat"
+          :key="cat"
+          class="tag"
+          :class="{ active: activeCat === cat }"
+          role="tab"
+          :aria-selected="activeCat === cat"
+          @click="setCat(cat)"
+        >
+          {{ cat }}
+        </button>
+      </HorizontalScrollRail>
     </div>
 
     <PlaylistHighlightSection
@@ -45,24 +48,19 @@
       <AnimatedAppear
         v-for="(item, idx) in playlists"
         :key="item.id"
-        tag="article"
         variant="media"
         rhythm="list"
         :index="idx"
-        class-name="card playlist-gradient-card hover-play-button-trigger"
-        :style="{ '--playlist-cover': `url(${resolveCover(item)})` }"
-        @click="openDetail(item.id)"
       >
-        <div class="cover playlist-card-media-shell">
-          <div class="playlist-card-cover-motion-shell">
-            <img class="playlist-card-cover-image" :src="resolveCover(item)" :alt="item.name" loading="lazy" />
-          </div>
-          <HoverPlayButton :count="item.playCount" size="md" />
-        </div>
-        <div class="info">
-          <p class="name" :title="item.name">{{ item.name }}</p>
-          <p class="sub">{{ item.creator?.nickname || '未知用户' }} · {{ item.trackCount || 0 }} 首</p>
-        </div>
+        <GradientCard
+          tag="article"
+          :cover="resolveCover(item)"
+          :name="item.name"
+          :subtitle="`${item.creator?.nickname || '未知用户'} · ${item.trackCount || 0} 首`"
+          hover-play-size="md"
+          :play-count="item.playCount"
+          @click="openDetail(item.id)"
+        />
       </AnimatedAppear>
     </div>
 
@@ -85,6 +83,8 @@ import { getHighQualityPlaylists, getPlaylistCatList, getTopPlaylists } from '..
 import { resolvePlaylistCoverUrl } from '../utils/image';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
+import GradientCard from './ui/GradientCard.vue';
+import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
 import PlaylistHighlightSection from './PlaylistHighlightSection.vue';
 
 type PlaylistItem = {
@@ -400,22 +400,13 @@ watch(
   top: calc(var(--playlist-panel-sticky-top, 0px) * -1);
   z-index: 999;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   width: 100%;
-  min-height: 52px;
+  min-height: 64px;
   margin: var(--space-2) 0 0;
   overflow: hidden;
   box-sizing: border-box;
-}
-
-.cat-header-inner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: 52px;
-  padding: 0 var(--space-3);
-  box-sizing: border-box;
+  padding: var(--space-1) 0;
 }
 
 .cat-header--fixed {
@@ -426,26 +417,10 @@ watch(
   transform: translateX(-50%);
 }
 
-.cat-header-inner--fixed {
-  width: 100%;
-  max-width: 100%;
-}
-
 :global(.dark-mode) .cat-header,
 :global(.dark) .cat-header,
 :global([data-theme='dark']) .cat-header {
   border-color: var(--border);
-}
-
-.cat-tags {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding-bottom: var(--space-0);
-}
-
-.cat-tags::-webkit-scrollbar {
-  display: none;
 }
 
 .tag {
@@ -484,83 +459,6 @@ watch(
 .hq-item .sub { margin: var(--space-1) 0 0; font-size: 12px; color: #6b7280; }
 
 .list-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); padding: var(--space-1); }
-.card { overflow: hidden; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12); }
-
-.playlist-gradient-card {
-  position: relative;
-  isolation: isolate;
-  background: color-mix(in srgb, var(--bg-surface) 86%, rgba(15, 23, 42, 0.16));
-}
-
-.playlist-gradient-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  background-image: var(--playlist-cover);
-  background-size: cover;
-  background-position: center;
-  opacity: 0.92;
-  filter: saturate(0.9) contrast(0.96);
-}
-
-.playlist-gradient-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(255, 255, 255, 0.18) 26%,
-    rgba(255, 255, 255, 0.46) 58%,
-    rgba(255, 255, 255, 0.84) 86%,
-    rgba(255, 255, 255, 0.96) 100%
-  );
-}
-
-.playlist-gradient-card .cover,
-.playlist-gradient-card .info {
-  position: relative;
-  z-index: 2;
-}
-
-.cover { --hover-play-button-size: 34px; --hover-play-button-offset: 9px; position: relative; overflow: hidden; }
-.playlist-card-media-shell {
-  border-radius: 12px 12px 0 0;
-  transform: translateZ(0);
-}
-.playlist-card-cover-motion-shell {
-  display: block;
-  line-height: 0;
-  transform-origin: center center;
-}
-.playlist-card-cover-image {
-  display: block;
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  transition:
-    transform var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease)),
-    filter var(--image-hover-duration, var(--an-duration-base)) var(--image-hover-ease, var(--an-ease));
-  transform: scale(1);
-  transform-origin: center center;
-  will-change: transform;
-}
-@media (hover: hover) and (pointer: fine) {
-  .playlist-card-media-shell:hover .playlist-card-cover-image,
-  .playlist-card-media-shell:focus-within .playlist-card-cover-image {
-    transform: scale(var(--image-hover-scale, 1.04));
-    filter: saturate(var(--image-hover-saturate, 1.04));
-  }
-}
-.playlist-hover-play { right: 10px; bottom: 10px; z-index: 4; }
-.info { padding: var(--space-2); }
-.info .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.info .sub { margin: var(--space-1) 0 0; font-size: 12px; color: #6b7280; }
 
 .muted { margin: 0; color: #6b7280; }
 .load-more-wrap { display: flex; align-items: center; justify-content: center; min-height: 36px; }
