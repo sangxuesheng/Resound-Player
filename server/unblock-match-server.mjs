@@ -34,8 +34,9 @@ async function matchSong(id, sources) {
       errors,
     };
   } catch (e) {
-    console.error(`[unblock-match] match error for song ${id}:`, e.message);
-    errors.push(e.message);
+    const errMsg = e?.message || String(e || 'unknown error');
+    console.error(`[unblock-match] match error for song ${id}:`, errMsg);
+    errors.push(errMsg);
     return { url: null, source: null, br: 0, size: 0, errors };
   }
 }

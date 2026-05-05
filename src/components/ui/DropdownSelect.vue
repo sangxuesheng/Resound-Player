@@ -25,6 +25,7 @@
           <span class="dd-item-label">
             <span v-if="props.optionColors[opt]" class="dd-swatch" :style="{ background: props.optionColors[opt] }"></span>
             {{ opt }}
+            <span v-if="props.optionVipLabels[opt]" class="dd-item-vip">{{ props.optionVipLabels[opt] }}</span>
           </span>
         </AnimatedAppear>
       </AnimatedAppear>
@@ -43,10 +44,12 @@ const props = withDefaults(
     options: string[];
     placeholder?: string;
     optionColors?: Record<string, string>;
+    optionVipLabels?: Record<string, string>;
   }>(),
   {
     placeholder: '请选择',
     optionColors: () => ({}),
+    optionVipLabels: () => ({}),
   },
 );
 
@@ -59,21 +62,61 @@ const rootRef = ref<HTMLElement | null>(null);
 const menuTop = ref(0);
 const menuLeft = ref(0);
 const menuWidth = ref(120);
+const direction = ref<'down' | 'up'>('down');
 
 const displayLabel = computed(() => props.modelValue || props.placeholder);
 
-const menuStyle = computed(() => ({
-  top: `${menuTop.value}px`,
-  left: `${menuLeft.value}px`,
-  width: `${menuWidth.value}px`,
-}));
+const menuStyle = computed(() => {
+  const originX = menuLeft.value + menuWidth.value > window.innerWidth - 16 ? 'right' : 'left';
+  const originY = direction.value === 'up' ? 'bottom' : 'top';
+  return {
+    top: `${menuTop.value}px`,
+    left: `${menuLeft.value}px`,
+    width: `${menuWidth.value}px`,
+    transformOrigin: `${originY} ${originX}`,
+  };
+});
 
 function updateMenuPosition() {
   if (!rootRef.value) return;
   const rect = rootRef.value.getBoundingClientRect();
-  menuTop.value = rect.bottom + 6;
-  menuLeft.value = rect.left;
-  menuWidth.value = rect.width;
+  menuWidth.value = Math.max(rect.width, 120);
+
+  const itemHeight = 38;
+  const padding = 16;
+  const estimatedHeight = Math.min(props.options.length * itemHeight + padding, 260);
+  const gap = 6;
+
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+
+  // Vertical: show below if enough room, otherwise flip upward
+  const fitsBelow = spaceBelow >= estimatedHeight + gap;
+  const fitsAbove = spaceAbove >= estimatedHeight + gap;
+
+  if (fitsBelow) {
+    direction.value = 'down';
+    menuTop.value = rect.bottom + gap;
+  } else if (fitsAbove) {
+    direction.value = 'up';
+    menuTop.value = rect.top - estimatedHeight - gap;
+  } else {
+    // Neither fits fully — use the side with more room
+    if (spaceAbove > spaceBelow) {
+      direction.value = 'up';
+      menuTop.value = Math.max(gap, rect.top - estimatedHeight - gap);
+    } else {
+      direction.value = 'down';
+      menuTop.value = rect.bottom + gap;
+    }
+  }
+
+  // Horizontal: left-align by default, right-align if overflowing right edge
+  if (rect.left + menuWidth.value > window.innerWidth) {
+    menuLeft.value = Math.max(8, window.innerWidth - menuWidth.value - 8);
+  } else {
+    menuLeft.value = rect.left;
+  }
 }
 
 function toggleOpen() {
@@ -147,9 +190,11 @@ onBeforeUnmount(() => {
 }
 
 .dd-item-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
+  width: 100%;
+  overflow: hidden;
 }
 
 .dd-swatch {
@@ -159,6 +204,22 @@ onBeforeUnmount(() => {
   border: 1px solid color-mix(in srgb, var(--text-main) 25%, transparent);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
   flex: 0 0 auto;
+}
+
+.dd-item-vip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 14px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  margin-left: auto;
 }
 
 .dd-icon {

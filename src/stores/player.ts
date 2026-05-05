@@ -8,7 +8,7 @@ import { recordLocalHistoryEntry } from '../utils/localHistory';
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
 type TrackSource = 'song' | 'podcast' | 'cloud';
-type PodcastMeta = { rid?: number };
+type PodcastMeta = { rid?: number; programId?: number; createTime?: number };
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type PersonalFmFetcher = () => Promise<any[]>;
 
@@ -22,6 +22,8 @@ export type Track = {
   podcast?: PodcastMeta;
   liked?: boolean;
   isLiked?: boolean;
+  // 播客单集简介
+  description?: string;
   // 云盘歌曲专用
   cloudSid?: number;
   cloudOwnerId?: number;
@@ -29,6 +31,7 @@ export type Track = {
 };
 
 const PLAYER_STORAGE_KEY = 'gm_player_state_v1';
+let _persistTimer: ReturnType<typeof setTimeout> | null = null;
 
 function formatTrack(raw: any): Track {
   return {
@@ -41,6 +44,7 @@ function formatTrack(raw: any): Track {
     podcast: raw.podcast,
     liked: Boolean(raw.liked || raw.isLiked),
     isLiked: Boolean(raw.isLiked || raw.liked),
+    description: raw.description,
     cloudSid: raw.cloudSid,
     cloudOwnerId: raw.cloudOwnerId,
     uid: raw.uid,
@@ -54,11 +58,35 @@ const QUALITY_LEVELS: Record<string, string> = {
   '极高(HQ)': 'exhigh',
   '无损(SQ)': 'lossless',
   'Hi-Res': 'hires',
+  '高清臻音': 'jyeffect',
   '高清环绕声': 'jyeffect',
   '沉浸环绕声': 'sky',
   '杜比全景声': 'dolby',
   '超清母带': 'jymaster',
 };
+
+/** 各音质等级的最低比特率阈值，低于此值判定为 API 静默降级 */
+const QUALITY_MIN_BR: Record<string, number> = {
+  'standard': 128000,
+  'higher': 192000,
+  'exhigh': 320000,
+  'lossless': 800000,
+  'hires': 1920000,
+  'jyeffect': 1920000,
+  'sky': 1920000,
+  'dolby': 1920000,
+  'jymaster': 1920000,
+};
+
+/** 需要 VIP 的音质 API level（免费用户不可请求） */
+const VIP_ONLY_API_LEVELS = new Set([
+  'lossless',
+  'hires',
+  'jyeffect',
+  'sky',
+  'dolby',
+  'jymaster',
+]);
 
 
 function formatQualityBr(br: number): string {
@@ -81,6 +109,8 @@ export const playerStore = reactive({
   currentTrack: null as Track | null,
   currentSongId: 0,
   currentQualityBr: 0,
+  currentQualityDowngraded: false,
+  qualityDowngradeInfo: null as { from: string; to: string } | null,
   currentSource: 'official' as string,
   isPlaying: false,
   currentTime: 0,
@@ -103,7 +133,8 @@ export const playerStore = reactive({
   playMode: 'loop' as 'loop' | 'single' | 'shuffle',
   crossfadeSec: 0,
   playbackRate: 1,
-  defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
+  defaultPlaybackRate: 1,
+  defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清臻音' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
   lyricsOffset: 0,
 
   init() {
@@ -135,9 +166,12 @@ export const playerStore = reactive({
   },
 
   persist() {
-    const playlist = this.trimPlaylistForStorage();
+    if (_persistTimer) clearTimeout(_persistTimer);
+    _persistTimer = setTimeout(() => {
+      _persistTimer = null;
+      const playlist = this.trimPlaylistForStorage();
     const defaultPlaylist = Array.isArray(this.defaultPlaylist) ? this.defaultPlaylist.slice(0, 50).map((t: any) =>
-      t ? { id: t.id, name: t.name, ar: t.ar?.slice(0, 3) || [], al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined } : t
+      t ? { id: t.id, name: t.name, ar: t.ar?.slice(0, 3) || [], al: t.al ? { name: t.al.name } : undefined } : t
     ) : [];
     const personalFmTrackIds = this.personalFmTrackIds.slice(0, 200);
     const payload = {
@@ -149,7 +183,7 @@ export const playerStore = reactive({
       autoplayNext: this.autoplayNext,
       playMode: this.playMode,
       crossfadeSec: this.crossfadeSec,
-      playbackRate: this.playbackRate,
+      defaultPlaybackRate: this.defaultPlaybackRate,
       defaultQuality: this.defaultQuality,
       themePrimary: this.themePrimary,
       themeMode: this.themeMode,
@@ -161,24 +195,32 @@ export const playerStore = reactive({
     try {
       const json = JSON.stringify(payload);
       localStorage.setItem(PLAYER_STORAGE_KEY, json);
+      console.debug('[player] persist saved, defaultQuality:', payload.defaultQuality);
     } catch (e) {
       if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        console.warn('[player] quota exceeded, trimming aggressively');
+        console.warn('[player] quota exceeded, trimming to 10 tracks');
         payload.playlist = this.trimPlaylistForStorage(10);
         payload.defaultPlaylist = [];
         payload.personalFmTrackIds = [];
         try {
           const json = JSON.stringify(payload);
           localStorage.setItem(PLAYER_STORAGE_KEY, json);
+          console.debug('[player] persist saved (trimmed), defaultQuality:', payload.defaultQuality);
         } catch {
+          console.warn('[player] quota still exceeded, removing key and retrying with empty data');
           try {
             localStorage.removeItem(PLAYER_STORAGE_KEY);
             localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify({ ...payload, playlist: [], defaultPlaylist: [] }));
-          } catch {}
+            console.debug('[player] persist saved (empty fallback)');
+          } catch (e2) {
+            if (e2 instanceof DOMException && e2.name === 'QuotaExceededError') {
+              console.warn('[player] localStorage full — other data consuming all quota, skipping persist');
+            }
+          }
         }
       }
     }
-    console.debug('[player] persist saved, defaultQuality:', payload.defaultQuality);
+    }, 0);
   },
 
   trimPlaylistForStorage(maxEntries = 50) {
@@ -187,7 +229,7 @@ export const playerStore = reactive({
         id: t.id,
         name: t.name,
         ar: t.ar?.slice(0, 3) || [],
-        al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined,
+        al: t.al ? { name: t.al.name } : undefined,
         source: t.source,
         podcast: t.podcast,
       }));
@@ -198,7 +240,7 @@ export const playerStore = reactive({
       id: t.id,
       name: t.name,
       ar: t.ar?.slice(0, 3) || [],
-      al: t.al ? { name: t.al.name, picUrl: t.al.picUrl } : undefined,
+      al: t.al ? { name: t.al.name } : undefined,
       source: t.source,
       podcast: t.podcast,
     }));
@@ -212,8 +254,11 @@ export const playerStore = reactive({
         return;
       }
       const parsed = JSON.parse(raw);
-      this.playlist = parsed.playlist || [];
-      this.currentIndex = Number.isInteger(parsed.currentIndex) ? parsed.currentIndex : -1;
+      // 不恢复播放列表和播放状态，用户需要主动点击歌单或播放时才加载内容
+      this.playlist = [];
+      this.currentIndex = -1;
+      this.currentTrack = null;
+      this.currentSongId = 0;
       this.volume = typeof parsed.volume === 'number' ? parsed.volume : 0.7;
       this.muted = typeof parsed.muted === 'boolean' ? parsed.muted : false;
       this.volumeBeforeMute = typeof parsed.volumeBeforeMute === 'number' ? parsed.volumeBeforeMute : this.volume;
@@ -221,7 +266,8 @@ export const playerStore = reactive({
       this.autoplayNext = typeof parsed.autoplayNext === 'boolean' ? parsed.autoplayNext : true;
       this.playMode = parsed.playMode === 'single' || parsed.playMode === 'shuffle' ? parsed.playMode : 'loop';
       this.crossfadeSec = typeof parsed.crossfadeSec === 'number' ? parsed.crossfadeSec : 0;
-      this.playbackRate = typeof parsed.playbackRate === 'number' ? parsed.playbackRate : 1;
+      this.playbackRate = 1;
+      this.defaultPlaybackRate = typeof parsed.defaultPlaybackRate === 'number' ? parsed.defaultPlaybackRate : 1;
       const savedQuality = localStorage.getItem('gm_quality_v1');
       this.defaultQuality = QUALITY_LEVELS[savedQuality] != null ? savedQuality : (QUALITY_LEVELS[parsed.defaultQuality] != null ? parsed.defaultQuality : '较高');
       console.debug('[player] hydrate defaultQuality:', parsed.defaultQuality, '→', this.defaultQuality);
@@ -232,13 +278,6 @@ export const playerStore = reactive({
       this.personalFmHasMore = typeof parsed.personalFmHasMore === 'boolean' ? parsed.personalFmHasMore : true;
       this.defaultPlaylist = Array.isArray(parsed.defaultPlaylist) ? parsed.defaultPlaylist : [];
       this.audio.playbackRate = this.playbackRate;
-
-      if (this.currentIndex >= 0 && this.playlist[this.currentIndex]) {
-        this.currentTrack = this.playlist[this.currentIndex];
-        this.currentSongId = Number(this.currentTrack?.id || 0);
-      } else {
-        this.currentSongId = 0;
-      }
       this.syncThemeState();
     } catch {
       this.syncThemeState();
@@ -353,6 +392,10 @@ export const playerStore = reactive({
   },
 
   async playTrack(track: Track, seekTo?: number) {
+    this.qualityDowngradeInfo = null;
+    // 切歌时重置播放速度为全局默认
+    this.playbackRate = this.defaultPlaybackRate;
+    this.audio.playbackRate = this.defaultPlaybackRate;
     this.loading = true;
     try {
       let playUrl = track.url || '';
@@ -360,7 +403,11 @@ export const playerStore = reactive({
 
       // 并行：fee 探测 + uiStore 导入 + 音源匹配（三者同时发起）
       const nocookie = userStore.loginCookie || undefined;
-      const level = toApiLevel(this.defaultQuality);
+      let level = toApiLevel(this.defaultQuality);
+      // 免费用户请求 VIP 音质时强制降为极高(HQ)
+      if (!userStore.isVip && VIP_ONLY_API_LEVELS.has(level)) {
+        level = 'exhigh';
+      }
       const qs = `id=${track.id}&level=${level}${nocookie ? '&cookie=' + encodeURIComponent(nocookie) : ''}`;
       const feePromise = fetch(`/api/song/url/v1?${qs}`);
       const uiImport = import("../stores/ui");
@@ -372,29 +419,44 @@ export const playerStore = reactive({
 
       // 1. 先等 fee 结果
       let isFreePlayable = false;
+      let fee = 0;
+      let hasTrial = false;
       try {
         const directRes = await feePromise;
         const directData = await directRes.json();
         const officialItem = Array.isArray(directData?.data) ? directData.data[0] : null;
         const officialCode = Number(officialItem?.code || 0);
-        const fee = Number(officialItem?.fee ?? 0);
+        fee = Number(officialItem?.fee ?? 0);
         if (officialItem?.url) playUrl = officialItem.url;
         if (officialItem?.br > 0) this.currentQualityBr = officialItem.br;
-        const hasTrial = Boolean(officialItem?.freeTrialInfo);
-        const isFeeFree = fee === 0 || fee === 8;
-        isFreePlayable = officialCode === 200 && Boolean(playUrl) && isFeeFree && !hasTrial;
-        console.log('[debug] direct fee:', { fee, hasTrial, officialCode, hasUrl: Boolean(playUrl) });
+        hasTrial = Boolean(officialItem?.freeTrialInfo);
+        // 无试听限制 = 用户有完整播放权限（含 VIP 登录后 fee=1 的场景）
+        isFreePlayable = officialCode === 200 && Boolean(playUrl) && !hasTrial;
+        // 检测 API 静默降级：返回 br 低于该音质最低阈值
+        const minBr = QUALITY_MIN_BR[level] || 0;
+        this.currentQualityDowngraded = minBr > 0 && this.currentQualityBr > 0 && this.currentQualityBr < minBr;
+        if (this.currentQualityDowngraded) {
+          const actualQ = formatQualityBr(this.currentQualityBr);
+          this.qualityDowngradeInfo = { from: this.defaultQuality, to: actualQ };
+          // 仅记录降级信息，不修改用户偏好：下一首歌仍会以 defaultQuality 请求
+          console.warn(
+            `[quality-downgrade] API 静默降级: 请求 ${this.qualityDowngradeInfo.from} (level=${level}, minBr=${minBr}) → 实际 br=${this.currentQualityBr} ≥ 交付 ${actualQ}（用户偏好 ${this.defaultQuality} 未变）`
+          );
+        }
+        console.log('[debug] direct fee:', { fee, hasTrial, officialCode, hasUrl: Boolean(playUrl), isFreePlayable });
       } catch (e) {
         console.warn('[debug] direct check failed:', e);
       }
 
-      // 2. 缓存命中 - 直接使用
-      if (cached) {
+      // 2. 官方可播 → 直接用；不可播 → 缓存/音源匹配
+      if (isFreePlayable) {
+        this.currentSource = "official";
+      } else if (cached) {
         playUrl = cached.url;
         this.currentSource = cached.source;
         if (cached.br > 0) this.currentQualityBr = cached.br;
-      } else if (matchPromise && !isFreePlayable) {
-        // 3. 付费歌曲 - 等待匹配结果
+      } else if (matchPromise) {
+        // 3. 付费/试听歌曲 - 等待匹配结果
         const result = await matchPromise;
         if (result?.url) {
           playUrl = result.url;
@@ -405,6 +467,20 @@ export const playerStore = reactive({
       } else {
         this.currentSource = "official";
       }
+
+      // ── 音质切换决策链路日志 ──
+      const downgradeInfo = this.qualityDowngradeInfo;
+      console.log(
+        '[quality-switch] ═══════════════════════════════\n' +
+        `  歌曲: ${track.name} (id=${track.id})\n` +
+        `  请求音质: ${downgradeInfo?.from || this.defaultQuality} → API level: ${level}\n` +
+        `  官方返回: br=${this.currentQualityBr}  fee=${fee}  hasTrial=${hasTrial}\n` +
+        `  可直播: ${isFreePlayable}  |  缓存命中: ${!!cached}  |  unblock启用: ${uiStore.unblockEnabled}\n` +
+        `  决策: ${isFreePlayable ? '✅ 使用官方音源' : cached ? '📦 命中缓存' : this.currentSource === 'official' ? '⚠️ 回退官方(无可替换)' : '🔀 unblock替换'}\n` +
+        `  降级: ${downgradeInfo ? `⚠️ 是 (${downgradeInfo.from} → ${downgradeInfo.to})` : '否'}\n` +
+        `  最终音源: ${this.currentSource}  |  比特率: ${this.currentQualityBr}  |  显示音质: ${this.defaultQuality}\n` +
+        '[quality-switch] ═══════════════════════════════'
+      );
 
       const wasPlaying = this.isPlaying;
       if (typeof seekTo === 'number') {
@@ -422,6 +498,7 @@ export const playerStore = reactive({
               al: track.al?.picUrl || track.al?.name ? track.al : n.al,
               url: track.url || n.url, source: track.source || n.source,
               podcast: track.podcast || n.podcast,
+              description: track.description || n.description,
               cloudSid: track.cloudSid || n.cloudSid,
               cloudOwnerId: track.cloudOwnerId || n.cloudOwnerId,
               uid: track.uid || n.uid,
@@ -639,7 +716,14 @@ export const playerStore = reactive({
   },
 
   setPlaybackRate(rate: number) {
-    const r = Math.max(0.5, Math.min(2, Number(rate || 1)));
+    const r = Math.max(0.5, Math.min(3, Number(rate || 1)));
+    this.playbackRate = r;
+    this.audio.playbackRate = r;
+  },
+
+  setDefaultPlaybackRate(rate: number) {
+    const r = Math.max(0.5, Math.min(3, Number(rate || 1)));
+    this.defaultPlaybackRate = r;
     this.playbackRate = r;
     this.audio.playbackRate = r;
     this.persist();
@@ -649,7 +733,7 @@ export const playerStore = reactive({
     this.currentSource = source || 'official';
   },
 
-  setDefaultQuality(quality: '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带') {
+  setDefaultQuality(quality: '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清臻音' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带') {
     this.defaultQuality = quality;
     console.log('[quality] setDefaultQuality:', quality);
     localStorage.setItem('gm_quality_v1', quality);

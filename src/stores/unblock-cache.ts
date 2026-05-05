@@ -126,6 +126,11 @@ export function clearCache(): void {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
 }
 
+export function clearCacheEntry(id: number): void {
+  memCache.delete(id);
+  schedulePersist();
+}
+
 export function getCacheSize(): number {
   return memCache.size;
 }

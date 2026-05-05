@@ -45,6 +45,9 @@
             @back="backToPlaylist"
             @open-artist="openArtistFromDetail"
             @open-comment="openSongComment"
+            @open-album="(albumId) => openAlbumDetail(albumId, 'playlist-detail')"
+            @open-language="(language) => openLanguageDetail(language, activePage)"
+            @open-mv-player="openMvFromSearch"
           />
           <AlbumDetailPage
             v-else-if="activePage === 'album-detail'"
@@ -52,6 +55,9 @@
             :back-label="albumBackLabel"
             @back="backToAlbum"
             @open-artist="openArtistFromDetail"
+            @open-album="(albumId) => openAlbumDetail(albumId, 'album-detail')"
+            @open-language="(language) => openLanguageDetail(language, activePage)"
+            @open-mv-player="openMvFromSearch"
           />
           <ArtistDetailPage
             v-else-if="activePage === 'artist-detail'"
@@ -63,6 +69,7 @@
             @open-album-detail="(albumId, tab) => { artistActiveTabState = tab || 'songs'; openAlbumDetail(albumId, 'artist-detail'); }"
             @open-artist="openArtistDetail($event, 'artist-detail')"
             @open-mv-player="openMvFromSearch"
+            @open-language="(language) => openLanguageDetail(language, activePage)"
           />
           <UserDetailPage
             v-else-if="activePage === 'user-detail'"
@@ -134,13 +141,14 @@
           />
           <SongCommentPage v-else-if="activePage === 'song-comment'" :song-id="activeSongId" @back="goBackFromComment" @open-artist="openArtistFromComment" @open-album="(albumId) => openAlbumDetail(albumId, 'song-comment')" @play-song="playSongFromComment" @open-user="openUserFromComment" />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
+          <LanguageDetailPage v-else-if="activePage === 'language-detail'" :language-name="activeLanguage" :back-label="activeLanguageReturnPage === 'song-comment' ? '评论' : undefined" @back="backToLanguage" @open-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, activePage)" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
       </main>
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
-    <PlayerExpanded @open-artist="openArtistFromPlayer" @open-album="(albumId) => { playerStore.closeExpanded(); openAlbumDetail(albumId, activePage.value); }" />
+    <PlayerExpanded @open-artist="openArtistFromPlayer" @open-album="(albumId) => { playerStore.closeExpanded(); openAlbumDetail(albumId, activePage.value); }" @open-user="openUserFromComment" @open-podcast-detail="(item) => { playerStore.closeExpanded(); openPodcastDetail(item); }" />
     <LoginModal />
   </div>
 </template>
@@ -163,6 +171,7 @@ import MvPanel from './components/MvPanel.vue';
 import SongCommentPage from './components/SongCommentPage.vue';
 import LoginModal from './components/LoginModal.vue';
 import MvPlayPage from './components/MvPlayPage.vue';
+import LanguageDetailPage from './components/LanguageDetailPage.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
 import PodcastDetailPage from './components/PodcastDetailPage.vue';
@@ -212,6 +221,8 @@ const activePodcastDetailSourcePage = ref<'user' | 'history' | 'podcast-list'>('
 const playlistInitialCategory = ref('');
 const dailyListSongs = ref<any[]>([]);
 const dailyInjectedPlaylist = ref<any>(null);
+const activeLanguage = ref('');
+const activeLanguageReturnPage = ref('home');
 const apiReady = ref(false);
 const isNarrow = ref(false);
 const sidebarOpen = ref(true);
@@ -240,7 +251,7 @@ const sidebarActiveKey = computed(() => {
   return activePage.value;
 });
 
-const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail'].includes(activePage.value));
+const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail'].includes(activePage.value));
 
 function syncViewport() {
   // 平板端沿用桌面布局，仅在移动端（<=767）启用窄屏抽屉逻辑
@@ -421,6 +432,8 @@ function resolvePodcastRid(item: any) {
 function normalizePodcastPlayableTrack(item: any) {
   const mainTrackId = Number(item?.mainTrackId || item?.mainSong?.id || item?.song?.id || item?.program?.mainTrackId || item?.program?.mainSong?.id || 0);
   const rid = resolvePodcastRid(item);
+  const programId = Number(item?.id || item?.voiceId || item?.programId || item?.program?.id || 0);
+  const createTime = Number(item?.createTime || item?.program?.createTime || 0);
   if (!mainTrackId) return null;
 
   return {
@@ -432,7 +445,8 @@ function normalizePodcastPlayableTrack(item: any) {
       picUrl: item?.coverUrl || item?.picUrl || item?.imgUrl || item?.program?.coverUrl || item?.program?.blurCoverUrl || item?.radio?.picUrl || '',
     },
     source: 'podcast',
-    podcast: rid > 0 ? { rid } : undefined,
+    description: (item?.description || item?.desc || item?.briefDesc || item?.program?.description || item?.program?.desc || item?.mainSong?.description || '').trim(),
+    podcast: rid > 0 ? { rid, programId: programId > 0 ? programId : undefined, createTime: createTime > 0 ? createTime : undefined } : (programId > 0 ? { programId, createTime: createTime > 0 ? createTime : undefined } : (createTime > 0 ? { createTime } : undefined)),
   };
 }
 
@@ -798,6 +812,7 @@ async function playSongFromComment(songId: number) {
 }
 
 function openUserFromComment(userId: number) {
+  playerStore.closeExpanded();
   openUserDetail(userId, activePage.value);
 }
 
@@ -830,14 +845,40 @@ function backToUserDetail() {
   activePage.value = activeUserReturnPage.value || 'search';
 }
 
+function openLanguageDetail(language: string, returnPage = 'home') {
+  if (!language) return;
+  activeLanguage.value = language;
+  activeLanguageReturnPage.value = returnPage;
+  activePage.value = 'language-detail';
+}
+
+function backToLanguage() {
+  if (activeLanguageReturnPage.value === 'song-comment') {
+    activePage.value = 'song-comment';
+    return;
+  }
+  activePage.value = activeLanguageReturnPage.value || 'home';
+}
+
 function goBackFromMvPlay() {
   activePage.value = activeMvReturnPage.value || 'playlist';
+  // 关闭 MV 页后根据设置恢复音乐播放
+  if (uiStore.resumeAfterMv && playerStore.isPlaying === false && playerStore.currentTrack) {
+    playerStore.togglePlay();
+  }
 }
+
+let wasPlayingBeforeMvPage = false;
 
 function openMvFromSearch(item: any) {
   activeMvItem.value = item || null;
   activeMvReturnPage.value = activePage.value;
   activePage.value = 'mv-play';
+  // 打开 MV 页时暂停音乐播放
+  wasPlayingBeforeMvPage = playerStore.isPlaying;
+  if (playerStore.isPlaying) {
+    playerStore.audio.pause();
+  }
 }
 
 watch(
@@ -855,7 +896,7 @@ onMounted(async () => {
   syncViewport();
   window.addEventListener('resize', syncViewport);
 
-  userStore.hydrate();
+  await userStore.hydrate();
   playerStore.init();
   uiStore.init();
 

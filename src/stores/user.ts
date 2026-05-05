@@ -1,6 +1,7 @@
 import { reactive } from 'vue';
-import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUserPlaylist, logout as logoutRequest } from '../api/auth';
+import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUserPlaylist, getVipInfo, logout as logoutRequest } from '../api/auth';
 import { getDjSublist } from '../api/music';
+import { storageSetItem, storageGetItem, storageRemoveItem } from '../utils/storage';
 
 const LOGIN_COOKIE_KEY = 'ncm_login_cookie';
 const LOGIN_MODE_KEY = 'ncm_login_mode';
@@ -18,6 +19,25 @@ type UserPlaylist = {
   id: number;
   name: string;
   trackCount?: number;
+};
+
+type VipSubItem = {
+  vipCode: number;
+  expireTime: number;
+  iconUrl: string;
+  dynamicIconUrl: string | null;
+  vipLevel: number;
+  isSignDeduct: boolean;
+  isSignIap: boolean;
+  isSignIapDeduct: boolean;
+  isSign: boolean;
+};
+
+type VipInfo = {
+  associator: VipSubItem;
+  musicPackage: VipSubItem;
+  redplus: VipSubItem;
+  redVipLevelIcon: string;
 };
 
 function maskCookie(cookie: string) {
@@ -38,12 +58,18 @@ export const userStore = reactive({
   playlists: [] as UserPlaylist[],
   likedSongIds: [] as number[],
   subscribedDjIds: [] as number[],
+  isVip: false,
+  vipInfo: null as VipInfo | null,
+  level: 0,
   loading: false,
   loginCookie: '',
   loginMode: 'none' as LoginMode,
   authRequestSeq: 0,
-  hydrate() {
+  async hydrate() {
     this.loginCookie = localStorage.getItem(LOGIN_COOKIE_KEY) || '';
+    if (!this.loginCookie) {
+      this.loginCookie = (await storageGetItem(LOGIN_COOKIE_KEY)) || '';
+    }
     const savedMode = localStorage.getItem(LOGIN_MODE_KEY) as LoginMode | null;
     this.loginMode = savedMode === 'uid' || savedMode === 'cookie' || savedMode === 'qr' ? savedMode : 'none';
 
@@ -57,7 +83,7 @@ export const userStore = reactive({
       cookiePreview: maskCookie(this.loginCookie),
     });
   },
-  saveCookie(cookie: string) {
+  async saveCookie(cookie: string) {
     this.loginCookie = cookie;
     logAuthDebug('saveCookie', {
       hasCookie: Boolean(cookie),
@@ -65,14 +91,24 @@ export const userStore = reactive({
       cookiePreview: maskCookie(cookie),
     });
     if (cookie) {
-      localStorage.setItem(LOGIN_COOKIE_KEY, cookie);
+      try {
+        await storageSetItem(LOGIN_COOKIE_KEY, cookie);
+      } catch (e: unknown) {
+        logAuthDebug('saveCookie:fallbackError', {
+          name: (e as Error)?.name,
+          message: (e as Error)?.message || String(e),
+          cookieSize: cookie.length,
+        });
+        // 极端情况：IndexedDB 也不可用时抛给上层处理
+        throw new Error('Cookie 存储失败，请检查浏览器存储设置或清理后再试。');
+      }
       localStorage.setItem(LOGIN_MODE_KEY, this.loginMode);
     } else {
-      localStorage.removeItem(LOGIN_COOKIE_KEY);
+      await storageRemoveItem(LOGIN_COOKIE_KEY);
       localStorage.removeItem(LOGIN_MODE_KEY);
     }
   },
-  resetSession() {
+  async resetSession() {
     this.authRequestSeq += 1;
     logAuthDebug('resetSession', {
       nextAuthRequestSeq: this.authRequestSeq,
@@ -82,8 +118,11 @@ export const userStore = reactive({
     this.playlists = [];
     this.likedSongIds = [];
     this.subscribedDjIds = [];
+    this.isVip = false;
+    this.vipInfo = null;
+    this.level = 0;
     this.loginMode = 'none';
-    this.saveCookie('');
+    await this.saveCookie('');
   },
   async logout() {
     const cookie = this.loginCookie || undefined;
@@ -93,7 +132,7 @@ export const userStore = reactive({
     } catch {
       // 即使服务端退出失败，也要清理本地登录态，避免界面残留已登录状态
     } finally {
-      this.resetSession();
+      await this.resetSession();
     }
   },
   async loginWithCookie(cookie: string) {
@@ -107,7 +146,7 @@ export const userStore = reactive({
       requestId,
       cookiePreview: maskCookie(normalizedCookie),
     });
-    this.saveCookie(normalizedCookie);
+    await this.saveCookie(normalizedCookie);
 
     try {
       await this.refreshLoginStatus(requestId);
@@ -132,6 +171,7 @@ export const userStore = reactive({
           this.isLogin = true;
           this.loginMode = 'cookie';
           await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+          this.fetchVipInfo();
           logAuthDebug('loginWithCookie:accountFallbackApplied', {
             requestId,
             profileUserId: profile.userId,
@@ -160,7 +200,7 @@ export const userStore = reactive({
         message: error?.message || String(error),
       });
       if (requestId === this.authRequestSeq) {
-        this.resetSession();
+        await this.resetSession();
       }
       throw error;
     }
@@ -201,9 +241,10 @@ export const userStore = reactive({
     this.likedSongIds = [];
     this.subscribedDjIds = [];
     this.loginMode = 'uid';
-    this.saveCookie('uid=' + String(profile.userId));
+    await this.saveCookie('uid=' + String(profile.userId));
 
     await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+    this.fetchVipInfo();
     logAuthDebug('loginWithUid:success', {
       requestId,
       profileUserId: profile.userId,
@@ -237,9 +278,10 @@ export const userStore = reactive({
       this.playlists = [];
       this.likedSongIds = [];
       this.subscribedDjIds = [];
-      this.saveCookie(UID_LOGIN_PREFIX + String(profile.userId));
+      await this.saveCookie(UID_LOGIN_PREFIX + String(profile.userId));
 
       await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+      this.fetchVipInfo();
       logAuthDebug('restoreUidLogin:success', {
         requestId,
         profileUserId: profile.userId,
@@ -250,7 +292,7 @@ export const userStore = reactive({
         message: error?.message || String(error),
       });
       if (requestId === this.authRequestSeq) {
-        this.resetSession();
+        await this.resetSession();
       }
     }
   },
@@ -300,6 +342,7 @@ export const userStore = reactive({
 
     if (this.isLogin && profile?.userId) {
       const results = await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+      this.fetchVipInfo();
       const rejected = results
         .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
         .map((result) => (result.reason as any)?.message || String(result.reason));
@@ -339,5 +382,85 @@ export const userStore = reactive({
     this.subscribedDjIds = items
       .map((item: any) => Number(item?.id || item?.radio?.id || item?.program?.radio?.id || item?.rid || 0))
       .filter((id: number) => Number.isFinite(id) && id > 0);
+  },
+  async fetchVipInfo() {
+    try {
+      const uid = this.profile?.userId;
+      const cookie = this.loginCookie || undefined;
+      const isRealLogin = this.loginMode === 'cookie' || this.loginMode === 'qr';
+
+      // 拉取用户等级（来自 /user/detail）
+      if (uid) {
+        try {
+          const detailRes = await getUserDetail(uid);
+          this.level = detailRes?.data?.level ?? detailRes?.data?.data?.level ?? 0;
+        } catch {
+          // 等级拉取失败不影响 VIP 信息
+        }
+      }
+
+      // 策略：仅真实登录（cookie/qr）时尝试走 cookie 认证路径（返回嵌套格式含 expireTime）
+      // UID 模式的 cookie 只是 'uid=用户ID'，不是真实凭据，直接跳过
+      let vipData: Record<string, any>;
+
+      if (isRealLogin && cookie) {
+        const { data: authData } = await getVipInfo(undefined, cookie);
+        vipData = authData?.data || {};
+
+        const hasNestedVip = vipData.associator || vipData.musicPackage || vipData.redplus;
+        const hasVipCode = hasNestedVip && (
+          Number(vipData.associator?.vipCode ?? 0) > 0
+          || Number(vipData.musicPackage?.vipCode ?? 0) > 0
+          || Number(vipData.redplus?.vipCode ?? 0) > 0
+        );
+
+        // 如果 cookie 认证返回了真实 VIP 数据，直接走嵌套格式
+        if (hasNestedVip && hasVipCode) {
+          this.vipInfo = {
+            associator: vipData.associator ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+            musicPackage: vipData.musicPackage ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+            redplus: vipData.redplus ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+            redVipLevelIcon: vipData.redVipLevelIcon ?? '',
+          };
+          const now = Date.now();
+          this.isVip
+            = (this.vipInfo.associator.vipCode > 0 && (this.vipInfo.associator.expireTime === -1 || this.vipInfo.associator.expireTime > now))
+            || (this.vipInfo.musicPackage.vipCode > 0 && (this.vipInfo.musicPackage.expireTime === -1 || this.vipInfo.musicPackage.expireTime > now))
+            || (this.vipInfo.redplus.vipCode > 0 && (this.vipInfo.redplus.expireTime === -1 || this.vipInfo.redplus.expireTime > now));
+          return;
+        }
+      }
+
+      // 回退：带 uid 调用（扁平格式，无 expireTime）
+      if (uid) {
+        const { data: uidData } = await getVipInfo(uid);
+        vipData = uidData?.data || {};
+      } else {
+        vipData = {};
+      }
+
+      if (vipData.associator || vipData.musicPackage || vipData.redplus) {
+        this.vipInfo = {
+          associator: vipData.associator ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          musicPackage: vipData.musicPackage ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          redplus: vipData.redplus ?? { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          redVipLevelIcon: vipData.redVipLevelIcon ?? '',
+        };
+        this.isVip = this.vipInfo.associator.vipCode > 0 || this.vipInfo.musicPackage.vipCode > 0 || this.vipInfo.redplus.vipCode > 0;
+      } else {
+        // 扁平格式（仅有等级，不能严格证明会员身份）
+        const redVipLevel = vipData.redVipLevel ?? 0;
+        this.vipInfo = {
+          associator: { vipCode: redVipLevel, expireTime: 0, iconUrl: vipData.redVipLevelIcon ?? '', dynamicIconUrl: vipData.redVipDynamicIconUrl ?? null, vipLevel: redVipLevel, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          musicPackage: { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          redplus: { vipCode: 0, expireTime: 0, iconUrl: '', dynamicIconUrl: null, vipLevel: 0, isSignDeduct: false, isSignIap: false, isSignIapDeduct: false, isSign: false },
+          redVipLevelIcon: vipData.redVipLevelIcon ?? '',
+        };
+        this.isVip = false;
+      }
+    } catch (e: any) {
+      this.isVip = false;
+      this.vipInfo = null;
+    }
   },
 });

@@ -169,8 +169,10 @@ async function fetchUserDetail(id: number) {
     ]);
     if (currentToken !== fetchToken) return;
     userDetail.value = detailRes?.data || detailRes;
-    createdPlaylists.value = normalizePlaylistArray(createdRes);
-    collectedPlaylists.value = normalizePlaylistArray(collectedRes);
+    const allCreated = normalizePlaylistArray(createdRes);
+    const allCollected = normalizePlaylistArray(collectedRes);
+    createdPlaylists.value = allCreated.filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) === Number(id));
+    collectedPlaylists.value = allCollected.filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) !== Number(id));
     activeTab.value = 'created';
   } catch (e: any) {
     if (currentToken !== fetchToken) return;

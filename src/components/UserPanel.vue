@@ -409,10 +409,16 @@ async function loadUserData() {
         ]);
 
         if (!createdPlaylists.value.length && createdRes.status === 'fulfilled') {
-          createdPlaylists.value = normalizeCreatedCollectedPayload(createdRes.value).map(normalizePlaylistItem);
+          const items = normalizeCreatedCollectedPayload(createdRes.value);
+          createdPlaylists.value = items
+            .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) === uid)
+            .map(normalizePlaylistItem);
         }
         if (!collectedPlaylists.value.length && collectedRes.status === 'fulfilled') {
-          collectedPlaylists.value = normalizeCreatedCollectedPayload(collectedRes.value).map(normalizePlaylistItem);
+          const items = normalizeCreatedCollectedPayload(collectedRes.value);
+          collectedPlaylists.value = items
+            .filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) !== uid)
+            .map(normalizePlaylistItem);
         }
       }
 
@@ -550,7 +556,7 @@ async function loadDjDetail(rid: number) {
   try {
     const [detailRes, programRes] = await Promise.all([
       getDjDetail(rid),
-      getDjProgram({ rid, limit: 100, offset: 0, asc: true }),
+      getDjProgram({ rid, limit: 100, offset: 0 }),
     ]);
     const detailData = detailRes.data?.data || detailRes.data || null;
     djDetail.value = detailData;

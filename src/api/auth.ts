@@ -79,7 +79,7 @@ export function getUserLikeList(uid: number) {
 }
 
 export function getUserCreatedPlaylist(uid: number, limit = 100, offset = 0, cookie?: string) {
-  return apiClient.get('/user/playlist/create', {
+  return apiClient.get('/user/playlist', {
     params: {
       uid,
       limit,
@@ -91,7 +91,7 @@ export function getUserCreatedPlaylist(uid: number, limit = 100, offset = 0, coo
 }
 
 export function getUserCollectedPlaylist(uid: number, limit = 100, offset = 0, cookie?: string) {
-  return apiClient.get('/user/playlist/collect', {
+  return apiClient.get('/user/playlist', {
     params: {
       uid,
       limit,
@@ -107,6 +107,16 @@ export function getMyCreatedVoiceList(limit = 20) {
     params: {
       limit,
       timestamp: Date.now(),
+    },
+  });
+}
+
+export function getVipInfo(uid?: number, cookie?: string) {
+  return apiClient.get('/vip/info', {
+    params: {
+      ...(uid ? { uid } : {}),
+      timestamp: Date.now(),
+      ...(cookie ? { cookie } : {}),
     },
   });
 }

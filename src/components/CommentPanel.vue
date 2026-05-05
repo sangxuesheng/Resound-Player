@@ -13,13 +13,24 @@
       </div>
     </div>
 
-    <div v-if="loading" class="comment-status">评论加载中…</div>
-    <div v-else-if="error" class="comment-status error">{{ error }}</div>
-    <div v-else-if="!comments.length" class="comment-status">暂无评论</div>
-
-    <template v-else>
-      <ul class="comment-list">
-        <AnimatedAppear v-for="(item, idx) in comments" :key="item.id" tag="li" variant="text" rhythm="list" :index="idx" class-name="comment-item">
+    <section v-if="hotLoading || hotError || hotComments.length" class="hot-comment-section">
+      <div class="hot-comment-head">
+        <h5 class="hot-comment-title">热门评论</h5>
+        <span class="hot-comment-count">{{ hotComments.length }} 条</span>
+      </div>
+      <div v-if="hotLoading" class="comment-status">热门评论加载中…</div>
+      <div v-else-if="hotError" class="comment-status error">{{ hotError }}</div>
+      <div v-else-if="!hotComments.length" class="comment-status">暂无热门评论</div>
+      <ul v-else class="comment-list hot-comment-list">
+        <AnimatedAppear
+          v-for="(item, idx) in hotComments"
+          :key="item.id"
+          tag="li"
+          variant="text"
+          rhythm="list"
+          :index="idx"
+          class-name="comment-item hot-comment-item"
+        >
           <div class="comment-main">
             <div class="comment-user-row">
               <img class="comment-avatar" :src="item.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user" @click="openUser(item)" />
@@ -33,9 +44,9 @@
             </div>
             <div class="comment-actions">
               <span class="comment-time">{{ item.time }}</span>
+              <span class="hot-badge">热门</span>
               <button class="text-btn" @click="toggleLike(item)">{{ item.liked ? '取消赞' : '点赞' }}({{ item.likes }})</button>
               <button class="text-btn" @click="toggleReply(item)">{{ item.showReply ? '取消回复' : '回复' }}</button>
-              <button v-if="canDelete(item)" class="text-btn danger" @click="removeComment(item)">删除</button>
             </div>
           </div>
           <div v-if="item.showReply" class="reply-editor">
@@ -55,10 +66,63 @@
           </ul>
         </AnimatedAppear>
       </ul>
-      <div v-if="hasMore" class="comment-more-wrap">
-        <button class="comment-more-btn" @click="loadMore" :disabled="loadingMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
+    </section>
+
+    <div v-if="hotComments.length" class="comment-divider" aria-hidden="true"></div>
+
+    <section class="recent-comment-section">
+      <div class="recent-comment-head">
+        <h5 class="recent-comment-title">最新评论</h5>
+        <span class="recent-comment-count">{{ total }} 条</span>
       </div>
-    </template>
+
+      <div v-if="loading" class="comment-status">评论加载中…</div>
+      <div v-else-if="error" class="comment-status error">{{ error }}</div>
+      <div v-else-if="!comments.length" class="comment-status">暂无评论</div>
+
+      <template v-else>
+        <ul class="comment-list">
+          <AnimatedAppear v-for="(item, idx) in comments" :key="item.id" tag="li" variant="text" rhythm="list" :index="idx" class-name="comment-item">
+            <div class="comment-main">
+              <div class="comment-user-row">
+                <img class="comment-avatar" :src="item.avatarUrl + '?imageView&thumbnail=40x40'" :alt="item.user" @click="openUser(item)" />
+                <button class="comment-user" @click="openUser(item)">{{ item.user }}</button>
+              </div>
+              <p class="comment-content">{{ item.content }}</p>
+              <div v-if="item.replyTo" class="comment-reply">
+                <button v-if="item.replyTo.userId" class="reply-user" @click="openUser(item.replyTo)">@{{ item.replyTo.user }}：</button>
+                <span v-else class="reply-user">@{{ item.replyTo.user }}：</span>
+                <span class="reply-text">{{ item.replyTo.content }}</span>
+              </div>
+              <div class="comment-actions">
+                <span class="comment-time">{{ item.time }}</span>
+                <button class="text-btn" @click="toggleLike(item)">{{ item.liked ? '取消赞' : '点赞' }}({{ item.likes }})</button>
+                <button class="text-btn" @click="toggleReply(item)">{{ item.showReply ? '取消回复' : '回复' }}</button>
+                <button v-if="canDelete(item)" class="text-btn danger" @click="removeComment(item)">删除</button>
+              </div>
+            </div>
+            <div v-if="item.showReply" class="reply-editor">
+              <input v-model="item.replyDraft" class="reply-input" type="text" maxlength="200" placeholder="回复这条评论..." />
+              <button type="button" class="reply-submit" :disabled="!item.replyDraft?.trim()" @click="submitReply(item)">发送</button>
+            </div>
+            <ul v-if="item.replies?.length" class="reply-list">
+              <li v-for="(reply, rIdx) in item.replies" :key="reply.id" class="reply-item">
+                <span class="reply-user">{{ reply.user }}</span>
+                <p class="reply-content">{{ reply.content }}</p>
+                <div class="comment-actions">
+                  <span class="comment-time">{{ reply.time }}</span>
+                  <button class="text-btn" @click="toggleReplyLike(item, rIdx)">{{ reply.liked ? '取消赞' : '点赞' }}({{ reply.likes }})</button>
+                  <button v-if="reply.user === myNickname" class="text-btn danger" @click="removeReply(item, rIdx)">删除</button>
+                </div>
+              </li>
+            </ul>
+          </AnimatedAppear>
+        </ul>
+        <div v-if="hasMore" class="comment-more-wrap">
+          <button class="comment-more-btn" @click="loadMore" :disabled="loadingMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
+        </div>
+      </template>
+    </section>
 
     <transition name="toast-fade">
       <div v-if="toast" class="cp-toast">{{ toast }}</div>
@@ -68,6 +132,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { getCommentHot } from '../api/music';
 import { userStore } from '../stores/user';
 import { showLoginModal } from '../stores/loginModal';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -84,10 +149,13 @@ const props = defineProps<{
 
 const newComment = ref('');
 const comments = ref<any[]>([]);
+const hotComments = ref<any[]>([]);
 const total = ref(0);
 const loading = ref(true);
 const loadingMore = ref(false);
+const hotLoading = ref(true);
 const error = ref('');
+const hotError = ref('');
 const offset = ref(0);
 const LIMIT = 20;
 const toast = ref('');
@@ -95,7 +163,6 @@ const toast = ref('');
 const hasMore = computed(() => comments.value.length < total.value);
 const myNickname = computed(() => userStore.profile?.nickname || '');
 
-/* 用户跳转 */
 const emit = defineEmits<{ (e: 'open-user', userId: number): void }>();
 
 function openUser(item: any) {
@@ -103,39 +170,78 @@ function openUser(item: any) {
   if (uid) emit('open-user', uid);
 }
 
-/* 鉴权 */
+function normalizeComment(c: any) {
+  return {
+    id: c.commentId != null ? String(c.commentId) : `c-${Date.now()}-${Math.random()}`,
+    rawId: c.commentId,
+    user: c.user?.nickname || '匿名用户',
+    avatarUrl: c.user?.avatarUrl || '',
+    content: c.content || '',
+    time: formatTime(c.time),
+    likes: c.likedCount ?? 0,
+    liked: !!c.liked,
+    ownerUserId: c.user?.userId ?? null,
+    replyTo: c.beReplied?.[0]
+      ? {
+          user: c.beReplied[0].user?.nickname,
+          content: c.beReplied[0].content,
+          userId: c.beReplied[0].user?.userId ?? null,
+        }
+      : null,
+    showReply: false,
+    replyDraft: '',
+    replies: [],
+  };
+}
+
 function requireAuth(): boolean {
-  if (!userStore.isLogin) { showLoginModal(); return false; }
+  if (!userStore.isLogin) {
+    showLoginModal();
+    return false;
+  }
   return true;
 }
 
-/* 加载评论 */
+async function fetchHotComments() {
+  hotLoading.value = true;
+  hotError.value = '';
+  try {
+    const res = await getCommentHot({ id: props.resourceId, type: props.resourceType, limit: 5 });
+    const body = res.data;
+    const data = body?.data || body || {};
+    const raw = data?.hotComments || data?.comments || [];
+    hotComments.value = raw.map(normalizeComment);
+  } catch (e: any) {
+    hotError.value = e?.message || '热门评论加载失败';
+    hotComments.value = [];
+  } finally {
+    hotLoading.value = false;
+  }
+}
+
 async function fetchComments(append = false) {
-  if (!append) { loading.value = true; offset.value = 0; error.value = ''; } else loadingMore.value = true;
+  if (!append) {
+    loading.value = true;
+    offset.value = 0;
+    error.value = '';
+  } else {
+    loadingMore.value = true;
+  }
   try {
     const res = await props.fetcher({ id: props.resourceId, limit: LIMIT, offset: offset.value });
     const body = res.data;
     const data = body?.data || body || {};
     total.value = data?.total || data?.totalCount || 0;
     const raw = data?.comments || [];
-    const normalized = raw.map((c: any) => ({
-      id: c.commentId != null ? String(c.commentId) : `c-${Date.now()}-${Math.random()}`,
-      rawId: c.commentId,
-      user: c.user?.nickname || '匿名用户',
-      avatarUrl: c.user?.avatarUrl || '',
-      content: c.content || '',
-      time: formatTime(c.time),
-      likes: c.likedCount ?? 0,
-      liked: !!c.liked,
-      ownerUserId: c.user?.userId ?? null,
-      replyTo: c.beReplied?.[0] ? { user: c.beReplied[0].user?.nickname, content: c.beReplied[0].content, userId: c.beReplied[0].user?.userId ?? null } : null,
-      showReply: false,
-      replyDraft: '',
-      replies: [],
-    }));
+    const normalized = raw.map(normalizeComment);
     comments.value = append ? [...comments.value, ...normalized] : normalized;
-  } catch (e: any) { error.value = e?.message || '加载失败'; }
-  finally { loading.value = false; loadingMore.value = false; }
+    await fetchHotComments();
+  } catch (e: any) {
+    error.value = e?.message || '加载失败';
+  } finally {
+    loading.value = false;
+    loadingMore.value = false;
+  }
 }
 
 async function loadMore() {
@@ -143,16 +249,13 @@ async function loadMore() {
   await fetchComments(true);
 }
 
-/* 发送评论 */
 async function submitComment() {
   const text = newComment.value.trim();
   if (!text) return;
-  console.log('[comment] auth', userStore.isLogin, userStore.loginMode);
   if (!requireAuth()) return;
   let res: any;
   try {
     res = await props.sender({ id: props.resourceId, t: 1, content: text, type: props.resourceType, cookie: userStore.loginCookie || undefined });
-    console.log('[comment] submit OK', res?.data?.code, res?.data);
   } catch (e: any) {
     console.error('[comment] submit ERROR', e, e?.response?.data);
     return;
@@ -178,7 +281,6 @@ async function submitComment() {
   }
 }
 
-/* 点赞 */
 async function toggleLike(item: any) {
   if (!requireAuth()) return;
   const liked = !item.liked;
@@ -191,7 +293,6 @@ async function toggleLike(item: any) {
   }
 }
 
-/* 回复 */
 function toggleReply(item: any) {
   item.showReply = !item.showReply;
   if (!item.showReply) item.replyDraft = '';
@@ -200,19 +301,18 @@ function toggleReply(item: any) {
 async function submitReply(item: any) {
   if (!item.replyDraft?.trim() || !requireAuth()) return;
   const cid = item.rawId;
-  console.log('[reply] cid', cid);
   if (!cid) return;
   let res: any;
   try {
     res = await props.sender({ id: props.resourceId, t: 2, content: item.replyDraft, commentId: cid, type: props.resourceType, cookie: userStore.loginCookie || undefined });
-    console.log('[reply] response', res?.data?.code, res?.data);
   } catch (e: any) {
     console.error('[reply] ERROR', e, e?.response?.data);
     return;
   }
   if (res?.data?.code === 200 || res?.data?.code === 250) {
+    const rawId = Number(res?.data?.comment?.commentId || 0);
     item.replies = item.replies || [];
-    item.replies.push({ id: `r-${Date.now()}`, user: userStore.profile?.nickname || '我', content: item.replyDraft, time: '刚刚', liked: false, likes: 0 });
+    item.replies.push({ id: `r-${Date.now()}`, rawId: rawId > 0 ? rawId : undefined, user: userStore.profile?.nickname || '我', content: item.replyDraft, time: '刚刚', liked: false, likes: 0 });
     item.replyDraft = '';
     item.showReply = false;
   }
@@ -225,7 +325,6 @@ function toggleReplyLike(item: any, rIdx: number) {
   r.likes += r.liked ? 1 : -1;
 }
 
-/* 删除 */
 function canDelete(item: any) {
   const uid = userStore.profile?.userId;
   const nickname = userStore.profile?.nickname;
@@ -250,11 +349,17 @@ async function removeComment(item: any) {
   }
 }
 
-function removeReply(item: any, rIdx: number) {
+async function removeReply(item: any, rIdx: number) {
+  const reply = item.replies?.[rIdx];
+  if (!reply) return;
+  const rawId = reply.rawId;
+  if (rawId) {
+    const res = await props.deleter({ id: props.resourceId, commentId: rawId, cookie: userStore.loginCookie || undefined }).catch(() => null);
+    if (res?.data?.code !== 200 && res?.data?.code !== 250) return;
+  }
   item.replies?.splice(rIdx, 1);
 }
 
-/* 时间格式化 */
 function formatTime(ms: number) {
   if (!ms) return '';
   const date = new Date(ms);
@@ -264,10 +369,13 @@ function formatTime(ms: number) {
   return `${date.getMonth() + 1}-${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-watch(() => props.resourceId, (id) => { if (id > 0) fetchComments(); }, { immediate: true });
+watch(() => props.resourceId, (id) => {
+  if (id > 0) fetchComments();
+}, { immediate: true });
 </script>
 
 <style scoped>
+@import '../styles/detail-page.css';
 .comment-panel { width: 100%; }
 .comment-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .comment-title { margin: 0; font-size: 16px; color: var(--text-main); }
@@ -282,6 +390,37 @@ watch(() => props.resourceId, (id) => { if (id > 0) fetchComments(); }, { immedi
 .comment-submit:not(:disabled):hover { opacity: 0.85; }
 .comment-status { padding: 32px 0; text-align: center; color: var(--text-sub); font-size: 14px; }
 .comment-status.error { color: #ef4444; }
+.hot-comment-section { margin-bottom: 16px; }
+.hot-comment-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.hot-comment-title { margin: 0; font-size: 14px; color: var(--text-main); }
+.hot-comment-count { font-size: 12px; color: var(--text-sub); }
+.hot-comment-list { margin-top: 0; }
+.hot-comment-item { border-color: color-mix(in srgb, var(--accent) 18%, var(--border-soft)); }
+.hot-badge { font-size: 11px; line-height: 1; padding: 3px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, var(--bg-surface)); color: var(--accent); }
+.comment-divider {
+  height: 1px;
+  margin: var(--space-5) 0 var(--space-4);
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, var(--accent) 38%, var(--border-soft)) 50%, transparent 100%);
+  opacity: 0.95;
+}
+.recent-comment-section {
+  padding-top: var(--space-1);
+}
+.recent-comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.recent-comment-title {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-main);
+}
+.recent-comment-count {
+  font-size: 12px;
+  color: var(--text-sub);
+}
 .comment-list { display: grid; gap: 10px; list-style: none; padding: 0; margin: 0; }
 .comment-item { border: 1px solid var(--border-soft); border-radius: 12px; padding: 10px; background: var(--bg-muted); list-style: none; }
 .comment-user-row { display: flex; align-items: center; gap: 8px; }

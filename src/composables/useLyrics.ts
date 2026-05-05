@@ -17,6 +17,7 @@ export type LyricLine = {
   time: number;
   text: string;
   translation?: string;
+  romalrc?: string;
   words?: LyricWord[];
 };
 
@@ -81,6 +82,7 @@ export function parseLyrics(payload: any): LyricLine[] {
   const yrcText = payload?.yrc?.lyric || '';
   const lrcText = typeof payload?.lrc === 'string' ? payload.lrc : (payload?.lrc?.lyric || '');
   const tlyricText = payload?.tlyric?.lyric || '';
+  const romalrcText = payload?.romalrc?.lyric || '';
   const lrcLines = parseLrc(lrcText);
   const yrcLines = parseYrc(yrcText);
   let baseLines: LyricLine[] = [];
@@ -103,19 +105,38 @@ export function parseLyrics(payload: any): LyricLine[] {
   }
   if (!baseLines.length) return [];
   const tLines = parseLrc(tlyricText);
-  if (!tLines.length) return baseLines;
-  if (tLines.length === baseLines.length) {
-    return baseLines.map((line, index) => ({ ...line, translation: tLines[index]?.text || '' }));
-  }
-  return baseLines.map((line) => {
-    let bestText = '';
-    let bestDiff = Infinity;
-    for (const tLine of tLines) {
-      const diff = Math.abs(tLine.time - line.time);
-      if (diff < bestDiff && diff <= 2) { bestDiff = diff; bestText = tLine.text; }
+  if (tLines.length) {
+    if (tLines.length === baseLines.length) {
+      baseLines = baseLines.map((line, index) => ({ ...line, translation: tLines[index]?.text || '' }));
+    } else {
+      baseLines = baseLines.map((line) => {
+        let bestText = '';
+        let bestDiff = Infinity;
+        for (const tLine of tLines) {
+          const diff = Math.abs(tLine.time - line.time);
+          if (diff < bestDiff && diff <= 2) { bestDiff = diff; bestText = tLine.text; }
+        }
+        return { ...line, translation: bestText };
+      });
     }
-    return { ...line, translation: bestText };
-  });
+  }
+  const rLines = parseLrc(romalrcText);
+  if (rLines.length) {
+    if (rLines.length === baseLines.length) {
+      baseLines = baseLines.map((line, index) => ({ ...line, romalrc: rLines[index]?.text || '' }));
+    } else {
+      baseLines = baseLines.map((line) => {
+        let bestText = '';
+        let bestDiff = Infinity;
+        for (const rLine of rLines) {
+          const diff = Math.abs(rLine.time - line.time);
+          if (diff < bestDiff && diff <= 2) { bestDiff = diff; bestText = rLine.text; }
+        }
+        return { ...line, romalrc: bestText };
+      });
+    }
+  }
+  return baseLines;
 }
 
 /* ------------------------------------------------------------------ */
@@ -281,7 +302,8 @@ export function getTranslationStyle(lineIndex: number, line: LyricLine, currentI
   const currentMs = displayTime * 1000;
   if (lineIndex < currentIndex) return { color: baseColor + ' !important' };
   if (lineIndex > currentIndex) return { color: baseColor + ' !important' };
-  if (!line.translation) return { color: baseColor + ' !important' };
+  // 无逐字数据时，当前行使用纯色高亮，不做渐变（与主歌词行对齐）
+  if (!line.words?.length) return { color: activeColor + ' !important', backgroundImage: 'none' };
   const startMs = line.time * 1000;
   const nextStartMs = (nextLine?.time ?? line.time + 3) * 1000;
   const percent = Math.round((Math.min(1, Math.max(0, (currentMs - startMs) / Math.max(1, nextStartMs - startMs)))) * 100);
@@ -294,6 +316,23 @@ export function getTranslationStyle(lineIndex: number, line: LyricLine, currentI
 /** 将 lyricsSettings.anchorPos (0-10) 转换为高亮位置比例 (0-1) */
 export function getAnchorRatio(anchorPos: number): number {
   return 0.15 + ((anchorPos ?? 3) / 10) * 0.7;
+}
+
+/**
+ * 移除末尾所有无文本内容的空行。
+ * 只裁剪尾部，不影响中间可能存在的间奏空行。
+ */
+function trimTrailingEmptyLines(lines: LyricLine[]): LyricLine[] {
+  if (!lines.length) return lines;
+  let end = lines.length;
+  while (end > 0) {
+    const line = lines[end - 1];
+    const text = line.text?.trim() || '';
+    const hasWords = (line.words || []).length > 0;
+    if (!text && !hasWords) end--;
+    else break;
+  }
+  return end < lines.length ? lines.slice(0, end) : lines;
 }
 
 export function scrollToLyricLine(container: HTMLElement | null, lineEls: HTMLElement[], index: number, behavior: ScrollBehavior = 'smooth') {
@@ -366,14 +405,18 @@ export function useLyrics() {
       const source = track?.source;
       const cloudSid = track?.cloudSid;
 
-      // 云盘歌词不走新 API
+      // 云盘歌词：优先走云盘专属 API
       if (source === 'cloud' && cloudSid) {
         const data = (await getCloudLyric(Number(track?.cloudOwnerId || track?.uid || 0), cloudSid)).data;
         lyricLines.value = parseLyrics(data);
-      } else {
+      }
+
+      // 云盘 API 无歌词 或 非云盘歌曲 → 走在线歌词
+      if (!lyricLines.value.length) {
+        const lyricId = source === 'cloud' && cloudSid ? Number(cloudSid) : Number(id);
         // 优先尝试 /lyric/new
         try {
-          const res = await getSongLyricNew(Number(id));
+          const res = await getSongLyricNew(lyricId);
           const data = res.data;
           const newLines = parseLyricsNew(data);
           if (newLines.length) {
@@ -383,10 +426,11 @@ export function useLyrics() {
           }
         } catch {
           // 回退旧 API
-          const data = (await getSongLyric(Number(id))).data;
+          const data = (await getSongLyric(lyricId)).data;
           lyricLines.value = parseLyrics(data);
         }
       }
+      lyricLines.value = trimTrailingEmptyLines(lyricLines.value);
       if (lyricBoxRef.value) lyricBoxRef.value.scrollTop = 0;
     } catch { lyricLines.value = []; error.value = '歌词加载失败'; }
     finally { isLoading.value = false; }

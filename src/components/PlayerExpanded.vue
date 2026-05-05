@@ -32,9 +32,9 @@
           :has-lyric="true"
         />
       </div>
-      <section class="expanded-panel" :class="{ 'comments-open': showComments }">
-        <AnimatedAppear v-show="!showComments" tag="header" variant="content" rhythm="head" class-name="panel-head">
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="playerStore.closeExpanded()">返回</AnimatedAppear>
+      <section class="expanded-panel">
+        <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
+          <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="showComments ? showComments = false : playerStore.closeExpanded()">返回</AnimatedAppear>
           <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :title="isFullscreen ? '退出全屏' : '全屏'">
             <svg v-if="isFullscreen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
             <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
@@ -45,7 +45,10 @@
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
                 <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name-center">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
                 <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist-center">
-                  <template v-if="playerStore.currentTrack?.ar?.length">
+                  <template v-if="isCurrentPodcast">
+                    <button type="button" class="artist-inline-btn" @click.stop="openPodcastDetail">{{ currentAlbumName }}</button>
+                  </template>
+                  <template v-else-if="playerStore.currentTrack?.ar?.length">
                     <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
                   </template>
                   <template v-else>{{ artistText }}</template>
@@ -77,7 +80,10 @@
                 <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode !== 'fullscreen'">
                   <AnimatedAppear tag="h2" variant="title" rhythm="title" class-name="song-name" :key="'sn-'+trackId">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
                   <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="song-artist" :key="'sa-'+trackId">
-                    <template v-if="playerStore.currentTrack?.ar?.length">
+                    <template v-if="isCurrentPodcast">
+                      <button type="button" class="artist-inline-btn" @click.stop="openPodcastDetail">{{ currentAlbumName }}</button>
+                    </template>
+                    <template v-else-if="playerStore.currentTrack?.ar?.length">
                       <button v-for="artist in playerStore.currentTrack.ar" :key="artist.id || artist.name" type="button" class="artist-inline-btn" :disabled="!(artist.id || artist.artistId)" @click.stop="openArtist(artist)">{{ artist.name }}</button>
                     </template>
                     <template v-else>{{ artistText }}</template>
@@ -91,9 +97,6 @@
                 </div>
                 <div v-show="showLeftControls" class="controls">
                   <button class="ctrl" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="16" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="16" /><Shuffle v-else :size="16" /></button>
-                  <button class="ctrl" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                  </button>
                   <template v-if="isPersonalFmCurrentTrack">
                     <button class="ctrl ctrl-dislike" @click="dislikeFmTrack" aria-label="不喜欢并切换下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.8 5.5H6.9c-.93 0-1.74.64-1.95 1.54l-1.14 4.9a2 2 0 0 0 1.95 2.46h3.38l-.53 3.92a1.85 1.85 0 0 0 3.4 1.18l4.3-6.14c.2-.28.3-.62.3-.97V7.4a1.9 1.9 0 0 0-1.9-1.9h-3.9Zm7.15 0h1.65A1.4 1.4 0 0 1 21 6.9v6.95a1.4 1.4 0 0 1-1.4 1.4h-1.65V5.5Z"/></svg></button>
                     <button class="ctrl main" @click="playerStore.togglePlay()" aria-label="播放或暂停">{{ playerStore.isPlaying ? '❚❚' : '▶' }}</button>
@@ -113,6 +116,9 @@
                     <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
                   </div>
                   <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
+                  <button class="ctrl volume-ctrl-comment" :class="{ active: showComments }" :disabled="!canComment" @click="showComments = !showComments" aria-label="评论区">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </button>
                 </div>
               </div>
               <LyricsPanel :vinyl-mode="lyricsSettings.displayMode === 'record'" :fullscreen="lyricsSettings.displayMode === 'fullscreen'" :accent-color="palette.c3" />
@@ -123,20 +129,25 @@
                   <img v-if="currentCover" :src="currentCover + '?param=80y80'" :alt="playerStore.currentTrack?.name" />
                 </div>
                 <div class="comments-head-info">
-                  <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '歌曲评论' }}</h3>
-                  <p v-if="currentArtistList.length" class="comments-head-artist">
-                    歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
-                  </p>
-                  <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(currentAlbumId)">{{ currentAlbumName }}</button></p>
+                  <h3 class="comments-head-title">{{ playerStore.currentTrack?.name || '评论' }}</h3>
+                  <p v-if="isCurrentPodcast" class="comments-head-artist">播客：<button type="button" class="head-link" @click.stop="openPodcastDetail">{{ currentAlbumName }}</button></p>
+                  <p v-if="isCurrentPodcast && podcastPublishTime" class="comments-head-time">发布时间：{{ podcastPublishTime }}</p>
+                  <template v-else>
+                    <p v-if="currentArtistList.length" class="comments-head-artist">
+                      歌手：<button v-for="(ar, i) in currentArtistList" :key="ar.id || ar.name" type="button" class="head-link" @click.stop="openArtist(ar)">{{ i > 0 ? ' / ' : '' }}{{ ar.name }}</button>
+                    </p>
+                    <p v-if="currentAlbumName" class="comments-head-album">专辑：<button type="button" class="head-link" @click.stop="openAlbum(currentAlbumId)">{{ currentAlbumName }}</button></p>
+                  </template>
                 </div>
               </div>
             <CommentPanel
-              :resource-id="(playerStore.currentTrack?.id as number) || 0"
-              :resource-type="0"
-              :fetcher="api.getSongComments"
+              :resource-id="commentResourceId"
+              :resource-type="commentResourceType"
+              :fetcher="commentFetcher"
               :sender="api.sendComment"
               :liker="api.likeComment"
-              :deleter="api.deleteSongComment"
+              :deleter="commentDeleter"
+              @open-user="openUser"
             />
           </div>
         </div>
@@ -146,14 +157,14 @@
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
-          <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ 'line-through': !lyricsSettings.showTranslation }" title="切换翻译显示" @click="lyricsSettings.showTranslation = !lyricsSettings.showTranslation; lyricsSettings.save()">译</button>
+          <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ active: showTransPanel }" title="翻译/音译设置" @click="showTransPanel = !showTransPanel">译</button>
           <button class="ra-btn" title="多选歌词" @click="onOpenLyricsSelection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></button>
         </div>
 
         <Teleport to="body">
           <transition name="offset-fade">
             <div v-if="showOffsetPanel" class="offset-mask" @click="showOffsetPanel = false" @touchstart="showOffsetPanel = false">
-              <div class="offset-popover" @click.stop @touchstart.stop>
+              <div class="offset-popover" :style="offsetPopoverStyle" @click.stop @touchstart.stop>
                 <div class="offset-head">歌词偏移</div>
                 <div class="offset-body">
                   <button class="of-step" @click="playerStore.adjustLyricsOffset(-0.1)"><Minus :size="18" /></button>
@@ -168,12 +179,33 @@
           </transition>
         </Teleport>
 
-        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console" :attrs="showComments ? { 'data-grid-item': '' } : {}" :class="{ 'grid-item': showComments }">
+        <!-- 翻译/音译设置弹窗 -->
+        <Teleport to="body">
+          <transition name="offset-fade">
+            <div v-if="showTransPanel" class="offset-mask" @click="showTransPanel = false" @touchstart="showTransPanel = false">
+              <div class="trans-popover" :style="transPopoverStyle" @click.stop @touchstart.stop>
+                <div class="trans-head">歌词内容显示</div>
+                <div class="trans-body">
+                  <div class="trans-row">
+                    <span class="trans-label">翻译</span>
+                    <FancySwitch :model-value="lyricsSettings.showTranslation" @update:model-value="lyricsSettings.showTranslation = $event; lyricsSettings.save()" />
+                  </div>
+                  <div class="trans-row">
+                    <span class="trans-label">音译</span>
+                    <FancySwitch :model-value="lyricsSettings.showRomalrc" @update:model-value="lyricsSettings.showRomalrc = $event; lyricsSettings.save()" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </Teleport>
+
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
             <button class="con-btn" @click="playerStore.cyclePlayMode()" aria-label="切换播放模式"><Repeat v-if="playerStore.playMode === 'loop'" :size="14" /><Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" /><Shuffle v-else :size="14" /></button>
-            <button class="con-btn" :class="{ active: showComments }" @click="showComments = !showComments" aria-label="评论区">
+            <button class="con-btn" :class="{ active: showComments }" :disabled="!canComment" @click="showComments = !showComments" aria-label="评论区">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </button>
           </div>
@@ -208,6 +240,7 @@
             <ul v-if="playerStore.playlist.length">
               <li v-for="(track, idx) in playerStore.playlist" :key="track.id" :class="{ active: idx === playerStore.currentIndex }" @click="playFromPopup(idx)">
                 <span class="track-num">{{ idx + 1 }}</span>
+                <img v-if="track.al?.picUrl" class="track-cover" :src="track.al.picUrl + '?param=48y48'" alt="" loading="lazy" />
                 <span class="track-info"><span class="t">{{ track.name }}</span><span class="a">{{ (track.ar || []).map((x) => x.name).join('/') }}</span></span>
                 <button class="track-remove-btn" title="移出列表" @click.stop="onRemoveTrack(idx)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
               </li>
@@ -226,7 +259,7 @@
 <script setup lang="ts">
 import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch, onMounted, onBeforeUnmount } from 'vue';
-import { toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
+import { toggleDjSubscribe, toggleSongLike, trashPersonalFm, deleteDjComment } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 import { lyricsSettings } from '../stores/lyricsSettings';
@@ -245,8 +278,9 @@ import LyricsSelectionModal from './LyricsSelectionModal.vue';
 import CommentPanel from './CommentPanel.vue';
 import * as api from '../api/music';
 import { openSelection } from '../stores/lyricsSelection';
+import FancySwitch from './ui/FancySwitch.vue';
 
-const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number] }>();
+const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number]; 'open-user': [userId: number]; 'open-podcast-detail': [item: any] }>();
 
 const artistText = computed(() => { const ar = playerStore.currentTrack?.ar || []; return ar.length ? ar.map((a) => a.name).join('/') : 'Unknown Artist'; });
 function openArtist(artist: Record<string, any>) { const id = Number(artist?.id || artist?.artistId || 0); if (id) emit('open-artist', artist); }
@@ -255,6 +289,11 @@ function openAlbum(albumId: number | undefined | null) {
   if (id > 0) emit('open-album', id);
 }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
+function openUser(userId: number) { if (userId > 0) emit('open-user', userId); }
+function openPodcastDetail() {
+  const rid = currentPodcastRid.value;
+  if (rid > 0) emit('open-podcast-detail', { radio: { id: rid }, name: currentAlbumName });
+}
 
 const currentCover = computed(() => playerStore.currentTrack?.al?.picUrl || '');
 const currentArtistList = computed(() => playerStore.currentTrack?.ar || []);
@@ -265,9 +304,12 @@ const palette = ref({ c1: 'rgb(28, 33, 53)', c2: 'rgb(84, 110, 126)', c3: 'rgb(1
 const showPlaylistPopup = ref(false);
 const showSettings = ref(false);
 const showOffsetPanel = ref(false);
+const showTransPanel = ref(false);
 const showComments = ref(false);
 const settingsAnchor = ref({ top: 0, right: 0 });
 const gearBtnRef = ref<HTMLElement | null>(null);
+const offsetPopoverStyle = ref<Record<string, string>>({});
+const transPopoverStyle = ref<Record<string, string>>({});
 
 const isFullscreen = ref(false);
 function toggleFullscreen() {
@@ -287,6 +329,32 @@ onBeforeUnmount(() => {
 });
 function onFsChange() { isFullscreen.value = !!document.fullscreenElement; }
 
+function updateOffsetPopoverStyle() {
+  const popoverHeight = 220;
+  const maxTopPx = window.innerHeight - popoverHeight - 16;
+  if (maxTopPx < 0) return;
+  const centeredTop = Math.floor(window.innerHeight / 2 - popoverHeight / 2);
+  offsetPopoverStyle.value = { top: `${Math.min(centeredTop, maxTopPx)}px` };
+}
+
+function updateTransPopoverStyle() {
+  const popoverHeight = 140;
+  const maxTopPx = window.innerHeight - popoverHeight - 16;
+  if (maxTopPx < 0) return;
+  const centeredTop = Math.floor(window.innerHeight / 2 - popoverHeight / 2);
+  transPopoverStyle.value = { top: `${Math.min(centeredTop, maxTopPx)}px` };
+}
+
+watch(showOffsetPanel, (v) => {
+  if (v) nextTick(() => updateOffsetPopoverStyle());
+  else offsetPopoverStyle.value = {};
+});
+
+watch(showTransPanel, (v) => {
+  if (v) nextTick(() => updateTransPopoverStyle());
+  else transPopoverStyle.value = {};
+});
+
 function onOpenSettings() {
   const btn = gearBtnRef.value;
   if (btn) { const r = btn.getBoundingClientRect(); settingsAnchor.value = { top: r.top - 8, right: window.innerWidth - r.left + 12 }; }
@@ -296,7 +364,20 @@ function onOpenSettings() {
 const isPersonalFmCurrentTrack = computed(() => playerStore.isPersonalFmTrack(playerStore.currentTrack));
 const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
 const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
+const currentPodcastProgramId = computed(() => Number(playerStore.currentTrack?.podcast?.programId || 0));
+const podcastPublishTime = computed(() => {
+  const t = Number(playerStore.currentTrack?.podcast?.createTime || 0);
+  if (!t) return '';
+  const d = new Date(t);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+});
 const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
+const commentResourceId = computed(() => isCurrentPodcast.value && currentPodcastProgramId.value > 0 ? currentPodcastProgramId.value : (currentTrackId.value > 0 ? currentTrackId.value : 0));
+const commentResourceType = computed(() => isCurrentPodcast.value ? 4 : 0);
+const commentFetcher = computed(() => isCurrentPodcast.value ? api.getDjComments : api.getSongComments);
+const commentDeleter = computed(() => isCurrentPodcast.value ? deleteDjComment : api.deleteSongComment);
+const canComment = computed(() => currentTrackId.value > 0);
 const canToggleCurrentLike = computed(() => isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0);
 const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
 const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
@@ -385,9 +466,9 @@ const displayMode = computed(() => lyricsSettings.displayMode);
 const isCustomBg = computed(() => lyricsSettings.bgMode === 'custom');
 
 const panelBodyStyle = computed(() => {
-  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr', rowGap: 'var(--space-3)' };
-  if (!lyricsSettings.showLyrics) return { gridTemplateColumns: '1fr' };
-  return { gridTemplateColumns: `${lyricsSettings.contentWidth}% ${100 - lyricsSettings.contentWidth}%` };
+  if (!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen') return { display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: 'auto 1fr', rowGap: 'var(--space-3)' };
+  if (!lyricsSettings.showLyrics) return { display: 'grid', gridTemplateColumns: '1fr' };
+  return { display: 'grid', gridTemplateColumns: '40% 60%', gap: '24px' };
 });
 
 const bgStyle = computed(() => {
@@ -516,11 +597,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .expanded-wrap { position: fixed; inset: 0; z-index: 60; overflow: hidden; transition: background 0.5s ease; }
 .cover-aura { position: absolute; inset: -8%; background: center/cover no-repeat; filter: blur(48px) saturate(130%); transform: scale(1.08); opacity: 0.18; pointer-events: none; transition: opacity 0.5s ease; }
 .bg-transition-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; transition: opacity 0.5s ease; }
-.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr; gap: var(--space-3); }
-.expanded-panel.comments-open { padding-bottom: 0; gap: 0; grid-template-rows: auto 1fr auto; }
-.expanded-panel.comments-open .panel-body { grid-row: 2; }
-.bottom-console.grid-item { position: static; grid-row: 3; }
-.panel-head { display: flex; justify-content: space-between; align-items: center; }
+.expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto; gap: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
 .song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 18px; }
@@ -528,9 +606,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
 .artist-inline-btn:focus-visible { outline: none; }
-.panel-body { min-height: 0; display: grid; grid-template-columns: 40% 60%; gap: 0; align-items: start; transition: grid-template-columns 0.3s ease; }
-.left-zone { width: 100%; box-sizing: border-box; justify-self: stretch; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 5% var(--space-2) 0; }
-.left-zone.l-only-cover { padding: var(--space-2) 0; }
+.panel-body { min-height: 0; overflow: hidden; display: grid; grid-template-columns: 40% 60%; gap: 24px; align-items: start; }
+.left-zone { width: 100%; box-sizing: border-box; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) var(--space-4); }
+.left-zone.l-only-cover { padding: var(--space-2) 0 var(--space-2) var(--space-4); }
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .album-shell.playing { transform: scale(1); }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
@@ -560,6 +638,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .favorite-ctrl { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .favorite-ctrl.saved { color: #ff6b8a !important; }
 .favorite-ctrl.saved :deep(svg) { fill: currentColor; }
+.volume-ctrl-comment { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; order: 1; }
+.volume-ctrl-comment.active { color: var(--accent, #fff) !important; }
 /* iridescence canvas */
 .iri-container { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .iri-container :deep(canvas) { width: 100% !important; height: 100% !important; display: block; }
@@ -592,7 +672,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ra-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
 .ra-btn--rect { border-radius: 10px; font-size: 14px; width: 44px; }
 .ra-btn-trans { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; }
-.ra-btn-trans.line-through { text-decoration: line-through; opacity: 0.5; }
+.ra-btn-trans.active { color: var(--accent, #c39c76); }
 .ra-icon { position: relative; display: grid; place-items: center; }
 .ra-badge {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -603,7 +683,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 /* offset popover */
 .offset-mask { position: fixed; inset: 0; z-index: 110; background: transparent; }
 .offset-popover {
-  position: fixed; right: 60px; top: 50%; transform: translateY(-50%);
+  position: fixed; right: 60px;
   width: 200px; padding: var(--space-3) var(--space-4);
   background: var(--bg-surface, #1a1c28);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
@@ -648,12 +728,26 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .of-reset:hover { color: var(--accent,#c39c76); border-color: var(--accent, rgba(195,156,118,0.4)); }
 .offset-fade-enter-active, .offset-fade-leave-active { transition: opacity 0.15s ease; }
 .offset-fade-enter-from, .offset-fade-leave-to { opacity: 0; }
+/* trans popover */
+.trans-popover {
+  position: fixed; right: 60px;
+  width: 200px; padding: var(--space-3) var(--space-4);
+  background: var(--bg-solid, #161823);
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  border-radius: var(--radius-lg, 14px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.45);
+  display: grid; gap: var(--space-3);
+  transform-origin: right center;
+  animation: offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+.trans-head { color: var(--text-main,#fff); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-align: center; padding-bottom: var(--space-1); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
+.trans-body { display: flex; flex-direction: column; gap: var(--space-2); }
+.trans-row { display: flex; align-items: center; justify-content: space-between; }
+.trans-label { color: var(--text-main,#fff); font-size: 13px; font-weight: 500; }
 /* bottom console */
 .bottom-console {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: static;
+  width: 100%;
   display: grid;
   gap: 2px;
   grid-template-columns: 1fr auto 1fr;
@@ -703,10 +797,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .playlist-popup-actions { display: flex; gap: var(--space-2); }
 .playlist-popup h3 { margin: 0; color: #fff; }
 .playlist-popup ul { margin: 0; padding: 0; list-style: none; overflow: auto; display: grid; gap: var(--space-1); }
-.playlist-popup li { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-2); border: 1px solid transparent; transition: background 120ms ease; }
+.playlist-popup li { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: auto 36px 1fr auto; align-items: center; gap: var(--space-2); border: 1px solid transparent; transition: background 120ms ease; }
 .playlist-popup li.active { background: color-mix(in srgb, var(--panel-bg-soft) 42%, #ffffff12); border-color: var(--line-muted); }
 .playlist-popup li:hover { background: color-mix(in srgb, var(--panel-bg-soft) 28%, #ffffff08); }
 .track-num { color: rgba(255,255,255,0.35); font-size: 12px; width: 20px; text-align: center; flex-shrink: 0; }
+.track-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
 .track-info { min-width: 0; display: grid; gap: 2px; }
 .t { color: #fff; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .a { color: rgba(255,255,255,0.75); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -757,6 +852,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   animation-delay: 0.1s;
 }
 .expanded-wrap.mode-fullscreen .panel-body {
+  display: grid !important;
   grid-template-columns: 1fr !important;
 }
 
@@ -887,6 +983,9 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   grid-column: 1 / -1;
   align-self: stretch;
   min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  box-sizing: border-box;
   overflow-y: auto;
   scrollbar-width: none;
   background: color-mix(in srgb, var(--bg-app) 94%, transparent);
@@ -894,7 +993,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   display: flex;
   flex-direction: column;
   padding: var(--space-4);
-  padding-bottom: 70px;
+  padding-bottom: 87px;
 }
 
 .comments-head {
@@ -965,6 +1064,18 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   white-space: nowrap;
 }
 .head-link:hover { opacity: 0.75; }
+.head-link-static {
+  color: var(--accent);
+  font-size: inherit;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.comments-head-time {
+  margin: 0;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  line-height: 1.6;
+}
 
 /* 评论区滑入动画 */
 /* 评论区切换动画 */

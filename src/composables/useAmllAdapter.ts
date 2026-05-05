@@ -3,7 +3,7 @@
  * 将项目现有的 LyricLine[] 格式转换为 AMLL LyricLine[] 格式
  */
 
-import type { LyricWord as ProjectLyricWord, LyricLine as ProjectLyricLine } from './useLyrics';
+import type { LyricLine as ProjectLyricLine } from './useLyrics';
 import { getAnchorRatio } from './useLyrics';
 
 export interface AmllLyricWord {
@@ -62,7 +62,7 @@ export function convertToAmmlLyrics(lines: ProjectLyricLine[]): AmllLyricLine[] 
     return {
       words,
       translatedLyric: line.translation || '',
-      romanLyric: '',
+      romanLyric: line.romalrc || '',
       startTime: startTimeMs,
       endTime: endTimeMs,
       isBG: false,

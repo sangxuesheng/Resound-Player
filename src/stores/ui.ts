@@ -12,6 +12,7 @@ const UNBLOCK_KEY = 'tm_unblock_enabled';
 const UNBLOCK_SRC_KEY = 'tm_unblock_sources';
 const ACCENT_KEY = 'tm_accent_mode';
 const ACCENT_COLOR_KEY = 'tm_accent_custom_color';
+const RESUME_AFTER_MV_KEY = 'tm_resume_after_mv';
 let mediaQuery: MediaQueryList | null = null;
 let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
 
@@ -76,6 +77,7 @@ export const uiStore = reactive({
   liquidGlassEnabled: true,
   unblockEnabled: true,
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
+  resumeAfterMv: true,
   searchKeyword: '',
   searchType: 1,
   defaultSearchHint: '',
@@ -96,6 +98,8 @@ export const uiStore = reactive({
     this.unblockEnabled = savedUnblock === null ? true : savedUnblock === '1';
     setUnblockProxyEnabled(this.unblockEnabled);
     try { this.unblockSources = savedUnblockSources ? JSON.parse(savedUnblockSources) : ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; } catch { this.unblockSources = ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; }
+    const savedResume = localStorage.getItem(RESUME_AFTER_MV_KEY);
+    this.resumeAfterMv = savedResume === null ? true : savedResume === '1';
 
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
@@ -148,6 +152,10 @@ export const uiStore = reactive({
     this.liquidGlassEnabled = enabled;
     localStorage.setItem(GLASS_KEY, enabled ? '1' : '0');
     applyGlassToDom(enabled);
+  },
+  setResumeAfterMv(enabled: boolean) {
+    this.resumeAfterMv = enabled;
+    localStorage.setItem(RESUME_AFTER_MV_KEY, enabled ? '1' : '0');
   },
   async loadDefaultSearchKeyword(force = false) {
     if (this.defaultSearchLoading) return;

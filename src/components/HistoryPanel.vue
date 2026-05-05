@@ -727,8 +727,15 @@ async function refreshAll() {
     songs.value = combinedSongSource.map((item: any, index: number) => buildSongItem(item, index));
     if (!songs.value.length) songs.value = [{ ...buildSongItem({ name: '暂无歌曲记录' }, 0), key: 'songs-empty', subtitle: '接口未返回歌曲历史', summary: '后续可继续按文档补充更精细的歌曲历史。', manageType: 'song', canUnlike: false, canOpenDetail: false, sortKey: Date.now() }];
 
-    let createdPlaylists = created;
-    let collectedPlaylists = collected;
+    let createdPlaylists: any[] = [];
+    let collectedPlaylists: any[] = [];
+    if (uid) {
+      createdPlaylists = created.filter((item: any) => Number(item.userId || item.creator?.userId || 0) === Number(uid));
+      collectedPlaylists = collected.filter((item: any) => Number(item.userId || item.creator?.userId || 0) !== Number(uid));
+    } else {
+      createdPlaylists = created;
+      collectedPlaylists = collected;
+    }
     if (uid && (!createdPlaylists.length || !collectedPlaylists.length)) {
       const allUserPlaylists = await settleList(getUserPlaylist(uid, cookie));
       if (allUserPlaylists.length) {

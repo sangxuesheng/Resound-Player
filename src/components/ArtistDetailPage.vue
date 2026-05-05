@@ -99,6 +99,7 @@
                 <span v-if="!getSongArtists(song).length">{{ resolveSongSubtitle(song) }}</span>
               </AnimatedAppear>
             </AnimatedAppear>
+            <SongActions :song="song" @play-next="playNext" @add-to-playlist="showAddToPlaylist" @open-comment="openComment" @open-album="(albumId) => emit('open-album-detail', albumId)" @open-artist="openArtistDetail" @open-language="openLanguageDetail" @open-mv-player="(mv) => emit('open-mv-player', mv)" />
           </AnimatedAppear>
         </AnimatedAppear>
 
@@ -160,6 +161,25 @@
       </template>
     </AnimatedAppear>
   </AnimatedAppear>
+  <!-- 收藏至歌单选择器 -->
+  <Teleport to="body">
+    <div v-if="showPlaylistPicker" class="pp-mask" @click.self="showPlaylistPicker = false">
+      <div class="pp-popup">
+        <h3 class="pp-title">添加至歌单</h3>
+        <ul class="pp-list">
+          <li v-for="p in playlistPickerList" :key="p.id" class="pp-item" :class="{ 'pp-item--selected': selectedPlaylistId === p.id }" @click="selectedPlaylistId = p.id">
+            <img v-if="p.coverImgUrl" class="pp-cover" :src="p.coverImgUrl + '?param=40y40'" alt="" loading="lazy" />
+            <span class="pp-name">{{ p.name }}</span>
+          </li>
+          <li v-if="!playlistPickerList.length" class="pp-empty">暂无可用歌单</li>
+        </ul>
+        <div class="pp-actions">
+          <button class="pp-close" @click="showPlaylistPicker = false">取消</button>
+          <button class="pp-confirm" :disabled="!selectedPlaylistId" @click="confirmAddToPlaylist()">确认添加</button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -170,9 +190,12 @@ import HeroCoverMedia from './HeroCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
-import { getArtistAlbums, getArtistDescription, getArtistDetail, getArtistMvs, getArtistTopSongs } from '../api/music';
+import SongActions from './ui/SongActions.vue';
+import { getArtistAlbums, getArtistDescription, getArtistDetail, getArtistMvs, getArtistTopSongs, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { resolveArtistImageUrl, normalizeImageUrl } from '../utils/image';
 import { playerStore } from '../stores/player';
+import { userStore } from '../stores/user';
+import { useAuthAction } from '../composables/useAuthAction';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
 
@@ -195,7 +218,9 @@ const emit = defineEmits<{
   (e: 'open-album-detail', albumId: number, activeTab?: string): void;
   (e: 'open-artist', artist: any): void;
   (e: 'open-mv-player', item: any): void;
+  (e: 'open-comment', songId: number): void;
   (e: 'update:active-tab', tab: string): void;
+  (e: 'open-language', language: string): void;
 }>();
 
 const loading = ref(false);
@@ -323,6 +348,11 @@ function openArtistDetail(artistItem: any) {
   emit('open-artist', artistItem);
 }
 
+function openLanguageDetail(language: string) {
+  if (!language) return;
+  emit('open-language', language);
+}
+
 let fetchToken = 0;
 
 async function fetchArtistDetail(id: number) {
@@ -391,6 +421,43 @@ async function playSong(index: number) {
   if (!topSongs.value.length) return;
   playerStore.setPlaylist(topSongs.value, index);
   await playerStore.playByIndex(index);
+}
+
+/* 操作按钮 */
+const { checkAuth, showToast } = useAuthAction(
+  '搜索用户方式登录不支持收藏功能，请使用扫码或 Cookie 登录',
+  'playlist',
+);
+const showPlaylistPicker = ref(false);
+const playlistPickerList = ref<any[]>([]);
+const pickerTargetSong = ref<any>(null);
+const selectedPlaylistId = ref<number | null>(null);
+function playNext(song: any) {
+  const idx = playerStore.currentIndex + 1;
+  playerStore.playlist.splice(idx, 0, { ...song });
+  showToast('已添加至播放列表', 'success', 3000);
+}
+async function showAddToPlaylist(song: any) {
+  if (!checkAuth()) return;
+  pickerTargetSong.value = song;
+  try {
+    const res = await getUserPlaylist(userStore.profile?.userId || 0, userStore.loginCookie || undefined);
+    playlistPickerList.value = (res.data?.playlist || []).filter((p: any) => !p.subscribed);
+  } catch { playlistPickerList.value = []; }
+  selectedPlaylistId.value = null;
+  showPlaylistPicker.value = true;
+}
+async function confirmAddToPlaylist() {
+  const pid = selectedPlaylistId.value;
+  const song = pickerTargetSong.value;
+  if (!pid || !song) return;
+  try {
+    await addTrackToPlaylist(pid, [Number(song.id || 0)], userStore.loginCookie || undefined);
+  } catch {}
+  showPlaylistPicker.value = false;
+}
+function openComment(songId: number) {
+  emit('open-comment', songId);
 }
 
 const isSticky = ref(false);
@@ -860,4 +927,28 @@ watch(
     grid-template-columns: 1fr;
   }
 }
+/* 操作按钮 */
+.song-item { position: relative; }
+:deep(.song-actions) { opacity: 0; visibility: hidden; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 4px; transition: opacity 0.2s ease, visibility 0.2s ease; }
+.song-item:hover :deep(.song-actions) { opacity: 1; visibility: visible; }
+/* 歌单选择器 */
+.pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
+.pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-solid); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.pp-title { margin: 0; color: var(--text-main); font-size: 15px; font-weight: 700; padding: var(--space-1) var(--space-2); }
+.pp-list { overflow-y: auto; display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; scrollbar-width: none; -ms-overflow-style: none; }
+.pp-list::-webkit-scrollbar { display: none; }
+.pp-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.12s ease; }
+.pp-item:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); }
+.pp-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
+.pp-name { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-empty { padding: var(--space-4); text-align: center; color: var(--text-soft); font-size: 13px; }
+.pp-close { padding: 8px; border: none; border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); color: var(--text-sub); cursor: pointer; font-size: 13px; }
+.pp-close:hover { background: color-mix(in srgb, var(--accent) 10%, var(--bg-solid)); color: var(--text-main); }
+.pp-actions { display: flex; gap: var(--space-2); }
+.pp-actions > * { flex: 1; }
+.pp-confirm { flex: 1; padding: 8px; border: none; border-radius: 10px; background: var(--accent, #5c6bc0); color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s ease; }
+.pp-confirm:disabled { opacity: 0.35; cursor: default; }
+.pp-confirm:not(:disabled):hover { opacity: 0.85; }
+.pp-item--selected { background: color-mix(in srgb, var(--accent) 18%, var(--bg-solid)); }
+.pp-item--selected .pp-name { color: var(--text-main); }
 </style>

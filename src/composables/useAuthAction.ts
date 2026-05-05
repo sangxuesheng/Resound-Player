@@ -1,6 +1,5 @@
-import { ref } from 'vue';
 import { userStore } from '../stores/user';
-import { showLoginModal } from '../stores/loginModal';
+import { showLoginModal, showGlobalToast } from '../stores/loginModal';
 
 /**
  * 需要完整登录态的操作（收藏、收藏至歌单等）的鉴权检查。
@@ -13,13 +12,9 @@ import { showLoginModal } from '../stores/loginModal';
  * @param loginIntent  未登录时弹窗的 intent 标识
  */
 export function useAuthAction(toastMsg: string, loginIntent: 'like' | 'playlist' = 'like') {
-  const authToast = ref('');
-  const toastType = ref<'warning' | 'success'>('warning');
 
-  function showToast(msg: string, type: 'warning' | 'success' = 'warning', duration = 5000) {
-    authToast.value = msg;
-    toastType.value = type;
-    setTimeout(() => { authToast.value = ''; }, duration);
+  function showToast(msg: string, type: 'warning' | 'success' | 'error' = 'warning', duration = 3000) {
+    showGlobalToast(msg, type, duration);
   }
 
   function checkAuth(): boolean {
@@ -28,11 +23,11 @@ export function useAuthAction(toastMsg: string, loginIntent: 'like' | 'playlist'
       return false;
     }
     if (userStore.loginMode !== 'cookie' && userStore.loginMode !== 'qr') {
-      showToast(toastMsg, 'warning', 5000);
+      showGlobalToast(toastMsg, 'warning', 5000);
       return false;
     }
     return true;
   }
 
-  return { authToast, toastType, checkAuth, showToast };
+  return { checkAuth, showToast };
 }

@@ -102,7 +102,26 @@ function setDisplayMode(v: string) { s.displayMode = v as any; s.save(); }
 
 const popoverStyle = computed(() => {
   const a = props.anchor || { top: 80, right: 24 };
-  const style: Record<string, string> = { top: `${a.top}px`, right: `${a.right}px` };
+  const popoverWidth = 380;
+  const estimatedHeight = Math.min(window.innerHeight * 0.8, 600);
+  const style: Record<string, string> = {};
+
+  // Vertical: prefer below, flip above if not enough space
+  const spaceAbove = a.top;
+  const spaceBelow = window.innerHeight - a.top;
+  if (spaceBelow >= estimatedHeight + 20 || spaceBelow >= spaceAbove) {
+    style.top = `${a.top}px`;
+  } else {
+    style.bottom = `${window.innerHeight - a.top}px`;
+  }
+
+  // Horizontal: prevent right edge overflow
+  if (a.right + popoverWidth > window.innerWidth) {
+    style.right = `${Math.max(8, window.innerWidth - popoverWidth - 8)}px`;
+  } else {
+    style.right = `${a.right}px`;
+  }
+
   if (props.accentColor) style['--accent'] = props.accentColor;
   return style;
 });

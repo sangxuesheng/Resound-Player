@@ -11,6 +11,7 @@ export type LyricsSettings = {
   displayMode: DisplayMode;
   centerAlign: boolean;
   showTranslation: boolean;
+  showRomalrc: boolean;
   showLyrics: boolean;
   showMiniBar: boolean;
   useAmllRenderer: boolean;
@@ -41,6 +42,7 @@ const defaults: LyricsSettings = {
   displayMode: 'cover',
   centerAlign: false,
   showTranslation: true,
+  showRomalrc: false,
   showLyrics: true,
   showMiniBar: false,
   useAmllRenderer: false,

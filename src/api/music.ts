@@ -609,6 +609,22 @@ export async function getMvUgcInfo(id: number) {
   });
 }
 
+export async function getSongEncyclopedia(id: number, cookie?: string) {
+  return apiClient.get('/ugc/song/get', {
+    params: {
+      id,
+      ...(cookie ? { cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getSongWikiSummary(id: number) {
+  return apiClient.get('/song/wiki/summary', {
+    params: { id, timestamp: Date.now() },
+  });
+}
+
 export async function getMvComments(params: {
   id: number;
   limit?: number;
@@ -647,6 +663,10 @@ export async function sendMvComment(params: {
 
 export async function deleteSongComment(params: { id: number; commentId: number; cookie?: string }) {
   return apiClient.post('/comment', null, { params: { t: 0, type: 0, id: params.id, commentId: params.commentId, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
+}
+
+export async function deleteDjComment(params: { id: number; commentId: number; cookie?: string }) {
+  return apiClient.post('/comment', null, { params: { t: 0, type: 4, id: params.id, commentId: params.commentId, ...(params.cookie ? { cookie: params.cookie } : {}), timestamp: Date.now() } });
 }
 
 export async function deleteMvComment(params: { id: number; commentId: number; cookie?: string }) {
@@ -704,6 +724,35 @@ export async function getSongComments(params: { id: number; limit?: number; offs
   return apiClient.get('/comment/music', { params: { ...params, timestamp: Date.now() } });
 }
 
+export async function getPlaylistComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/playlist', { params: { ...params, timestamp: Date.now() } });
+}
+
+export async function getAlbumComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/album', { params: { ...params, timestamp: Date.now() } });
+}
+
+export async function getDjComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/dj', { params: { ...params, timestamp: Date.now() } });
+}
+
+export async function getVideoComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/video', { params: { ...params, timestamp: Date.now() } });
+}
+
+export async function getCommentHot(params: { id: number; type: number; limit?: number; offset?: number; before?: number }) {
+  return apiClient.get('/comment/hot', {
+    params: {
+      id: params.id,
+      type: params.type,
+      limit: params.limit ?? 20,
+      offset: params.offset ?? 0,
+      ...(params.before ? { before: params.before } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
 export async function addTrackToPlaylist(pid: number, tracks: number[], cookie?: string) {
   return apiClient.get('/playlist/tracks', { params: { op: 'add', pid, tracks: tracks.join(','), ...(cookie ? { cookie } : {}), timestamp: Date.now() } });
 }
@@ -721,6 +770,34 @@ export async function toggleDjSubscribe(params: { rid: number; subscribe: boolea
     params: {
       rid: params.rid,
       t: params.subscribe ? 1 : 0,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+// 云盘导入歌曲（无需上传文件，直接导入网易云已有音源或已上传文件）
+export async function importToCloud(params: {
+  song: string;      // 歌名/文件名
+  fileType: string;  // 文件后缀（mp3/flac等）
+  fileSize: number;  // 文件大小（字节）
+  bitrate: number;   // 比特率（kbps，Math.floor(br/1000)）
+  md5: string;       // 文件 MD5
+  id?: number;       // 歌曲 ID（如果是网易云自有音源必须填写）
+  artist?: string;   // 歌手（默认 未知）
+  album?: string;    // 专辑（默认 未知）
+  cookie?: string;
+}) {
+  return apiClient.get('/cloud/import', {
+    params: {
+      song: params.song,
+      fileType: params.fileType,
+      fileSize: params.fileSize,
+      bitrate: params.bitrate,
+      md5: params.md5,
+      ...(params.id ? { id: params.id } : {}),
+      ...(params.artist ? { artist: params.artist } : {}),
+      ...(params.album ? { album: params.album } : {}),
       ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },

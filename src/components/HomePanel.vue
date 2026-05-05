@@ -763,8 +763,10 @@ async function fetchPublicRecoPlaylists() {
         : Array.isArray(data?.data?.playlist)
           ? data.data.playlist
           : [];
+    const uid = userStore.profile?.userId;
+    const createdList = uid ? list.filter((item: any) => Number(item?.creator?.userId || item?.userId || 0) === Number(uid)) : list;
 
-    publicRecoPlaylists.value = list
+    publicRecoPlaylists.value = createdList
       .filter((item: any) => Number(item?.id || 0) > 0)
       .map((item: any) => ({
         ...item,

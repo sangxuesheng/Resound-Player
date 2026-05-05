@@ -22,6 +22,7 @@
     <template v-else>
       <!-- 加载中 / 暂无歌词：统一状态 -->
       <div v-if="isLoading" class="amll-status">歌词加载中...</div>
+      <div v-else-if="!lyricLines.length && podcastDescription" class="podcast-desc">{{ podcastDescription }}</div>
       <div v-else-if="!lyricLines.length" class="amll-status">暂无歌词</div>
       <!-- 有歌词数据：双渲染器层叠，v-show 保持两个组件始终挂载 -->
       <div v-else class="renderer-stack">
@@ -51,6 +52,7 @@
                 <template v-else>{{ line.text || '...' }}</template>
               </p>
               <p v-if="line.translation && lyricsSettings.showTranslation" class="line-sub" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="translationStyle(idx, line)">{{ line.translation }}</p>
+              <p v-if="line.romalrc && lyricsSettings.showRomalrc" class="line-sub line-roma" :class="{ active: idx === currentLyricIndex, passed: idx < currentLyricIndex }" :style="translationStyle(idx, line)">{{ line.romalrc }}</p>
             </div>
           </div>
         </div>
@@ -89,11 +91,19 @@ const letterSpacingMap = ['-0.03em','-0.02em','-0.01em','0','0.01em','0.02em','0
 const fontWeightMap = ['300','400','500','600','700','800','900','950','950','950','950'];
 const lineHeightMap = ['1.1','1.15','1.2','1.25','1.28','1.32','1.36','1.4','1.45','1.5','1.6'];
 
+/* 播客动态歌词区显示的简介 */
+const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast');
+const podcastDescription = computed(() => {
+  if (!isCurrentPodcast.value) return '';
+  return playerStore.currentTrack?.description || '';
+});
+
 const lyricVars = computed(() => {
   const fs = fontSizeMap[lyricsSettings.fontSize] || fontSizeMap[1];
   const ls = letterSpacingMap[lyricsSettings.letterSpacing] || letterSpacingMap[1];
   const fw = fontWeightMap[lyricsSettings.fontWeight] || fontWeightMap[4];
   const lh = lineHeightMap[lyricsSettings.lineHeight] || lineHeightMap[4];
+  const amllColor = lyricColorOpts.value.activeColor;
   return {
     // CSS 变量：自定义渲染器通过 var() 读取
     '--l-font-size': fs,
@@ -102,6 +112,7 @@ const lyricVars = computed(() => {
     '--l-line-height': lh,
     // AMLL 专属 CSS 变量
     '--amll-lp-font-size': fs,
+    '--amll-lp-color': amllColor || 'white',
     // 实际 CSS 属性：两个渲染器均通过继承 + getComputedStyle() 读取
     'font-size': fs,
     'letter-spacing': ls,
@@ -112,7 +123,7 @@ const lyricVars = computed(() => {
 
 const zoneStyle = computed(() => ({
   boxSizing: 'border-box',
-  paddingBottom: lyricsSettings.showMiniBar ? '85px' : '0',
+  transform: `translateX(${lyricsSettings.lyricOffsetX}%)`,
 }));
 
 const lyricBoxStyle = computed(() => {
@@ -232,11 +243,32 @@ startTick();
 .line { margin: 0; color: rgba(255,255,255,0.55); font-size: var(--l-font-size, 30px); font-weight: var(--l-font-weight, 700); line-height: var(--l-line-height, 1.28); letter-spacing: var(--l-letter-spacing, 0); overflow-wrap: break-word; word-break: break-word; }
 .line-sub { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.62); font-size: calc(var(--l-font-size, 30px) * 0.66); font-weight: 500; line-height: var(--l-line-height, 1.28); }
 .line-sub.active { color: rgba(255,255,255,0.9); }
+.line-roma { font-style: italic; }
 .word { display: inline; }
 .amll-status { flex: 1; display: grid; place-items: center; color: rgba(255,255,255,0.4); font-size: 15px; }
-.renderer-stack { flex: 1; min-height: 0; position: relative; }
-.renderer-layer { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.podcast-desc {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-5);
+  color: rgba(255,255,255,0.75);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.podcast-desc::-webkit-scrollbar { display: none; }
+.renderer-stack { flex: 1; min-height: 0; display: flex; flex-direction: column; mask-image: linear-gradient(to bottom, transparent 0%, transparent 4%, black 14%, black 86%, transparent 96%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 4%, black 14%, black 86%, transparent 96%, transparent 100%); }
+.renderer-layer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .amll-player { flex: 1; min-height: 0; }
 .amll-player :deep(.amll-lyric-player.dom) { line-height: var(--l-line-height, 1.28) !important; }
+.amll-player :deep(.UagxCq_interludeDots),
+.amll-player :deep(.B6JzaG_interludeDots) {
+  left: 0;
+  right: 0;
+  width: fit-content;
+  margin: 0 auto;
+}
 .right-zone.l-center .amll-player :deep(.amll-lyric-player) { text-align: center; }
 </style>

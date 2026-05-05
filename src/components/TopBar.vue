@@ -39,7 +39,7 @@
             </button>
           </div>
           <transition name="recent-panel-fade">
-            <div v-if="showRecentPanel && recentSearches.length" class="recent-panel">
+            <div v-if="showRecentPanel && recentSearches.length" class="recent-panel" :style="recentPanelStyle">
               <div class="recent-panel-head">
                 <span>最近搜索</span>
                 <button class="recent-clear" type="button" @click.stop="clearRecentSearches">清空历史</button>
@@ -77,11 +77,17 @@
         </AnimatedAppear>
 
         <transition name="user-menu-fade">
-          <div v-if="showUserMenu && userStore.isLogin" class="user-menu" @click.stop>
+          <div v-if="showUserMenu && userStore.isLogin" class="user-menu" :style="userMenuStyle" @click.stop>
             <div class="user-card">
               <img v-if="userAvatarUrl" :src="userAvatarUrl" :alt="userAvatarAlt" class="user-card-avatar" />
               <div class="user-card-meta">
-                <strong>{{ userStore.profile?.nickname || '未命名用户' }}</strong>
+                <div class="user-card-name-row">
+                  <strong>{{ userStore.profile?.nickname || '未命名用户' }}</strong>
+                </div>
+                <div class="user-card-vip-row">
+                  <span class="level-tag">Lv.{{ userStore.level || 0 }}</span>
+                  <img v-if="userStore.isVip && userStore.vipInfo?.redVipLevelIcon" :src="userStore.vipInfo.redVipLevelIcon" class="vip-icon" alt="VIP" />
+                </div>
                 <span>UID {{ userStore.profile?.userId || '-' }}</span>
                 <em>{{ loginModeLabel }}</em>
               </div>
@@ -133,6 +139,8 @@ const menuFeedback = ref('');
 const recentSearches = ref<string[]>(readRecentSearches());
 const isExpanded = ref(false);
 const isClicked = ref(false);
+const userMenuStyle = ref<Record<string, string>>({});
+const recentPanelStyle = ref<Record<string, string>>({});
 
 const searchKeyword = computed({
   get: () => uiStore.searchKeyword,
@@ -154,6 +162,22 @@ const loginModeLabel = computed(() => {
   if (userStore.loginMode === 'qr') return '扫码登录';
   if (userStore.loginMode === 'cookie') return 'Cookie 登录';
   return '已登录';
+});
+const vipLabel = computed(() => {
+  if (!userStore.isVip) return '';
+  const info = userStore.vipInfo;
+  if (!info) return '';
+  const parts: string[] = [];
+  if (info.associator?.vipCode > 0) {
+    parts.push('黑胶 ' + (info.associator.vipLevel > 0 ? 'Lv.' + info.associator.vipLevel : ''));
+  }
+  if (info.musicPackage?.vipCode > 0) {
+    parts.push('音乐包');
+  }
+  if (info.redplus?.vipCode > 0) {
+    parts.push('红砖PLUS');
+  }
+  return parts.join(' + ') || '';
 });
 const accentModes = ['绿色', '蓝色', '紫色', '橙色', '自定义'] as const;
 const currentThemeLabel = computed(() => uiStore.themeMode);
@@ -249,10 +273,22 @@ function clearRecentSearches() {
 function openRecentPanel() {
   isExpanded.value = true;
   showRecentPanel.value = recentSearches.value.length > 0;
+  if (showRecentPanel.value) {
+    const wrap = document.querySelector('.search-wrap');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const gap = 8;
+    if (window.innerHeight - rect.bottom < 200 + gap) {
+      recentPanelStyle.value = { bottom: 'calc(100% + var(--space-2))', top: 'auto' };
+    } else {
+      recentPanelStyle.value = {};
+    }
+  }
 }
 
 function closeRecentPanel() {
   showRecentPanel.value = false;
+  recentPanelStyle.value = {};
 }
 
 function onInputEscape() {
@@ -265,6 +301,7 @@ function onInputEscape() {
 
 function closeUserMenu() {
   showUserMenu.value = false;
+  userMenuStyle.value = {};
 }
 
 function onUserButtonClick() {
@@ -275,6 +312,18 @@ function onUserButtonClick() {
 
   showUserMenu.value = !showUserMenu.value;
   menuFeedback.value = '';
+
+  if (showUserMenu.value) {
+    const wrap = document.querySelector('.user-menu-wrap');
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const gap = 8;
+    if (window.innerHeight - rect.bottom < 300 + gap) {
+      userMenuStyle.value = { bottom: 'calc(100% + var(--space-2))', top: 'auto' };
+    } else {
+      userMenuStyle.value = {};
+    }
+  }
 }
 
 function emitMenuAction(action: 'open-user' | 'open-settings-page') {
@@ -655,8 +704,8 @@ onBeforeUnmount(() => {
   background: color-mix(in srgb, var(--bg-solid) 88%, var(--bg-muted));
 }
 .user-card-avatar {
-  width: 52px;
-  height: 52px;
+  width: 68px;
+  height: 68px;
   border-radius: 14px;
   object-fit: cover;
   flex: 0 0 auto;
@@ -677,11 +726,39 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   font-size: 15px;
 }
+.user-card-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.user-card-vip-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .user-card-meta span,
 .user-card-meta em {
   color: var(--text-sub);
   font-size: 12px;
   font-style: normal;
+}
+.vip-icon {
+  width: 50px;
+  height: 50px;
+  margin: -15px 0;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+.level-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f5a623;
+  background: color-mix(in srgb, #f5a623 14%, var(--bg-solid));
+  padding: 0 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  border: 1px solid color-mix(in srgb, #f5a623 24%, transparent);
 }
 .menu-section {
   display: grid;

@@ -174,6 +174,8 @@ import {
 } from '../api/music';
 import AnimatedAppear from './AnimatedAppear.vue';
 import { userStore } from '../stores/user';
+import { playerStore } from '../stores/player';
+import { uiStore } from '../stores/ui';
 
 const props = withDefaults(
   defineProps<{
@@ -314,6 +316,7 @@ const activeMv = ref<MvItem | null>(null);
 const mvUrl = ref('');
 const playerLoading = ref(false);
 const playerError = ref('');
+const wasPlayingBeforeMv = ref(false);
 
 const detailLoading = ref(false);
 const mvMeta = ref<{
@@ -379,6 +382,11 @@ let openMvToken = 0;
 async function openMv(item: MvItem) {
   const currentToken = ++openMvToken;
   activeMv.value = item;
+  // 打开 MV 时暂停音乐播放
+  wasPlayingBeforeMv.value = playerStore.isPlaying;
+  if (playerStore.isPlaying) {
+    playerStore.audio.pause();
+  }
   welcomeOpen.value = true;
   mvUrl.value = '';
   playerError.value = '';
@@ -624,6 +632,11 @@ function closeWelcome() {
   commentsHasMore.value = false;
   commentOffset.value = 0;
   newCommentText.value = '';
+  // 关闭 MV 后根据设置恢复音乐播放
+  if (uiStore.resumeAfterMv && wasPlayingBeforeMv.value) {
+    playerStore.togglePlay();
+  }
+  wasPlayingBeforeMv.value = false;
   emit('close');
 }
 

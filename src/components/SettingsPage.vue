@@ -48,33 +48,63 @@
             </div>
 
             <div v-else-if="item.type === 'source-order'" class="source-order-wrap">
-              <div
-                v-for="(src, srcIdx) in sourceOrder"
-                :key="src.key"
-                class="source-row"
+              <button
+                class="source-order-toggle"
+                type="button"
+                @click="sourceOrderExpanded = !sourceOrderExpanded"
+                :aria-expanded="sourceOrderExpanded"
+                aria-controls="source-order-list"
               >
-                <span class="source-index" :style="{ backgroundColor: src.color + '22', color: src.color }">{{ srcIdx + 1 }}</span>
-                <span class="source-name">{{ src.label }}</span>
-                <div class="source-arrows">
-                  <button
-                    class="arrow-btn"
-                    :disabled="srcIdx === 0"
-                    @click="moveSource(srcIdx, -1)"
-                    aria-label="上移"
-                  >
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 10l4-4 4 4"/></svg>
-                  </button>
-                  <button
-                    class="arrow-btn"
-                    :disabled="srcIdx === sourceOrder.length - 1"
-                    @click="moveSource(srcIdx, 1)"
-                    aria-label="下移"
-                  >
-                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 6l4 4 4-4"/></svg>
-                  </button>
+                <span class="source-order-summary">
+                  {{ sourceOrder.length }}个音源
+                  <span class="source-order-hint">{{ sourceOrderExpanded ? '点击收起' : '点击展开' }}</span>
+                </span>
+                <svg
+                  class="source-order-chevron"
+                  :class="{ rotated: sourceOrderExpanded }"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  width="16"
+                  height="16"
+                >
+                  <path d="M4 6l4 4 4-4" />
+                </svg>
+              </button>
+              <div
+                v-show="sourceOrderExpanded"
+                id="source-order-list"
+                class="source-order-list"
+              >
+                <div
+                  v-for="(src, srcIdx) in sourceOrder"
+                  :key="src.key"
+                  class="source-row"
+                >
+                  <span class="source-index" :style="{ backgroundColor: src.color + '22', color: src.color }">{{ srcIdx + 1 }}</span>
+                  <span class="source-name">{{ src.label }}</span>
+                  <div class="source-arrows">
+                    <button
+                      class="arrow-btn"
+                      :disabled="srcIdx === 0"
+                      @click="moveSource(srcIdx, -1)"
+                      aria-label="上移"
+                    >
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 10l4-4 4 4"/></svg>
+                    </button>
+                    <button
+                      class="arrow-btn"
+                      :disabled="srcIdx === sourceOrder.length - 1"
+                      @click="moveSource(srcIdx, 1)"
+                      aria-label="下移"
+                    >
+                      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M4 6l4 4 4-4"/></svg>
+                    </button>
+                  </div>
                 </div>
+                <p v-if="sourceOrderFeedback" class="source-order-feedback">{{ sourceOrderFeedback }}</p>
               </div>
-              <p v-if="sourceOrderFeedback" class="source-order-feedback">{{ sourceOrderFeedback }}</p>
             </div>
 
             <DropdownSelect
@@ -82,6 +112,7 @@
               v-model="selectState[item.key]"
               :options="item.options || []"
               :option-colors="item.key === 'accent' ? accentColors : {}"
+              :option-vip-labels="item.optionVipLabels || {}"
             />
 
             <input
@@ -193,6 +224,7 @@ type SettingItem = {
   desc?: string;
   type: 'switch' | 'select' | 'range' | 'action' | 'input' | 'source-order';
   options?: string[];
+  optionVipLabels?: Record<string, string>;
   min?: number;
   max?: number;
   actionText?: string;
@@ -220,11 +252,12 @@ const groupsMap: Record<string, SettingGroup[]> = {
       title: '播放设置',
       items: [
         { key: 'autoplay', label: '自动播放下一首', desc: '当前歌曲结束后自动切换到下一首', type: 'switch' },
-        { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'] },
-        { key: 'unblock', label: '音源替换', desc: '启用后自动从波点/酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
+        { key: 'resumeAfterMv', label: 'MV 关闭后恢复播放', desc: '关闭 MV 播放页后自动恢复歌曲播放', type: 'switch' },
+        { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清臻音', '沉浸环绕声', '杜比全景声', '超清母带'], optionVipLabels: { '无损(SQ)': '黑胶VIP', 'Hi-Res': '黑胶VIP', '高清臻音': 'SVIP', '沉浸环绕声': 'SVIP', '杜比全景声': 'SVIP', '超清母带': 'SVIP' } },
+        { key: 'unblock', label: '音源替换', desc: '非会员用户，建议打开。可享受所有会员歌曲播放。仅对播放音乐有限制，下载不受该选项的管理。启用后自动从波点/酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
         { key: 'unblockSources', label: '音源优先级', desc: '按从上到下的顺序逐个尝试，第一个匹配成功的使用，全部失败则使用官方音源', type: 'source-order' },
         { key: 'playMode', label: '默认播放模式', desc: '循环/单曲/随机播放策略', type: 'select', options: ['列表循环', '单曲循环', '随机播放'] },
-        { key: 'playbackRate', label: '播放速度', desc: '影响底部栏与全屏页播放速度', type: 'select', options: ['0.75x', '1.0x', '1.25x', '1.5x'] },
+        { key: 'playbackRate', label: '播放速度', desc: '设置全局默认播放速度，各歌曲可在底部栏单独调整', type: 'select', options: ['0.5x', '0.75x', '1.0x', '1.25x', '1.5x', '2.0x', '2.5x', '3.0x'] },
         { key: 'crossfade', label: '淡入淡出时长', desc: '控制切歌时过渡顺滑程度', type: 'range', min: 0, max: 12 },
       ],
     },
@@ -302,12 +335,13 @@ const switchState = reactive<Record<string, boolean>>({
   liquidGlass: uiStore.liquidGlassEnabled,
   compact: false,
   barLyric: lyricsSettings.showBarLyric,
+  resumeAfterMv: uiStore.resumeAfterMv,
 });
 
 const selectState = reactive<Record<string, string>>({
   quality: playerStore.defaultQuality,
   playMode: playerStore.playMode === 'single' ? '单曲循环' : playerStore.playMode === 'shuffle' ? '随机播放' : '列表循环',
-  playbackRate: `${playerStore.playbackRate.toFixed(2).replace(/\.00$/, '.0')}x`,
+  playbackRate: `${playerStore.defaultPlaybackRate.toFixed(2).replace(/\.00$/, '.0')}x`,
   theme: uiStore.themeMode,
   accent: uiStore.accentMode,
 });
@@ -369,6 +403,7 @@ const sourceOrder = computed({
   },
 });
 
+const sourceOrderExpanded = ref(false);
 const sourceOrderFeedback = ref('');
 let sourceOrderFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -450,6 +485,13 @@ watch(
   },
 );
 
+watch(
+  () => switchState.resumeAfterMv,
+  (enabled) => {
+    uiStore.setResumeAfterMv(Boolean(enabled));
+  },
+);
+
 // 从 playerStore 持久化数据同步到 selectState
 watch(() => playerStore.defaultQuality, (val) => {
   selectState.quality = val;
@@ -458,7 +500,7 @@ watch(() => playerStore.defaultQuality, (val) => {
 watch(
   () => selectState.quality,
   (value) => {
-    const validQualities = ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清环绕声', '沉浸环绕声', '杜比全景声', '超清母带'];
+    const validQualities = ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清臻音', '沉浸环绕声', '杜比全景声', '超清母带'];
     if (validQualities.includes(value)) {
       playerStore.setDefaultQuality(value);
       console.log('[quality] 设置页切换为:', value, '| 歌曲:', playerStore.currentTrack?.name);
@@ -484,7 +526,7 @@ watch(
   () => selectState.playbackRate,
   (value) => {
     const rate = Number(String(value).replace('x', ''));
-    if (Number.isFinite(rate)) playerStore.setPlaybackRate(rate);
+    if (Number.isFinite(rate)) playerStore.setDefaultPlaybackRate(rate);
   },
 );
 
@@ -538,9 +580,13 @@ function goToLogin() {
 
 async function handleAction(key: string) {
   if (key === 'cookieEditor') {
-    const normalizedCookie = String(inputState.cookieEditor || '').trim();
-    userStore.saveCookie(normalizedCookie);
-    showLogoutMessage(normalizedCookie ? 'Cookie 已保存' : 'Cookie 已清空');
+    try {
+      const normalizedCookie = String(inputState.cookieEditor || '').trim();
+      userStore.saveCookie(normalizedCookie);
+      showLogoutMessage(normalizedCookie ? 'Cookie 已保存' : 'Cookie 已清空');
+    } catch (e: any) {
+      showLogoutMessage(e?.message || 'Cookie 保存失败');
+    }
     return;
   }
 
@@ -805,9 +851,62 @@ function onHomeLayoutSaved(payload: unknown) {
 .source-order-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0;
   width: 100%;
   max-width: 280px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.source-order-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-3);
+  border: none;
+  background: var(--bg-muted);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.source-order-toggle:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-muted));
+}
+
+.source-order-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.source-order-hint {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-weight: 400;
+}
+
+.source-order-chevron {
+  transition: transform 0.2s ease;
+  color: var(--text-sub);
+}
+
+.source-order-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.source-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+  background: var(--bg-surface);
 }
 
 .source-row {

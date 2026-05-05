@@ -9,7 +9,7 @@
         <div class="title-row">
           <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="title">{{ playerStore.currentTrack?.name || '未在播放' }}</AnimatedAppear>
         </div>
-        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist"><template v-if="playerStore.isPlaying && currentLyricText && lyricsSettings.showBarLyric"><span class="lyric-text" :title="currentLyricText">{{ currentLyricText }}</span></template><template v-else>{{ artistText }}<span v-if="qualityLabel" class="quality-badge">{{ qualityLabel }}</span><span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></template></AnimatedAppear>
+        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="artist"><template v-if="playerStore.isPlaying && currentLyricText && lyricsSettings.showBarLyric"><span class="lyric-text" :title="currentLyricText">{{ currentLyricText }}</span></template><template v-else>{{ artistText }}<span v-if="uiStore.unblockEnabled && playerStore.currentTrack" class="source-badge">{{ sourceLabel }}</span></template></AnimatedAppear>
       </div>
     </AnimatedAppear>
 
@@ -55,7 +55,7 @@
       </AnimatedAppear>
       <div class="quality-wrap" ref="qualityWrapRef">
         <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="icon quality-icon" :class="{ active: showQualityPopup }" aria-label="音质选择" @click.stop="toggleQualityPopup">
-          <span class="quality-btn-label">{{ playerStore.defaultQuality }}</span>
+          <span class="quality-btn-label">{{ qualityLabel || playerStore.defaultQuality }}</span>
         </AnimatedAppear>
         <Teleport to="body">
           <transition name="quality-fade">
@@ -69,12 +69,41 @@
                     :key="q.label"
                     type="button"
                     class="quality-popup__item"
-                    :class="{ active: playerStore.defaultQuality === q.label }"
+                    :class="{ active: playerStore.defaultQuality === q.label, disabled: !isQualityAvailable(q.level) }"
+                    :disabled="!isQualityAvailable(q.level)"
                     @click.stop="selectQuality(q.label)"
                   >
                     <span class="quality-popup__item-label">{{ q.label }}</span>
+                    <span v-if="q.vip" class="quality-popup__item-vip">{{ q.vip }}</span>
                     <span class="quality-popup__item-size">{{ qualitySizes[q.label] || '' }}</span>
                     <Check v-if="playerStore.defaultQuality === q.label" :size="14" class="quality-popup__check" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </Teleport>
+      </div>
+      <div class="speed-wrap" ref="speedWrapRef">
+        <button class="icon speed-btn" type="button" :class="{ active: showSpeedPopup }" aria-label="播放速度" @click.stop="toggleSpeedPopup">
+          <span class="speed-label">{{ playbackRateLabel }}</span>
+        </button>
+        <Teleport to="body">
+          <transition name="quality-fade">
+            <div v-if="showSpeedPopup" class="quality-popup-backdrop" @click.self="showSpeedPopup = false" @wheel.passive @touchmove.passive>
+              <div class="quality-popup speed-popup" :style="speedPopupStyle">
+                <div class="quality-popup__header">播放速度</div>
+                <div class="quality-popup__list">
+                  <button
+                    v-for="rate in speedOptions"
+                    :key="rate"
+                    type="button"
+                    class="quality-popup__item"
+                    :class="{ active: playerStore.playbackRate === rate }"
+                    @click.stop="selectSpeed(rate)"
+                  >
+                    <span class="quality-popup__item-label">{{ rate.toFixed(2).replace(/\.?0+$/, '') }}x</span>
+                    <Check v-if="playerStore.playbackRate === rate" :size="14" class="quality-popup__check" />
                   </button>
                 </div>
               </div>
@@ -92,14 +121,11 @@
       </AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="6" class-name="icon" aria-label="播放列表"><ListMusic :size="14" /></AnimatedAppear>
     </AnimatedAppear>
-    <transition name="quality-toast-fade">
-      <div v-if="qualityToastMsg" class="quality-toast" role="status" aria-live="polite">{{ qualityToastMsg }}</div>
-    </transition>
   </AnimatedAppear>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted, Teleport } from 'vue';
+import { computed, nextTick, ref, watch, onMounted, onUnmounted, Teleport } from 'vue';
 import {
   Captions,
   Check,
@@ -123,28 +149,31 @@ import { lyricsSettings } from '../stores/lyricsSettings';
 import { playerStore } from '../stores/player';
 import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
 import { userStore } from '../stores/user';
+import { clearCacheEntry } from '../stores/unblock-cache';
 import AnimatedAppear from './AnimatedAppear.vue';
 import { useLyrics } from '../composables/useLyrics';
+import { showGlobalToast } from '../stores/loginModal';
 
 const qualityOptions = [
-  { label: '标准', level: 'standard' },
-  { label: '较高', level: 'higher' },
-  { label: '极高(HQ)', level: 'exhigh' },
-  { label: '无损(SQ)', level: 'lossless' },
-  { label: 'Hi-Res', level: 'hires' },
-  { label: '高清环绕声', level: 'jyeffect' },
-  { label: '沉浸环绕声', level: 'sky' },
-  { label: '杜比全景声', level: 'dolby' },
-  { label: '超清母带', level: 'jymaster' },
+  { label: '标准', level: 'standard', vip: '' },
+  { label: '较高', level: 'higher', vip: '' },
+  { label: '极高(HQ)', level: 'exhigh', vip: '' },
+  { label: '无损(SQ)', level: 'lossless', vip: '黑胶VIP' },
+  { label: 'Hi-Res', level: 'hires', vip: '黑胶VIP' },
+  { label: '高清臻音', level: 'jyeffect', vip: 'SVIP' },
+  { label: '沉浸环绕声', level: 'sky', vip: 'SVIP' },
+  { label: '杜比全景声', level: 'dolby', vip: 'SVIP' },
+  { label: '超清母带', level: 'jymaster', vip: 'SVIP' },
 ];
 
-const qualityToastMsg = ref('');
-let qualityToastTimer: ReturnType<typeof setTimeout> | null = null;
+/** 需要 VIP 的 API level（与 player.ts 中 VIP_ONLY_API_LEVELS 保持一致） */
+const VIP_ONLY_LEVELS = new Set([
+  'lossless', 'hires', 'jyeffect', 'sky', 'dolby', 'jymaster',
+]);
 
-function showQualityToast(msg: string) {
-  qualityToastMsg.value = msg;
-  if (qualityToastTimer) clearTimeout(qualityToastTimer);
-  qualityToastTimer = setTimeout(() => { qualityToastMsg.value = ''; }, 3000);
+function isQualityAvailable(level: string): boolean {
+  if (userStore.isVip) return true;
+  return !VIP_ONLY_LEVELS.has(level);
 }
 
 const showQualityPopup = ref(false);
@@ -157,6 +186,50 @@ async function dislikeFmTrack() {
   if (!id) return;
   try { await trashPersonalFm(id, userStore.loginCookie || undefined); } catch { /* ignore */ }
   playerStore.next();
+}
+
+const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
+
+const playbackRateLabel = computed(() => `${playerStore.playbackRate.toFixed(2).replace(/\.?0+$/, '')}x`);
+
+const showSpeedPopup = ref(false);
+const speedWrapRef = ref<HTMLElement | null>(null);
+const speedPopupStyle = ref<Record<string, string>>({});
+
+function toggleSpeedPopup() {
+  showSpeedPopup.value = !showSpeedPopup.value;
+  if (showSpeedPopup.value) {
+    nextTick(() => {
+      if (!speedWrapRef.value) return;
+      const rect = speedWrapRef.value.getBoundingClientRect();
+      const estimatedHeight = Math.min(speedOptions.length * 38 + 16, 380);
+      const gap = 8;
+      const spaceAbove = rect.top;
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const fitsAbove = spaceAbove >= estimatedHeight + gap;
+      const fitsBelow = spaceBelow >= estimatedHeight + gap;
+
+      if (fitsAbove || (!fitsBelow && spaceAbove >= spaceBelow)) {
+        speedPopupStyle.value = {
+          position: 'fixed',
+          top: `${rect.top - gap}px`,
+          right: `${window.innerWidth - rect.right}px`,
+          transform: 'translateY(-100%)',
+        };
+      } else {
+        speedPopupStyle.value = {
+          position: 'fixed',
+          top: `${rect.bottom + gap}px`,
+          right: `${window.innerWidth - rect.right}px`,
+        };
+      }
+    });
+  }
+}
+
+function selectSpeed(rate: number) {
+  playerStore.setPlaybackRate(rate);
+  showSpeedPopup.value = false;
 }
 
 async function fetchQualitySizes() {
@@ -185,13 +258,30 @@ const popupStyle = ref<Record<string, string>>({});
 function updatePopupPosition() {
   if (!qualityWrapRef.value) return;
   const rect = qualityWrapRef.value.getBoundingClientRect();
-  popupStyle.value = {
-    position: 'absolute',
-    bottom: `${window.innerHeight - rect.top + 8}px`,
-    right: `${window.innerWidth - rect.right}px`,
-    width: '200px',
-    maxHeight: '380px',
-  };
+  const estimatedHeight = Math.min(qualityOptions.length * 38 + 16, 380);
+  const gap = 8;
+  const spaceAbove = rect.top;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const fitsAbove = spaceAbove >= estimatedHeight + gap;
+  const fitsBelow = spaceBelow >= estimatedHeight + gap;
+
+  if (fitsAbove || (!fitsBelow && spaceAbove >= spaceBelow)) {
+    popupStyle.value = {
+      position: 'fixed',
+      bottom: `${window.innerHeight - rect.top + gap}px`,
+      right: `${window.innerWidth - rect.right}px`,
+      width: '200px',
+      maxHeight: '380px',
+    };
+  } else {
+    popupStyle.value = {
+      position: 'fixed',
+      top: `${rect.bottom + gap}px`,
+      right: `${window.innerWidth - rect.right}px`,
+      width: '200px',
+      maxHeight: '380px',
+    };
+  }
 }
 
 function toggleQualityPopup() {
@@ -203,19 +293,44 @@ function toggleQualityPopup() {
 }
 
 function selectQuality(quality: string) {
+  // 免费用户不可选择 VIP 音质
+  const qOpt = qualityOptions.find(function (q) { return q.label === quality; });
+  if (qOpt && !isQualityAvailable(qOpt.level)) {
+    showGlobalToast(quality + ' 需要 VIP，已自动切换为 极高(HQ)', 'warning');
+    playerStore.setDefaultQuality('极高(HQ)');
+    showQualityPopup.value = false;
+    return;
+  }
+
+  const prevQuality = playerStore.defaultQuality;
   playerStore.setDefaultQuality(quality);
   showQualityPopup.value = false;
-  console.log('[quality] 切换到:', quality, '| 当前歌曲:', playerStore.currentTrack?.name, '| 进度:', Math.floor(playerStore.currentTime), 's');
+  console.log(
+    '[quality-switch] ★ 用户切换音质 ★\n' +
+    `  ${prevQuality} → ${quality}  |  歌曲: ${playerStore.currentTrack?.name || '(无)'}`
+  );
   // 如果正在播放，立即以新音质重新拉取播放地址，并保持当前进度
   if (playerStore.currentTrack && playerStore.isPlaying) {
     const currentTime = playerStore.currentTime;
-    console.log('[quality] 重新拉取播放地址...');
+    const trackId = playerStore.currentTrack.id;
+    if (trackId) {
+      clearCacheEntry(trackId);
+      console.log('[quality-switch] 已清除歌曲缓存 (id=' + trackId + ')');
+    }
+    console.log('[quality-switch] 调用 playTrack 重新拉取 (seekTo=' + Math.floor(currentTime) + 's)...');
     playerStore.playTrack(playerStore.currentTrack, currentTime).then((ok) => {
+      const di = playerStore.qualityDowngradeInfo;
       if (!ok) {
-        console.log('[quality] 切换失败，当前账号可能不支持此音质');
-        showQualityToast('当前账号不支持 ' + quality + ' 音质');
+        console.log('[quality-switch] ❌ 切换失败，当前账号可能不支持此音质');
+        showGlobalToast('当前账号不支持 ' + quality + ' 音质', 'warning');
+      } else if (di) {
+        console.log(`[quality-switch] ⚠️ ${di.from} 不可用，已自动切换为 ${di.to}`);
+        showGlobalToast(di.from + ' 不可用，已自动切换为 ' + di.to, 'warning');
+        playerStore.qualityDowngradeInfo = null;
       }
     });
+  } else {
+    console.log('[quality-switch] 未在播放中，仅保存设置，下次播放时生效');
   }
 }
 
@@ -288,6 +403,15 @@ const sourceLabel = computed(() => {
 
 const qualityLabel = computed(() => {
   const br = playerStore.currentQualityBr;
+  // 官方音源且 API 确认交付了请求的音质 → 直接显示用户选择
+  if (
+    playerStore.currentSource === 'official' &&
+    br > 0 &&
+    !playerStore.currentQualityDowngraded
+  ) {
+    return playerStore.defaultQuality;
+  }
+  // 降级 / unblock / 其他音源 → 根据实际 br 反推音质标签
   if (br >= 1920000) return 'Hi-Res';
   if (br >= 999000) return '无损(SQ)';
   if (br >= 320000) return '极高(HQ)';
@@ -388,7 +512,6 @@ function formatTime(sec: number) {
 .title { color: #111827; font-weight: 600; }
 .artist { color: #6b7280; font-size: 12px; display: flex; align-items: center; gap: 4px; overflow: hidden; height: 18px; line-height: 18px; max-width: 100%; }
 .lyric-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #6b7280; font-size: 12px; height: 18px; line-height: 18px; max-width: 100%; }
-.quality-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
 .source-badge { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; background: color-mix(in srgb, #6366f1 18%, transparent); color: #6366f1; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; margin-left: 4px; }
 .center { display: grid; justify-items: center; gap: var(--space-1); min-width: 0; }
 .controls-row { height: 42px; display: flex; align-items: center; gap: var(--space-2); }
@@ -409,6 +532,9 @@ function formatTime(sec: number) {
 .quality-wrap { position: relative; flex-shrink: 0; }
 .icon.quality-icon { width: auto; min-width: 32px; padding: 0 8px; }
 .quality-btn-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
+.speed-btn { width: auto !important; min-width: 32px; padding: 0 8px; }
+.speed-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
+.speed-wrap { position: relative; flex-shrink: 0; }
 .icon { width: 32px; height: 32px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; display: grid; place-items: center; transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
 .icon:hover { transform: translateY(-1px); border-color: #86efac; color: #16a34a; }
 .icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
@@ -422,8 +548,10 @@ function formatTime(sec: number) {
 .quality-popup__list { overflow-y: auto; max-height: 340px; padding: 0 6px 6px; display: grid; gap: 2px; }
 .quality-popup__item { display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 12px; border: none; border-radius: 10px; background: transparent; color: var(--text-main); font-size: 13px; cursor: pointer; transition: background 0.12s ease; text-align: left; }
 .quality-popup__item-size { margin-left: auto; font-size: 10px; color: var(--text-soft); white-space: nowrap; letter-spacing: 0.03em; }
+.quality-popup__item-vip { display: inline-flex; align-items: center; flex-shrink: 0; height: 16px; padding: 0 5px; border-radius: 3px; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 .quality-popup__item:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); }
 .quality-popup__item.active { background: color-mix(in srgb, var(--accent) 12%, var(--bg-solid)); color: var(--accent); font-weight: 600; }
+.quality-popup__item.disabled { opacity: 0.35; cursor: not-allowed; }
 .quality-popup__check { color: var(--accent); flex-shrink: 0; }
 
 .quality-fade-enter-active, .quality-fade-leave-active { transition: opacity 0.18s ease; }
@@ -432,25 +560,5 @@ function formatTime(sec: number) {
 .quality-fade-enter-from .quality-popup { transform: translateY(8px); opacity: 0; }
 .quality-fade-leave-active .quality-popup { transition: transform 0.18s ease, opacity 0.18s ease; }
 .quality-fade-leave-to .quality-popup { transform: translateY(8px); opacity: 0; }
-
-.quality-toast {
-  position: fixed;
-  left: 50%;
-  bottom: 100px;
-  transform: translateX(-50%);
-  z-index: 10001;
-  padding: 10px 16px;
-  border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--border));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--danger) 10%, var(--bg-solid));
-  color: var(--text-main);
-  font-size: 13px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
-  pointer-events: none;
-}
-.quality-toast-fade-enter-active,
-.quality-toast-fade-leave-active { transition: opacity 0.22s ease, transform 0.22s ease; }
-.quality-toast-fade-enter-from,
-.quality-toast-fade-leave-to { opacity: 0; transform: translateX(-50%) translateY(8px); }
 
 </style>
