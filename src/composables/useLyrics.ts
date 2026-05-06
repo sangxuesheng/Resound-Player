@@ -401,6 +401,7 @@ export function useLyrics() {
     if (!id) { lyricLines.value = []; return; }
     isLoading.value = true;
     error.value = null;
+    lyricLines.value = [];
     try {
       const source = track?.source;
       const cloudSid = track?.cloudSid;

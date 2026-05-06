@@ -63,31 +63,14 @@ function handleOpenComment(songId: number) {
 
 ## 定位与显隐
 
-组件本身不处理定位和悬停显隐，由父容器自行控制：
+组件内置全局样式块，自行处理定位和悬停显隐，父容器只需确保 `.song-item` 设置了 `position: relative`（已在 `detail-page.css` 中统一提供）：
 
-- **定位**：父容器通过 `position: absolute; right: 8px; top: 50%; transform: translateY(-50%)` 固定在列表行右侧
-- **显隐**：父容器通过 `opacity` + `visibility` + `transition` 控制悬停渐入渐出
+- **默认隐藏**：`opacity: 0; visibility: hidden`
+- **悬停显示**：`.song-item:hover .song-actions` → `opacity: 1; visibility: visible`
+- **定位**：`position: absolute; right: 8px; top: 50%; transform: translateY(-50%)`
+- **过渡**：`opacity 0.2s ease, visibility 0.2s ease`
 
-示例（PlaylistDetailPage.vue）：
-
-```css
-.song-item { position: relative; }
-.song-actions {
-  opacity: 0;
-  visibility: hidden;
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  align-items: center;
-  gap: 4px;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-.song-item:hover .song-actions {
-  opacity: 1;
-  visibility: visible;
-}
-```
+父容器不再需要各自重复编写 hover 显隐 CSS。组件内部通过非 scoped `<style>` 块以全局选择器 `.song-item:hover .song-actions` 实现，确保在任何引入该组件的详情页中自动生效。
 
 ## 视觉规范
 

@@ -251,7 +251,7 @@ const sidebarActiveKey = computed(() => {
   return activePage.value;
 });
 
-const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail'].includes(activePage.value));
+const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail', 'podcast-detail'].includes(activePage.value));
 
 function syncViewport() {
   // 平板端沿用桌面布局，仅在移动端（<=767）启用窄屏抽屉逻辑

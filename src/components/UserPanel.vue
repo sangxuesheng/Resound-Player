@@ -47,6 +47,8 @@
           :embedded="true"
           scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
+          @play-item="playPodcastItem"
+          @play-all="playPodcastAll"
         />
 
         <PlaylistDetailPage
@@ -580,6 +582,47 @@ function handleSelectItem(item: any) {
   }
 }
 
+function resolvePodcastRid(item: any) {
+  return Number(item?.radio?.id || item?.program?.radio?.id || item?.dj?.id || djDetail.value?.id || djDetail.value?.radio?.id || 0);
+}
+
+function normalizePodcastPlayableTrack(item: any) {
+  const mainTrackId = Number(item?.mainTrackId || item?.mainSong?.id || item?.song?.id || item?.program?.mainTrackId || item?.program?.mainSong?.id || 0);
+  const rid = resolvePodcastRid(item);
+  const programId = Number(item?.id || item?.voiceId || item?.programId || item?.program?.id || 0);
+  const createTime = Number(item?.createTime || item?.program?.createTime || 0);
+  if (!mainTrackId) return null;
+
+  return {
+    id: mainTrackId,
+    name: item?.name || item?.programName || item?.title || item?.mainSong?.name || '播客节目',
+    ar: [{ name: item?.radio?.name || item?.program?.radio?.name || djDetail.value?.name || '播客' }],
+    al: {
+      name: item?.radio?.name || item?.program?.radio?.name || djDetail.value?.name || '播客',
+      picUrl: item?.coverUrl || item?.picUrl || item?.imgUrl || item?.program?.coverUrl || item?.program?.blurCoverUrl || item?.radio?.picUrl || '',
+    },
+    source: 'podcast',
+    description: (item?.description || item?.desc || item?.briefDesc || item?.program?.description || item?.program?.desc || item?.mainSong?.description || '').trim(),
+    podcast: rid > 0 ? { rid, programId: programId > 0 ? programId : undefined, createTime: createTime > 0 ? createTime : undefined } : (programId > 0 ? { programId, createTime: createTime > 0 ? createTime : undefined } : (createTime > 0 ? { createTime } : undefined)),
+  };
+}
+
+async function playPodcastItem(payload: { item: any; index: number }) {
+  const playableTracks = djDetailItems.value.map(normalizePodcastPlayableTrack).filter(Boolean);
+  if (!playableTracks.length) return;
+
+  const targetTrackId = Number(payload?.item?.mainTrackId || payload?.item?.mainSong?.id || payload?.item?.song?.id || payload?.item?.program?.mainTrackId || payload?.item?.program?.mainSong?.id || 0);
+  const startIndex = Math.max(0, playableTracks.findIndex((track: any) => Number(track?.id || 0) === targetTrackId));
+  playerStore.setPlaylist(playableTracks, startIndex >= 0 ? startIndex : 0);
+  await playerStore.playByIndex(startIndex >= 0 ? startIndex : 0);
+}
+
+async function playPodcastAll(items: any[]) {
+  const playableTracks = (items || []).map(normalizePodcastPlayableTrack).filter(Boolean);
+  if (!playableTracks.length) return;
+  playerStore.setPlaylist(playableTracks, 0);
+  await playerStore.playByIndex(0);
+}
 
 function openPlaylist(playlistId: number) {
   if (!playlistId) return;

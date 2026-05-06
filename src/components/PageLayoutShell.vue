@@ -59,7 +59,7 @@ const normalizedHeaderClass = computed(() => {
   top: 0;
   z-index: 30;
   margin: 0 calc(var(--space-4) * -1) 0;
-  padding: 0 var(--space-4) var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border-radius: 0 0 18px 18px;
   background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.14);
@@ -70,7 +70,7 @@ const normalizedHeaderClass = computed(() => {
 .playlist-detail-header-wrap.is-sticky-header.detail-sticky-header--embedded {
   top: -18px;
   margin: 0 -18px 0;
-  padding: 18px 18px var(--space-2);
+  padding: var(--space-3) 18px;
 }
 
 .page-shell__body {

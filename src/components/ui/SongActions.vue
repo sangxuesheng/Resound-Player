@@ -801,3 +801,20 @@ async function uploadToCloud() {
   opacity: 0;
 }
 </style>
+
+<style>
+/* 操作按钮 hover 显隐：收敛在组件内，页面不再各自重复 */
+.song-actions {
+  opacity: 0;
+  visibility: hidden;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+.song-item:hover .song-actions {
+  opacity: 1;
+  visibility: visible;
+}
+</style>

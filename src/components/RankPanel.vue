@@ -462,7 +462,7 @@ const otherList = computed(() => {
 
 function rankCardStyle(coverUrl?: string) {
   if (!coverUrl) return {};
-  return { '--cover-bg': `url(${coverUrl})`, '--detail-head-fade-height': '102px', '--detail-head-fade-soft': '72px' } as StyleValue;
+  return { '--cover-bg-url': `url(${coverUrl})`, '--detail-head-fade-height': '102px', '--detail-head-fade-soft': '72px' } as StyleValue;
 }
 
 function formatCuratedName(name: string) {

@@ -1,11 +1,11 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="language-detail-page" :class="{ 'language-detail-page--embedded': embedded }">
-    <div v-if="!sticky" class="playlist-detail-back">
+    <div v-if="!isSticky" class="playlist-detail-back">
       <button class="back-btn" @click="$emit('back')">← {{ backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="sticky"
+      :sticky="isSticky"
       :embedded="embedded"
       :loading="loading && !dataReady"
       :ready="dataReady"
@@ -79,7 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { getTopPlaylists, getHighQualityPlaylists } from '../api/music';
 import { resolvePlaylistCoverUrl } from '../utils/image';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -105,10 +106,9 @@ const props = withDefaults(
   defineProps<{
     languageName: string;
     backLabel?: string;
-    sticky?: boolean;
     embedded?: boolean;
   }>(),
-  { backLabel: '返回', sticky: false, embedded: false },
+  { backLabel: '返回', embedded: false },
 );
 
 const emit = defineEmits<{
@@ -126,6 +126,10 @@ const order = ref<'hot' | 'new'>('hot');
 const hasMore = ref(false);
 
 let fetchToken = 0;
+
+const { isSticky, refresh } = useDetailStickyState({
+  scrollHostSelector: () => '.content',
+});
 
 /** 计算实际要查的歌单分类 */
 const playlistCategory = computed(() => {
@@ -199,6 +203,9 @@ function loadMore() {
   if (!hasMore.value || loading.value) return;
   fetchPlaylists(false);
 }
+
+onMounted(() => {
+});
 
 watch(() => props.languageName, (name) => {
   if (name) void fetchPlaylists(true);

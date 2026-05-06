@@ -86,7 +86,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useDetailStickyState } from '../composables/useDetailStickyState';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
@@ -118,50 +119,9 @@ const emit = defineEmits<{
 
 const isDescriptionExpanded = ref(false);
 
-const isSticky = ref(false);
-let stickyRAF = 0;
-let scrollHost: HTMLElement | null = null;
-let headerWrapEl: HTMLElement | null = null;
-const STICKY_ENTER_THRESHOLD = 12;
-const STICKY_EXIT_THRESHOLD = 4;
-const STICKY_SCROLL_SAFETY_GAP = 32;
-
-function getScrollHost() {
-  return document.querySelector(props.scrollHostSelector || '.content') as HTMLElement | null;
-}
-
-function getHeaderWrapEl() {
-  return document.querySelector('.playlist-detail-header-wrap') as HTMLElement | null;
-}
-
-function getStickyRequiredScrollRange() {
-  if (!headerWrapEl) return Number.POSITIVE_INFINITY;
-
-  const headerHeight = headerWrapEl.getBoundingClientRect().height;
-  const stickyCollapsedHeight = 72;
-  return Math.max(0, headerHeight - stickyCollapsedHeight) + STICKY_SCROLL_SAFETY_GAP;
-}
-
-function updateStickyState() {
-  if (!scrollHost) return;
-  const scrollRange = scrollHost.scrollHeight - scrollHost.clientHeight;
-  const requiredScrollRange = getStickyRequiredScrollRange();
-  if (scrollRange <= requiredScrollRange) {
-    isSticky.value = false;
-    return;
-  }
-  const nextScrollTop = scrollHost.scrollTop;
-  if (isSticky.value) {
-    isSticky.value = nextScrollTop > STICKY_EXIT_THRESHOLD;
-    return;
-  }
-  isSticky.value = nextScrollTop > STICKY_ENTER_THRESHOLD;
-}
-
-function onScroll() {
-  cancelAnimationFrame(stickyRAF);
-  stickyRAF = requestAnimationFrame(updateStickyState);
-}
+const { isSticky, refresh } = useDetailStickyState({
+  scrollHostSelector: () => props.scrollHostSelector || '.content',
+});
 const voiceDetailById = ref<Record<number, any>>({});
 const loadingVoiceDetailIds = new Set<number>();
 const detail = computed(() => props.detail?.voiceList || props.detail?.data?.voiceList || props.detail?.data || props.detail || props.items?.[0]?.voiceList || props.items?.[0]?.detail || props.items?.[0]?.program?.radio || props.items?.[0]?.program || props.items?.[0] || null);
@@ -179,7 +139,7 @@ const heroDescription = computed(() => hero.value.description || '暂无简介�
 const shouldShowDescriptionToggle = computed(() => heroDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = hero.value.coverUrl?.trim();
-  return coverUrl ? { '--cover-bg': `url("${coverUrl}")` } : {};
+  return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
 });
 const displayedRawItems = computed(() => [...props.items].reverse());
 const normalizedItems = computed(() => displayedRawItems.value.map((item, idx) => {
@@ -343,24 +303,12 @@ function deepFindValue(source: any, keys: string[], seen = new Set<any>()): any 
 }
 
 onMounted(() => {
-  scrollHost = getScrollHost();
-  headerWrapEl = getHeaderWrapEl();
-  updateStickyState();
-  scrollHost?.addEventListener('scroll', onScroll, { passive: true });
-});
-
-onBeforeUnmount(() => {
-  scrollHost?.removeEventListener('scroll', onScroll);
-  cancelAnimationFrame(stickyRAF);
 });
 
 watch(
   () => props.detail,
   () => {
-    requestAnimationFrame(() => {
-      headerWrapEl = getHeaderWrapEl();
-      updateStickyState();
-    });
+    requestAnimationFrame(() => refresh());
   },
 );
 </script>
@@ -505,187 +453,5 @@ watch(
     height: 56px;
     border-radius: 14px;
   }
-}
-
-:deep(.playlist-detail-header-wrap .page-hero-header) {
-  transition: grid-template-columns 0.56s cubic-bezier(0.2, 0.9, 0.22, 1), gap 0.56s cubic-bezier(0.2, 0.9, 0.22, 1);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__media),
-:deep(.playlist-detail-header-wrap .playlist-detail-header__content),
-:deep(.playlist-detail-header-wrap .hero-media-shell),
-:deep(.playlist-detail-header-wrap .hero-main-shell),
-:deep(.playlist-detail-header-wrap .hero-title-shell),
-:deep(.playlist-detail-header-wrap .hero-meta-shell),
-:deep(.playlist-detail-header-wrap .hero-actions-shell),
-:deep(.playlist-detail-header-wrap .ops),
-:deep(.playlist-detail-header-wrap .cover),
-:deep(.playlist-detail-header-wrap .title),
-:deep(.playlist-detail-header-wrap .sub-row),
-:deep(.playlist-detail-header-wrap .sub),
-:deep(.playlist-detail-header-wrap .desc),
-:deep(.playlist-detail-header-wrap .play-all) {
-  transition:
-    opacity 0.42s ease,
-    transform 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    width 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    height 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    max-width 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    max-height 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    margin 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    padding 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    gap 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    font-size 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    letter-spacing 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    line-height 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    box-shadow 0.42s ease,
-    background-color 0.42s ease,
-    color 0.42s ease,
-    border-color 0.42s ease,
-    filter 0.42s ease,
-    border-radius 0.56s cubic-bezier(0.2, 0.9, 0.22, 1);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__media) {
-  width: 308px;
-  max-width: 308px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap .hero-media-shell) {
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-}
-
-:deep(.playlist-detail-header-wrap .cover) {
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-  filter: saturate(1) blur(0);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__content) {
-  min-width: 0;
-  width: 100%;
-  transform: translate3d(0, 0, 0);
-}
-
-:deep(.playlist-detail-header-wrap .hero-main-shell) {
-  min-width: 0;
-}
-
-:deep(.playlist-detail-header-wrap .hero-title-shell) {
-  min-width: 0;
-}
-
-:deep(.playlist-detail-header-wrap .hero-meta-shell) {
-  display: grid;
-  min-width: 0;
-  max-height: 240px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap .title) {
-  max-width: 100%;
-  letter-spacing: 0.2px;
-}
-
-:deep(.playlist-detail-header-wrap .desc) {
-  max-height: 120px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .page-hero-header) {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-  align-items: center;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .playlist-detail-header__media) {
-  width: 0;
-  max-width: 0;
-  height: 0;
-  opacity: 0;
-  transform: translate3d(-18px, 0, 0) scale(0.84);
-  margin: 0;
-  pointer-events: none;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-media-shell) {
-  transform: translate3d(-10px, -4px, 0) scale(0.76);
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .cover) {
-  opacity: 0;
-  transform: translate3d(-14px, -6px, 0) scale(0.7);
-  filter: saturate(0.88) blur(6px);
-  border-radius: 14px;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .playlist-detail-header__content) {
-  width: 100%;
-  min-width: 0;
-  transform: translate3d(0, 0, 0);
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-main-shell) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto;
-  align-items: center;
-  column-gap: var(--space-3);
-  row-gap: 0;
-  width: 100%;
-  min-height: 54px;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell) {
-  grid-column: 1;
-  grid-row: 1;
-  min-width: 0;
-  max-width: 100%;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell .title) {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.2;
-  letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-meta-shell) {
-  max-height: 0;
-  opacity: 0;
-  transform: translate3d(0, -8px, 0);
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-actions-shell) {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  align-items: center;
-  justify-self: end;
-  align-self: center;
-  min-width: max-content;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-actions-shell .ops) {
-  margin-top: 0;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .desc) {
-  max-height: 0;
-  opacity: 0;
-  transform: translate3d(0, -8px, 0);
 }
 </style>

@@ -183,7 +183,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { useDominantColor } from '../composables/useDominantColor';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
@@ -245,7 +246,7 @@ const tabs = [
 const coverUrl = computed(() => resolveArtistImageUrl(artist.value));
 useDominantColor(coverUrl);
 const shellStyle = computed<Record<string, string>>(() => {
-  return coverUrl.value ? { '--cover-bg': `url("${coverUrl.value}")` } : {};
+  return coverUrl.value ? { '--cover-bg-url': `url("${coverUrl.value}")` } : {};
 });
 const artistAreaText = computed(() => artist.value?.area ? `地区：${artist.value.area}` : '歌手详情');
 const artistDescriptionPreview = computed(() => {
@@ -460,63 +461,12 @@ function openComment(songId: number) {
   emit('open-comment', songId);
 }
 
-const isSticky = ref(false);
-let stickyRAF = 0;
-let scrollHost: HTMLElement | null = null;
-let headerWrapEl: HTMLElement | null = null;
-const STICKY_ENTER_THRESHOLD = 12;
-const STICKY_EXIT_THRESHOLD = 4;
-const STICKY_SCROLL_SAFETY_GAP = 32;
-
-function getScrollHost() {
-  return document.querySelector(props.scrollHostSelector || '.content') as HTMLElement | null;
-}
-
-function getHeaderWrapEl() {
-  return document.querySelector('.playlist-detail-header-wrap') as HTMLElement | null;
-}
-
-function getStickyRequiredScrollRange() {
-  if (!headerWrapEl) return Number.POSITIVE_INFINITY;
-  const headerHeight = headerWrapEl.getBoundingClientRect().height;
-  const stickyCollapsedHeight = 72;
-  return Math.max(0, headerHeight - stickyCollapsedHeight) + STICKY_SCROLL_SAFETY_GAP;
-}
-
-function updateStickyState() {
-  if (!scrollHost) return;
-  const scrollRange = scrollHost.scrollHeight - scrollHost.clientHeight;
-  const requiredScrollRange = getStickyRequiredScrollRange();
-  if (scrollRange <= requiredScrollRange) {
-    isSticky.value = false;
-    return;
-  }
-
-  const nextScrollTop = scrollHost.scrollTop;
-  if (isSticky.value) {
-    isSticky.value = nextScrollTop > STICKY_EXIT_THRESHOLD;
-    return;
-  }
-
-  isSticky.value = nextScrollTop > STICKY_ENTER_THRESHOLD;
-}
-
-function onScroll() {
-  cancelAnimationFrame(stickyRAF);
-  stickyRAF = requestAnimationFrame(updateStickyState);
-}
+const { isSticky, refresh } = useDetailStickyState({
+  scrollHostSelector: () => props.scrollHostSelector || '.content',
+});
 
 onMounted(() => {
   fetchArtistDetail(props.artistId);
-  scrollHost = getScrollHost();
-  headerWrapEl = getHeaderWrapEl();
-  updateStickyState();
-  scrollHost?.addEventListener('scroll', onScroll, { passive: true });
-});
-
-onBeforeUnmount(() => {
-  scrollHost?.removeEventListener('scroll', onScroll);
-  cancelAnimationFrame(stickyRAF);
 });
 
 watch(
@@ -525,10 +475,7 @@ watch(
     activeTab.value = 'songs';
     isDescriptionExpanded.value = false;
     fetchArtistDetail(Number(id));
-    requestAnimationFrame(() => {
-      headerWrapEl = getHeaderWrapEl();
-      updateStickyState();
-    });
+    requestAnimationFrame(() => refresh());
   },
 );
 </script>
@@ -743,174 +690,6 @@ watch(
   align-items: center;
 }
 
-:deep(.playlist-detail-header-wrap .page-hero-header) {
-  transition: grid-template-columns 0.56s cubic-bezier(0.2, 0.9, 0.22, 1), gap 0.56s cubic-bezier(0.2, 0.9, 0.22, 1);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__media),
-:deep(.playlist-detail-header-wrap .playlist-detail-header__content),
-:deep(.playlist-detail-header-wrap .hero-media-shell),
-:deep(.playlist-detail-header-wrap .hero-main-shell),
-:deep(.playlist-detail-header-wrap .hero-title-shell),
-:deep(.playlist-detail-header-wrap .hero-meta-shell),
-:deep(.playlist-detail-header-wrap .hero-actions-shell),
-:deep(.playlist-detail-header-wrap .ops),
-:deep(.playlist-detail-header-wrap .cover),
-:deep(.playlist-detail-header-wrap .title),
-:deep(.playlist-detail-header-wrap .sub-row),
-:deep(.playlist-detail-header-wrap .sub),
-:deep(.playlist-detail-header-wrap .desc),
-:deep(.playlist-detail-header-wrap .play-all),
-:deep(.playlist-detail-header-wrap .artist-meta-row),
-:deep(.playlist-detail-header-wrap .artist-tabs),
-:deep(.playlist-detail-header-wrap .meta-pill),
-:deep(.playlist-detail-header-wrap .artist-tab) {
-  transition:
-    opacity 0.42s ease,
-    transform 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    width 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    height 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    max-width 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    max-height 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    margin 0.56s cubic-bezier(0.2, 0.9, 0.22, 1),
-    padding 0.56s cubic-bezier(0.2, 0.9, 0.22, 1);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__media) {
-  width: 308px;
-  max-width: 308px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap .hero-media-shell) {
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-}
-
-:deep(.playlist-detail-header-wrap .cover) {
-  width: 308px;
-  height: 308px;
-  border-radius: 18px;
-  transform: translate3d(0, 0, 0) scale(1);
-  transform-origin: left center;
-  filter: saturate(1) blur(0);
-}
-
-:deep(.playlist-detail-header-wrap .playlist-detail-header__content) {
-  min-width: 0;
-  width: 100%;
-  transform: translate3d(0, 0, 0);
-}
-
-:deep(.playlist-detail-header-wrap .hero-main-shell) {
-  min-width: 0;
-}
-
-:deep(.playlist-detail-header-wrap .hero-title-shell) {
-  min-width: 0;
-  max-width: 100%;
-}
-
-:deep(.playlist-detail-header-wrap .hero-meta-shell) {
-  display: grid;
-  min-width: 0;
-  max-height: 240px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap .title) {
-  max-width: 100%;
-  letter-spacing: 0.2px;
-}
-
-:deep(.playlist-detail-header-wrap .desc) {
-  max-height: 120px;
-  opacity: 1;
-  transform: translate3d(0, 0, 0);
-  overflow: hidden;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .page-hero-header) {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 0;
-  align-items: center;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .playlist-detail-header__media) {
-  width: 0;
-  max-width: 0;
-  height: 0;
-  opacity: 0;
-  transform: translate3d(-18px, 0, 0) scale(0.84);
-  margin: 0;
-  pointer-events: none;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-media-shell) {
-  transform: translate3d(-10px, -4px, 0) scale(0.76);
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .cover) {
-  opacity: 0;
-  transform: translate3d(-14px, -6px, 0) scale(0.7);
-  filter: saturate(0.88) blur(6px);
-  border-radius: 14px;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .playlist-detail-header__content) {
-  width: 100%;
-  min-width: 0;
-  transform: translate3d(0, 0, 0);
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-main-shell) {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 100%;
-  min-height: 36px;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell) {
-  flex: 1;
-  min-width: 0;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-title-shell .title) {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.2;
-  letter-spacing: 0;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-meta-shell) {
-  max-height: 0;
-  opacity: 0;
-  transform: translate3d(0, -10px, 0);
-  pointer-events: none;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-actions-shell) {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .hero-actions-shell .ops) {
-  margin-top: 0;
-}
-
-:deep(.playlist-detail-header-wrap.is-sticky-header .desc) {
-  max-height: 0;
-  opacity: 0;
-  transform: translate3d(0, -8px, 0);
-}
-
 @media (max-width: 767px) {
   .artist-tabs {
     gap: 10px;
@@ -927,10 +706,6 @@ watch(
     grid-template-columns: 1fr;
   }
 }
-/* 操作按钮 */
-.song-item { position: relative; }
-:deep(.song-actions) { opacity: 0; visibility: hidden; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); align-items: center; gap: 4px; transition: opacity 0.2s ease, visibility 0.2s ease; }
-.song-item:hover :deep(.song-actions) { opacity: 1; visibility: visible; }
 /* 歌单选择器 */
 .pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
 .pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-solid); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }

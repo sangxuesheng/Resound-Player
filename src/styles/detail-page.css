@@ -12,7 +12,10 @@
 }
 
 .panel::before,
-.daily-page::before {
+.daily-page::before,
+.playlist-detail-page::before,
+.artist-detail-page::before,
+.user-detail-page::before {
   content: '';
   position: absolute;
   left: 0;
@@ -28,35 +31,13 @@
       rgba(17, 24, 39, 0.14) 56%,
       rgba(17, 24, 39, 0) 100%
     ),
-    var(--cover-bg);
+    var(--cover-bg-url);
   background-size: cover, cover;
   background-position: center, var(--detail-head-bg-position, center);
   transform: scale(1.1);
   transform-origin: top center;
   filter: blur(24px) saturate(155%) contrast(1.08);
   opacity: 0.98;
-  pointer-events: none;
-}
-
-.panel::after,
-.daily-page::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: var(--detail-head-fade-height, 320px);
-  z-index: 1;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--bg-surface) 8%, transparent) 0%,
-      color-mix(in srgb, var(--bg-surface) 18%, transparent) 22%,
-      color-mix(in srgb, var(--bg-surface) 34%, transparent) 46%,
-      color-mix(in srgb, var(--bg-surface) 56%, transparent) 68%,
-      color-mix(in srgb, var(--bg-surface) 72%, transparent) 86%,
-      transparent 100%
-    );
   pointer-events: none;
 }
 
@@ -250,6 +231,7 @@
   border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
   border-radius: 16px;
   overflow: hidden;
+  position: relative;
 }
 
 .song-item:last-child {

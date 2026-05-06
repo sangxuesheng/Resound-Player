@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="header" variant="content" rhythm="head" :class="['page-hero-header', layoutClass]">
+  <AnimatedAppear :tag="headerTag" variant="content" rhythm="head" :class="['page-hero-header', layoutClass]">
     <AnimatedAppear tag="div" variant="media" rhythm="list" class-name="page-hero-header__media" :class="mediaClass">
       <slot name="media" />
     </AnimatedAppear>
@@ -12,11 +12,19 @@
 <script setup lang="ts">
 import AnimatedAppear from './AnimatedAppear.vue';
 
-defineProps<{
-  layoutClass?: string;
-  mediaClass?: string;
-  contentClass?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    tag?: string;
+    layoutClass?: string;
+    mediaClass?: string;
+    contentClass?: string;
+  }>(),
+  {
+    tag: 'header',
+  },
+);
+
+const headerTag = props.tag;
 </script>
 
 <style scoped>
