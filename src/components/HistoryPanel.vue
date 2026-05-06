@@ -34,6 +34,7 @@
             />
           </AnimatedAppear>
           <div v-if="!favoriteSongs.length" class="collection-empty">暂无收藏歌曲，登录后会自动读取喜欢列表。</div>
+          <ScrollToTopFab scrollHostSelector=".collection-list--favorites" />
         </div>
       </AnimatedAppear>
 
@@ -95,6 +96,7 @@
             <span v-if="historySource === 'local'" class="history-count">{{ getHistoryCount(item) }}</span>
           </AnimatedAppear>
           <div v-if="!leftItems.length" class="collection-empty">暂无播放历史</div>
+          <ScrollToTopFab scrollHostSelector=".collection-list--history" />
         </div>
       </AnimatedAppear>
     </div>
@@ -106,6 +108,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
+import ScrollToTopFab from './ui/ScrollToTopFab.vue';
 import { getAlbumSublist, getPlaylistDetail, getPlaylistTrackAll, getRecentSongs, getRecentPlaylists, getRecentAlbums, getRecentVoices, getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getSongDetailBatch, getVoiceDetail, toggleAlbumSubscribe, toggleDjSubscribe, togglePlaylistSubscribe, toggleSongLike } from '../api/music';
 import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserLikeList, getUserPlaylist, getUserRecord } from '../api/auth';
 import { playerStore } from '../stores/player';

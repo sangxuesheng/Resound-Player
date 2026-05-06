@@ -81,6 +81,7 @@
             </button>
           </div>
         </div>
+        <ScrollToTopFab scrollHostSelector=".left-panel" />
       </aside>
 
       <section class="detail-panel" :style="detailPanelStyle">
@@ -92,6 +93,7 @@
           <h3>请选择左侧内容</h3>
           <p>点击歌单或播客后，这里会联动显示对应详情。</p>
         </div>
+        <ScrollToTopFab scrollHostSelector=".detail-panel" />
       </section>
     </div>
   </AnimatedAppear>
@@ -101,6 +103,7 @@
 import { computed } from 'vue';
 import { useDominantColor } from '../composables/useDominantColor';
 import AnimatedAppear from './AnimatedAppear.vue';
+import ScrollToTopFab from './ui/ScrollToTopFab.vue';
 
 const props = defineProps<{
   detail?: any;

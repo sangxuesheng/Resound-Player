@@ -64,8 +64,27 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(145%);
   box-shadow: var(--glass-highlight);
   cursor: pointer;
-  margin: var(--space-2) 0 var(--space-4);
+  margin: 0;
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 返回按钮容器 — 用 opacity + max-height 过渡取代 v-if 移除，避免布局跳动 */
+.playlist-detail-back,
+.artist-detail-back {
+  max-height: 58px;
+  overflow: hidden;
+  transition:
+    opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
+    max-height 0.3s cubic-bezier(0.33, 0, 0.1, 1),
+    margin 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+  margin: var(--space-2) 0 var(--space-4);
+}
+.playlist-detail-back.back-fade,
+.artist-detail-back.back-fade {
+  opacity: 0;
+  pointer-events: none;
+  max-height: 0;
+  margin: 0;
 }
 
 .back-btn:hover {

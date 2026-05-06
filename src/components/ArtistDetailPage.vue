@@ -1,6 +1,6 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="artist-detail-page" :style="shellStyle">
-    <div v-if="!isSticky" class="artist-detail-back">
+    <div :class="['artist-detail-back', { 'back-fade': isSticky }]">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
@@ -47,30 +47,31 @@
       <template #actions>
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playTopSongs">播放热门</AnimatedAppear>
       </template>
+      <template #tabs>
+        <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="artist-tabs" role="tablist" aria-label="歌手详情标签">
+          <AnimatedAppear
+            v-for="tab in tabs"
+            :key="tab.key"
+            tag="button"
+            variant="control"
+            rhythm="actions"
+            class-name="artist-tab"
+            :class="{ active: activeTab === tab.key }"
+            type="button"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+          </AnimatedAppear>
+        </AnimatedAppear>
+      </template>
     </DetailStickyHeroHeader>
-
-    <AnimatedAppear v-if="artist" tag="div" variant="content" rhythm="body" class-name="artist-tabs" role="tablist" aria-label="歌手详情标签">
-      <AnimatedAppear
-        v-for="tab in tabs"
-        :key="tab.key"
-        tag="button"
-        variant="control"
-        rhythm="actions"
-        class-name="artist-tab"
-        :class="{ active: activeTab === tab.key }"
-        type="button"
-        @click="activeTab = tab.key"
-      >
-        {{ tab.label }}
-      </AnimatedAppear>
-    </AnimatedAppear>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="artist-detail-body">
       <AnimatedAppear v-if="loading && !artist" tag="div" variant="text" rhythm="body" class-name="state">歌手详情加载中…</AnimatedAppear>
       <AnimatedAppear v-else-if="error" tag="div" variant="text" rhythm="body" class-name="state error">{{ error }}</AnimatedAppear>
 
       <template v-else-if="artist">
-        <AnimatedAppear v-if="activeTab === 'songs'" tag="ul" variant="content" rhythm="list" class-name="song-list">
+        <AnimatedAppear v-show="activeTab === 'songs'" tag="ul" variant="content" rhythm="list" class-name="song-list">
           <AnimatedAppear
             v-for="(song, idx) in topSongs"
             :key="song.id || idx"
@@ -103,7 +104,7 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <AnimatedAppear v-else-if="activeTab === 'albums'" tag="div" variant="content" rhythm="list" class-name="album-grid">
+        <AnimatedAppear v-show="activeTab === 'albums'" tag="div" variant="content" rhythm="list" class-name="album-grid">
           <AnimatedAppear v-for="(album, idx) in albums" :key="album.id || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="entity-card album-card" type="button" @click="emit('open-album-detail', Number(album.id || 0), activeTab)">
             <img v-if="resolveAlbumCover(album)" class="entity-cover cover-image" :src="resolveAlbumCover(album)" :alt="album.name || '专辑封面'" loading="lazy" />
             <div v-else class="entity-cover album-fallback">AL</div>
@@ -126,7 +127,7 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <AnimatedAppear v-else-if="activeTab === 'mvs'" tag="div" variant="content" rhythm="list" class-name="mv-grid">
+        <AnimatedAppear v-show="activeTab === 'mvs'" tag="div" variant="content" rhythm="list" class-name="mv-grid">
           <AnimatedAppear v-for="(mv, idx) in mvs" :key="mv.id || mv.vid || idx" tag="button" variant="content" rhythm="list" :index="idx" class-name="mv-card" type="button" @click="emit('open-mv-player', mv)">
             <MvHoverPoster
               :src="resolveMvCover(mv)"
@@ -152,7 +153,7 @@
           </AnimatedAppear>
         </AnimatedAppear>
 
-        <AnimatedAppear v-else tag="div" variant="content" rhythm="body" class-name="bio-panel">
+        <AnimatedAppear v-show="activeTab === 'bio'" tag="div" variant="content" rhythm="body" class-name="bio-panel">
           <AnimatedAppear v-for="(block, idx) in bioBlocks" :key="`${block.title}-${idx}`" tag="section" variant="content" rhythm="list" :index="idx" class-name="bio-block">
             <AnimatedAppear tag="h3" variant="title" rhythm="title" class-name="bio-title">{{ block.title }}</AnimatedAppear>
             <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="bio-text">{{ block.text }}</AnimatedAppear>
@@ -517,7 +518,7 @@ watch(
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin: 18px 0 20px;
+  margin: 0;
 }
 
 .artist-tab {
@@ -545,7 +546,7 @@ watch(
 }
 
 .artist-detail-body {
-  min-height: 320px;
+  min-height: calc(100vh - 280px);
 }
 
 .album-grid,

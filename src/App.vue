@@ -145,6 +145,7 @@
           <PlaceholderPanel v-else :page-key="activePage" />
         </div>
       </main>
+      <ScrollToTopFab v-if="showBackToTop" :fixed="true" />
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
@@ -159,6 +160,7 @@ import HomePanel from './components/HomePanel.vue';
 import PlayerBar from './components/PlayerBar.vue';
 import PlayerExpanded from './components/PlayerExpanded.vue';
 import PlaceholderPanel from './components/PlaceholderPanel.vue';
+import ScrollToTopFab from './components/ui/ScrollToTopFab.vue';
 import PlaylistDetailPage from './components/PlaylistDetailPage.vue';
 import AlbumDetailPage from './components/AlbumDetailPage.vue';
 import ArtistDetailPage from './components/ArtistDetailPage.vue';
@@ -252,6 +254,7 @@ const sidebarActiveKey = computed(() => {
 });
 
 const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail', 'podcast-detail'].includes(activePage.value));
+const showBackToTop = computed(() => isHeroStickyPage.value || ['history', 'user', 'mv', 'playlist', 'rank', 'search', 'podcast-list', 'podcast-subscribed', 'podcast-category', 'song-comment'].includes(activePage.value));
 
 function syncViewport() {
   // 平板端沿用桌面布局，仅在移动端（<=767）启用窄屏抽屉逻辑
@@ -864,7 +867,7 @@ function backToLanguage() {
 function goBackFromMvPlay() {
   activePage.value = activeMvReturnPage.value || 'playlist';
   // 关闭 MV 页后根据设置恢复音乐播放
-  if (uiStore.resumeAfterMv && playerStore.isPlaying === false && playerStore.currentTrack) {
+  if (uiStore.resumeAfterMv && wasPlayingBeforeMvPage && playerStore.currentTrack) {
     playerStore.togglePlay();
   }
 }

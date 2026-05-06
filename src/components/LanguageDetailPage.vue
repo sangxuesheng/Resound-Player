@@ -1,6 +1,6 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="language-detail-page" :class="{ 'language-detail-page--embedded': embedded }">
-    <div v-if="!isSticky" class="playlist-detail-back">
+    <div :class="['playlist-detail-back', { 'back-fade': isSticky }]">
       <button class="back-btn" @click="$emit('back')">← {{ backLabel }}</button>
     </div>
 

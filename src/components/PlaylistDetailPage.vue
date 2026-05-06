@@ -1,6 +1,6 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
-    <div v-if="!isSticky && !isUserDetail" class="playlist-detail-back">
+    <div v-if="!isUserDetail" :class="['playlist-detail-back', { 'back-fade': isSticky }]">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
@@ -607,7 +607,6 @@ function openAlbum(albumId: number) {
 @import '../styles/detail-page.css';
 
 .playlist-detail-body { }
-.playlist-detail-back { display: block; }
 
 .history-dropdown {
   width: 120px;
