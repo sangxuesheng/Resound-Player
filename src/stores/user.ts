@@ -387,7 +387,7 @@ export const userStore = reactive({
     }
   },
   async fetchPlaylists(uid: number) {
-    const { data } = await getUserPlaylist(uid);
+    const { data } = await getUserPlaylist(uid, this.loginCookie || undefined);
     const playlists = data?.playlist || [];
     this.playlists = playlists;
     // 从 /user/playlist 响应中提取已订阅歌单 ID（每条歌单包含 subscribed 字段）
@@ -441,7 +441,7 @@ export const userStore = reactive({
     try {
       const uid = this.profile?.userId;
       if (!uid) { this.subscribedPlaylistIds = []; return; }
-      const { data } = await getUserPlaylist(uid);
+      const { data } = await getUserPlaylist(uid, this.loginCookie || undefined);
       const playlists = data?.playlist || [];
       this.subscribedPlaylistIds = (Array.isArray(playlists) ? playlists : [])
         .filter((p: any) => p?.subscribed)

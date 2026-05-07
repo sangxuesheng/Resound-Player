@@ -271,9 +271,8 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'accent', label: '主题色', desc: '切换系统强调色（带颜色预览）', type: 'select', options: ['绿色', '蓝色', '紫色', '橙色', '自定义'] },
         { key: 'accentCustomColor', label: '自定义主题色', desc: '在调色盘中选择任意颜色', type: 'action' },
         { key: 'liquidGlass', label: '液态玻璃效果', desc: '开启后使用高透明磨砂玻璃视觉风格', type: 'switch' },
-        { key: 'compact', label: '紧凑列表模式', desc: '减少列表行高以显示更多信息', type: 'switch' },
         { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
-        { key: 'fontScale', label: '字体缩放', desc: '调整界面字体大小比例', type: 'range', min: 90, max: 130 },
+        { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
         { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
       ],
     },
@@ -335,7 +334,6 @@ const switchState = reactive<Record<string, boolean>>({
   unblock: uiStore.unblockEnabled,
   autoplay: playerStore.autoplayNext,
   liquidGlass: uiStore.liquidGlassEnabled,
-  compact: false,
   barLyric: lyricsSettings.showBarLyric,
   resumeAfterMv: uiStore.resumeAfterMv,
   showIntelligenceIndicator: uiStore.showIntelligenceIndicator,
@@ -387,7 +385,6 @@ const accentColors = computed<Record<string, string>>(() => ({
 
 const rangeState = reactive<Record<string, number>>({
   crossfade: playerStore.crossfadeSec,
-  fontScale: 100,
 });
 
 const inputState = reactive<Record<string, string>>({
