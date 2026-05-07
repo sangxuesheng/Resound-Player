@@ -60,6 +60,7 @@
             @open-album="(albumId) => openAlbumDetail(albumId, 'album-detail')"
             @open-language="(language) => openLanguageDetail(language, activePage)"
             @open-mv-player="openMvFromSearch"
+            @open-user="openUserFromComment"
           />
           <ArtistDetailPage
             v-else-if="activePage === 'artist-detail'"

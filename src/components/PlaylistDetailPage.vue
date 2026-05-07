@@ -83,21 +83,13 @@
         <AnimatedAppear v-if="trackEnriching" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表补全中…</AnimatedAppear>
       </template>
       <template #tabs>
-        <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="playlist-tabs" role="tablist" aria-label="歌单详情标签">
-          <AnimatedAppear
-            v-for="tab in tabs"
-            :key="tab.key"
-            tag="button"
-            variant="control"
-            rhythm="actions"
-            class-name="playlist-tab"
-            :class="{ active: activeTab === tab.key }"
-            type="button"
-            @click="activeTab = tab.key"
-          >
-            {{ tab.label }}
-          </AnimatedAppear>
-        </AnimatedAppear>
+        <DetailTabBar
+          v-model="activeTab"
+          :tabs="tabs"
+          aria-label="歌单详情标签"
+          v-model:search-query="searchQuery"
+          :show-search="activeTab === 'songs'"
+        />
       </template>
     </DetailStickyHeroHeader>
 
@@ -108,7 +100,7 @@
         <template v-if="activeTab === 'songs'">
           <AnimatedAppear :key="`${tabContentKey}:songs`" tag="ul" variant="content" rhythm="list" class-name="song-list">
           <AnimatedAppear
-            v-for="(song, idx) in tracks"
+            v-for="(song, idx) in filteredTracks"
             :key="song.id"
             tag="li"
             variant="text"
@@ -192,6 +184,7 @@ import DropdownSelect from './ui/DropdownSelect.vue';
 import SongActions from './ui/SongActions.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
 import CommentPanel from './CommentPanel.vue';
+import DetailTabBar from './ui/DetailTabBar.vue';
 import { useEntitySubscribe } from '../composables/useEntitySubscribe';
 import * as commentApi from '../api/music';
 
@@ -244,6 +237,7 @@ const tabs = [
   { key: 'songs', label: '歌曲' },
   { key: 'comments', label: '评论' },
 ] as const;
+const searchQuery = ref('');
 
 const playlistIdRef = computed(() => playlist.value?.id || undefined);
 const tabContentKey = computed(() => `${playlist.value?.id || props.playlistId || 'pending'}:${activeTab.value}`);
@@ -254,6 +248,17 @@ const subscribeState = useEntitySubscribe({
 });
 
 const tracks = computed<any[]>(() => playlist.value?.tracks || []);
+
+const filteredTracks = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return tracks.value;
+  return tracks.value.filter(song => {
+    const name = (song.name || '').toLowerCase();
+    const artists = getSongArtists(song).map(a => (a.name || '').toLowerCase());
+    return name.includes(q) || artists.some(a => a.includes(q));
+  });
+});
+
 const playlistDescription = computed(() => playlist.value?.description?.trim() || '');
 const shouldShowDescriptionToggle = computed(() => playlistDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const injectedPlaylist = computed(() => props.injectedPlaylist || null);

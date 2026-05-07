@@ -706,6 +706,19 @@ export async function deletePlaylistComment(params: { id: number; commentId: num
   });
 }
 
+export async function deleteAlbumComment(params: { id: number; commentId: number; cookie?: string }) {
+  return apiClient.post('/comment', null, {
+    params: {
+      t: 0,
+      type: 3,
+      id: params.id,
+      commentId: params.commentId,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
 export async function toggleSongLike(params: { id: number; like: boolean; uid?: number; cookie?: string }) {
   return apiClient.get('/like', {
     params: {
