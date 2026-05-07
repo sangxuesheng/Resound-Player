@@ -1150,6 +1150,12 @@ export const playerStore = reactive({
     this.persist();
   },
 
+  /** 登出时清理播放器持久化数据，防止用户切换后 playlist 残留在 localStorage */
+  clearPersistedState() {
+    this.clearPlaylist();
+    try { localStorage.removeItem(PLAYER_STORAGE_KEY); } catch {}
+  },
+
   moveTrack(fromIndex: number, toIndex: number) {
     if (fromIndex < 0 || fromIndex >= this.playlist.length) return;
     if (toIndex < 0 || toIndex >= this.playlist.length) return;

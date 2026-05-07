@@ -2,7 +2,9 @@ import { reactive } from 'vue';
 import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUserPlaylist, getVipInfo, logout as logoutRequest } from '../api/auth';
 import { getDjSublist, getAlbumSublist, getArtistSublist, getUserFollows } from '../api/music';
 import { playerStore } from './player';
+import { clearCache } from './unblock-cache';
 import { storageSetItem, storageGetItem, storageRemoveItem } from '../utils/storage';
+import { LOCAL_HISTORY_KEY } from '../utils/localHistory';
 
 const LOGIN_COOKIE_KEY = 'ncm_login_cookie';
 const LOGIN_MODE_KEY = 'ncm_login_mode';
@@ -141,7 +143,11 @@ export const userStore = reactive({
     } catch {
       // 即使服务端退出失败，也要清理本地登录态，避免界面残留已登录状态
     } finally {
-      playerStore.clearPlaylistContext();
+      playerStore.clearPersistedState();
+      clearCache();
+      try { localStorage.removeItem(LOCAL_HISTORY_KEY); } catch {}
+      try { localStorage.removeItem('music_search_history'); } catch {}
+      try { localStorage.removeItem('tm_search_history'); } catch {}
       await this.resetSession();
     }
   },
