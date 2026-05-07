@@ -82,28 +82,47 @@
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playAll">播放全部</AnimatedAppear>
         <AnimatedAppear v-if="trackEnriching" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表补全中…</AnimatedAppear>
       </template>
+      <template #tabs>
+        <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="playlist-tabs" role="tablist" aria-label="歌单详情标签">
+          <AnimatedAppear
+            v-for="tab in tabs"
+            :key="tab.key"
+            tag="button"
+            variant="control"
+            rhythm="actions"
+            class-name="playlist-tab"
+            :class="{ active: activeTab === tab.key }"
+            type="button"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+          </AnimatedAppear>
+        </AnimatedAppear>
+      </template>
     </DetailStickyHeroHeader>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="playlist-detail-body">
       <AnimatedAppear v-if="detailLoading && !playlist" tag="div" variant="text" rhythm="body" class-name="state">歌单加载中…</AnimatedAppear>
       <AnimatedAppear v-else-if="error" tag="div" variant="text" rhythm="body" class-name="state error">{{ error }}</AnimatedAppear>
-      <AnimatedAppear v-else-if="playlist" tag="ul" variant="content" rhythm="list" class-name="song-list">
-        <AnimatedAppear
-          v-for="(song, idx) in tracks"
-          :key="song.id"
-          tag="li"
-          variant="text"
-          rhythm="list"
-          :index="idx"
-          class-name="song-item"
-          :class="{ 'song-item--playing': isCurrentTrack(song) }"
-          @dblclick="onSongItemDblClick($event, idx)"
-        >
-          <PlayPauseButton :song-id="Number(song.id || 0)" :index-label="idx + 1" @play="playOne(idx)" />
-          <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="song-cover" :src="song.al?.picUrl || playlist.coverImgUrl" :alt="song.name" />
-          <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="song-meta">
-            <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-name">{{ song.name }}</AnimatedAppear>
-            <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-artist">
+      <AnimatedAppear v-else-if="playlist" tag="div" variant="content" rhythm="body" class-name="playlist-detail-body">
+        <template v-if="activeTab === 'songs'">
+          <AnimatedAppear :key="`${tabContentKey}:songs`" tag="ul" variant="content" rhythm="list" class-name="song-list">
+          <AnimatedAppear
+            v-for="(song, idx) in tracks"
+            :key="song.id"
+            tag="li"
+            variant="text"
+            rhythm="list"
+            :index="idx"
+            class-name="song-item"
+            :class="{ 'song-item--playing': isCurrentTrack(song) }"
+            @dblclick="onSongItemDblClick($event, idx)"
+          >
+            <PlayPauseButton :song-id="Number(song.id || 0)" :index-label="idx + 1" @play="playOne(idx)" />
+            <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="song-cover" :src="song.al?.picUrl || playlist.coverImgUrl" :alt="song.name" />
+            <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="song-meta">
+              <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-name">{{ song.name }}</AnimatedAppear>
+              <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-artist">
               <button
                 v-for="artist in getSongArtists(song)"
                 :key="`${song.id}-${artist.id || artist.name}`"
@@ -117,7 +136,22 @@
             </AnimatedAppear>
           </AnimatedAppear>
           <SongActions :song="song" @play-next="playNext" @add-to-playlist="showAddToPlaylist" @open-comment="openComment" @open-album="openAlbum" @open-artist="openArtistDetail" @open-language="openLanguageDetail" @open-mv-player="(mv) => emit('open-mv-player', mv)" />
-        </AnimatedAppear>
+          </AnimatedAppear>
+          </AnimatedAppear>
+        </template>
+        <template v-else-if="activeTab === 'comments'">
+          <div :key="`${tabContentKey}:comments`" class="playlist-comment-section">
+          <CommentPanel
+            :resource-id="Number(playlist.id || props.playlistId || 0)"
+            :resource-type="2"
+            :fetcher="commentApi.getPlaylistComments"
+            :sender="(params) => commentApi.sendComment({ ...params, type: 2 })"
+            :liker="(params) => commentApi.likeComment({ ...params, type: 2 })"
+            :deleter="commentApi.deletePlaylistComment"
+            @open-user="(uid) => emit('open-user', uid)"
+          />
+          </div>
+        </template>
       </AnimatedAppear>
     </AnimatedAppear>
     <!-- 收藏至歌单选择器 -->
@@ -157,7 +191,9 @@ import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
 import SongActions from './ui/SongActions.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import CommentPanel from './CommentPanel.vue';
 import { useEntitySubscribe } from '../composables/useEntitySubscribe';
+import * as commentApi from '../api/music';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
 
@@ -191,6 +227,7 @@ const emit = defineEmits<{
   (e: 'open-album', albumId: number): void;
   (e: 'open-language', language: string): void;
   (e: 'open-mv-player', mv: any): void;
+  (e: 'open-user', userId: number): void;
 }>();
 
 const detailLoading = ref(false);
@@ -202,7 +239,14 @@ const historyDates = ref<Array<{ value: string; label: string }>>([]);
 const selectedHistoryDate = ref('');
 const historyLoading = ref(false);
 
+const activeTab = ref<'songs' | 'comments'>('songs');
+const tabs = [
+  { key: 'songs', label: '歌曲' },
+  { key: 'comments', label: '评论' },
+] as const;
+
 const playlistIdRef = computed(() => playlist.value?.id || undefined);
+const tabContentKey = computed(() => `${playlist.value?.id || props.playlistId || 'pending'}:${activeTab.value}`);
 const subscribeState = useEntitySubscribe({
   type: 'playlist',
   id: playlistIdRef,
@@ -713,7 +757,7 @@ function openAlbum(albumId: number) {
 
 
 
-.playlist-detail-header {
+:deep(.playlist-detail-header) {
   --hero-media-width: 308px;
   gap: var(--space-4);
   padding: var(--space-2) var(--space-3);
@@ -831,6 +875,44 @@ function openAlbum(albumId: number) {
     font-size: 14px;
   }
 }
+
+/* 歌单标签栏 */
+.playlist-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+}
+
+.playlist-tab {
+  min-width: 96px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg-surface) 88%, transparent);
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.playlist-tab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+  box-shadow: 0 12px 22px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.playlist-tab.active {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 90%, #fff), color-mix(in srgb, var(--accent) 68%, #000));
+  color: #fff;
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+}
+
+/* 评论面板容器 */
+.playlist-comment-section {
+  padding: var(--space-2) 0;
+}
+
 /* 歌单选择器 */
 .pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
 .pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-solid); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
