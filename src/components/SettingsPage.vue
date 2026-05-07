@@ -256,6 +256,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'quality', label: '默认音质', desc: '以账号具体权限为准', type: 'select', options: ['标准', '较高', '极高(HQ)', '无损(SQ)', 'Hi-Res', '高清臻音', '沉浸环绕声', '杜比全景声', '超清母带'], optionVipLabels: { '无损(SQ)': '黑胶VIP', 'Hi-Res': '黑胶VIP', '高清臻音': 'SVIP', '沉浸环绕声': 'SVIP', '杜比全景声': 'SVIP', '超清母带': 'SVIP' } },
         { key: 'unblock', label: '音源替换', desc: '非会员用户，建议打开。可享受所有会员歌曲播放。仅对播放音乐有限制，下载不受该选项的管理。启用后自动从波点/酷狗/咪咕等源替换无法播放的歌曲', type: 'switch' },
         { key: 'unblockSources', label: '音源优先级', desc: '按从上到下的顺序逐个尝试，第一个匹配成功的使用，全部失败则使用官方音源', type: 'source-order' },
+        { key: 'paidContentSkip', label: '付费内容自动跳过', desc: '遇到未购买的付费播客时自动跳过到下一首，关闭则停止播放', type: 'switch' },
         { key: 'playMode', label: '默认播放模式', desc: '循环/单曲/随机播放策略', type: 'select', options: ['列表循环', '单曲循环', '随机播放'] },
         { key: 'playbackRate', label: '播放速度', desc: '设置全局默认播放速度，各歌曲可在底部栏单独调整', type: 'select', options: ['0.5x', '0.75x', '1.0x', '1.25x', '1.5x', '2.0x', '2.5x', '3.0x'] },
         { key: 'crossfade', label: '淡入淡出时长', desc: '控制切歌时过渡顺滑程度', type: 'range', min: 0, max: 12 },
@@ -338,6 +339,7 @@ const switchState = reactive<Record<string, boolean>>({
   barLyric: lyricsSettings.showBarLyric,
   resumeAfterMv: uiStore.resumeAfterMv,
   showIntelligenceIndicator: uiStore.showIntelligenceIndicator,
+  paidContentSkip: playerStore.paidContentSkip,
 });
 
 const selectState = reactive<Record<string, string>>({
@@ -498,6 +500,14 @@ watch(
   () => switchState.showIntelligenceIndicator,
   (enabled) => {
     uiStore.setShowIntelligenceIndicator(Boolean(enabled));
+  },
+);
+
+watch(
+  () => switchState.paidContentSkip,
+  (enabled) => {
+    playerStore.paidContentSkip = Boolean(enabled);
+    playerStore.persist();
   },
 );
 

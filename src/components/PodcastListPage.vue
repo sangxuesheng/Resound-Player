@@ -161,30 +161,33 @@ async function loadCategoryRecommendations() {
   categoryOffsets.value = {};
   categoryHasMore.value = {};
   try {
-    await Promise.all(
-      categories.map(async (category) => {
-        try {
-          const response = activeSectionMode.value === 'hot'
-            ? await getDjRadioHot({ cateId: category.id, limit: PAGE_SIZE, offset: 0 })
-            : await getDjRecommendType(category.id);
-          const items = normalizeVoiceItems(response);
-          const hasMore = activeSectionMode.value === 'hot' ? extractHasMore(response) : false;
-          categoryRecommendations.value = {
-            ...categoryRecommendations.value,
-            [category.id]: items,
-          };
-          if (activeSectionMode.value === 'hot') {
-            categoryOffsets.value = { ...categoryOffsets.value, [category.id]: 0 };
-            categoryHasMore.value = { ...categoryHasMore.value, [category.id]: hasMore };
-          }
-        } catch {
-          categoryRecommendations.value = {
-            ...categoryRecommendations.value,
-            [category.id]: [],
-          };
+    // 串行请求避免触发 Netease API 频率限制
+    for (const category of categories) {
+      try {
+        const response = activeSectionMode.value === 'hot'
+          ? await getDjRadioHot({ cateId: category.id, limit: PAGE_SIZE, offset: 0 })
+          : await getDjRecommendType(category.id);
+        const items = normalizeVoiceItems(response);
+        const hasMore = activeSectionMode.value === 'hot' ? extractHasMore(response) : false;
+        categoryRecommendations.value = {
+          ...categoryRecommendations.value,
+          [category.id]: items,
+        };
+        if (activeSectionMode.value === 'hot') {
+          categoryOffsets.value = { ...categoryOffsets.value, [category.id]: 0 };
+          categoryHasMore.value = { ...categoryHasMore.value, [category.id]: hasMore };
         }
-      }),
-    );
+      } catch {
+        categoryRecommendations.value = {
+          ...categoryRecommendations.value,
+          [category.id]: [],
+        };
+      }
+      // 串行间隔，避免触发频率限制
+      if (activeSectionMode.value !== 'hot') {
+        await new Promise((r) => setTimeout(r, 300));
+      }
+    }
   } finally {
     categoryLoading.value = false;
   }

@@ -53,6 +53,7 @@
           :loading="subscribeState.isLoading.value"
           @toggle="subscribeState.toggle"
         />
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="add-to-queue" type="button" @click="addAllToQueue">添加到播放列表</AnimatedAppear>
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" type="button" @click="emit('play-all', displayedRawItems)">播放全部</AnimatedAppear>
       </template>
       <template #tabs>
@@ -126,6 +127,8 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import { playerStore } from '../stores/player';
+import { userStore } from '../stores/user';
+import { showGlobalToast } from '../stores/loginModal';
 import { getVoiceDetail } from '../api/music';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
@@ -275,7 +278,7 @@ async function loadMissingVoiceDetails(items: any[]) {
   await Promise.all(targets.map(async (id) => {
     loadingVoiceDetailIds.add(id);
     try {
-      const res = await getVoiceDetail(id);
+      const res = await getVoiceDetail(id, userStore.loginCookie || undefined);
       const payload = extractVoiceDetailPayload(res.data || res);
       if (payload && typeof payload === 'object') {
         voiceDetailById.value = { ...voiceDetailById.value, [id]: payload };
@@ -376,6 +379,47 @@ function deepFindValue(source: any, keys: string[], seen = new Set<any>()): any 
   }
 
   return undefined;
+}
+
+function addAllToQueue() {
+  const items = normalizedItems.value;
+  if (!items.length) return;
+  // 播客条目需要用 mainTrackId（而非节目 id）作为 playback ID，
+  // 并构造 al.picUrl 供播放列表封面使用
+  const tracks = items
+    .map((item: any) => {
+      const raw = item.raw;
+      if (!item.trackId) return null;
+      const programId = Number(raw?.id || raw?.voiceId || raw?.programId || raw?.program?.id || 0);
+      const createTime = Number(raw?.createTime || raw?.program?.createTime || 0);
+      const podcastMeta: Record<string, any> = {};
+      if (podcastRid.value) podcastMeta.rid = podcastRid.value;
+      if (programId) podcastMeta.programId = programId;
+      if (createTime) podcastMeta.createTime = createTime;
+      // 携带付费/会员徽标信息，供播放列表展示
+      const feeBadge = item.badges?.find((b: any) =>
+        b.tone === 'paid' || b.tone === 'vip' || b.tone === 'purchased'
+      );
+      if (feeBadge) {
+        podcastMeta.feeBadge = feeBadge.label;
+        podcastMeta.feeTone = feeBadge.tone;
+      }
+      return {
+        id: item.trackId,
+        name: item.name,
+        ar: [{ name: hero.value.name || '播客' }],
+        al: { picUrl: item.coverUrl },
+        source: 'podcast',
+        description: item.description,
+        podcast: Object.keys(podcastMeta).length ? podcastMeta : undefined,
+      };
+    })
+    .filter(Boolean);
+  if (!tracks.length) return;
+  const added = playerStore.appendToQueue(tracks);
+  if (added > 0) {
+    showGlobalToast(`已添加 ${added} 条至播放列表`, 'success', 3000);
+  }
 }
 
 onMounted(() => {

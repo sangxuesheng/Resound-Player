@@ -145,6 +145,7 @@
             @back="backToPodcastDetailSource"
             @play-item="playPodcastItem"
             @play-all="playPodcastAll"
+            @open-user="openUserFromComment"
           />
           <SongCommentPage v-else-if="activePage === 'song-comment'" :song-id="activeSongId" @back="goBackFromComment" @open-artist="openArtistFromComment" @open-album="(albumId) => openAlbumDetail(albumId, 'song-comment')" @play-song="playSongFromComment" @open-user="openUserFromComment" />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
@@ -466,6 +467,18 @@ function normalizePodcastPlayableTrack(item: any) {
   const createTime = Number(item?.createTime || item?.program?.createTime || 0);
   if (!mainTrackId) return null;
 
+  // 内联付费徽标检测，与 PodcastDetailPage 的 resolveFeeMeta 一致
+  const feeType = Number(item?.voiceFeeType ?? item?.feeType ?? item?.programFeeType ?? item?.fee ?? item?.payType ?? item?.saleType ?? 0);
+  const payed = Number(item?.payed ?? item?.paid ?? 0);
+  const price = Number(item?.price ?? item?.originalPrice ?? item?.actualPrice ?? 0);
+  const buyed = Boolean(item?.buyed ?? item?.purchased ?? item?.hasPurchased) || payed > 0;
+  const needPay = Boolean(item?.needPay ?? item?.needPurchase ?? item?.needBuy ?? item?.payInfo) || price > 0;
+  let feeBadge: string | undefined;
+  let feeTone: string | undefined;
+  if (buyed) { feeBadge = '已购买'; feeTone = 'purchased'; }
+  else if (feeType === 8 || feeType === 16) { feeBadge = '会员'; feeTone = 'vip'; }
+  else if (feeType > 0 || needPay) { feeBadge = '付费'; feeTone = 'paid'; }
+
   return {
     id: mainTrackId,
     name: item?.name || item?.programName || item?.title || item?.mainSong?.name || '播客节目',
@@ -476,7 +489,13 @@ function normalizePodcastPlayableTrack(item: any) {
     },
     source: 'podcast',
     description: (item?.description || item?.desc || item?.briefDesc || item?.program?.description || item?.program?.desc || item?.mainSong?.description || '').trim(),
-    podcast: rid > 0 ? { rid, programId: programId > 0 ? programId : undefined, createTime: createTime > 0 ? createTime : undefined } : (programId > 0 ? { programId, createTime: createTime > 0 ? createTime : undefined } : (createTime > 0 ? { createTime } : undefined)),
+    podcast: rid > 0
+      ? { rid, programId: programId > 0 ? programId : undefined, createTime: createTime > 0 ? createTime : undefined, feeBadge, feeTone }
+      : (programId > 0
+        ? { programId, createTime: createTime > 0 ? createTime : undefined, feeBadge, feeTone }
+        : (createTime > 0
+          ? { createTime, feeBadge, feeTone }
+          : (feeBadge ? { feeBadge, feeTone } : undefined))),
   };
 }
 

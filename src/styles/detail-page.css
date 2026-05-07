@@ -202,7 +202,8 @@
   margin-top: 12px;
 }
 
-.play-all {
+.play-all,
+.add-to-queue {
   height: 36px;
   padding: 0 14px;
   border-radius: 999px;
@@ -218,13 +219,15 @@
   transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
 }
 
-.play-all:hover {
+.play-all:hover,
+.add-to-queue:hover {
   transform: translateY(-1px);
   filter: brightness(1.04);
   box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 26%, transparent), var(--glass-highlight);
 }
 
-.play-all:active {
+.play-all:active,
+.add-to-queue:active {
   transform: translateY(0) scale(0.99);
 }
 

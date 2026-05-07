@@ -2,6 +2,7 @@ import { reactive } from 'vue';
 import { getIntelligenceList, getPlaylistTrackAll, getSongDetail, trashPersonalFm } from '../api/music';
 import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
+import { showGlobalToast } from './loginModal';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
 import { eqSettings } from './eqSettings';
@@ -9,7 +10,7 @@ import { eqSettings } from './eqSettings';
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
 type TrackSource = 'song' | 'podcast' | 'cloud';
-type PodcastMeta = { rid?: number; programId?: number; createTime?: number };
+type PodcastMeta = { rid?: number; programId?: number; createTime?: number; feeBadge?: string; feeTone?: string };
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type PersonalFmFetcher = () => Promise<any[]>;
 
@@ -140,6 +141,7 @@ export const playerStore = reactive({
   crossfadeSec: 0,
   playbackRate: 1,
   defaultPlaybackRate: 1,
+  paidContentSkip: true,
   defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清臻音' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
   lyricsOffset: 0,
   currentPlaylistId: 0,
@@ -200,6 +202,7 @@ export const playerStore = reactive({
       playMode: this.playMode,
       crossfadeSec: this.crossfadeSec,
       defaultPlaybackRate: this.defaultPlaybackRate,
+      paidContentSkip: this.paidContentSkip,
       defaultQuality: this.defaultQuality,
       themePrimary: this.themePrimary,
       themeMode: this.themeMode,
@@ -286,6 +289,7 @@ export const playerStore = reactive({
       this.crossfadeSec = typeof parsed.crossfadeSec === 'number' ? parsed.crossfadeSec : 0;
       this.playbackRate = 1;
       this.defaultPlaybackRate = typeof parsed.defaultPlaybackRate === 'number' ? parsed.defaultPlaybackRate : 1;
+      this.paidContentSkip = typeof parsed.paidContentSkip === 'boolean' ? parsed.paidContentSkip : true;
       const savedQuality = localStorage.getItem('gm_quality_v1');
       const persistedQuality = typeof parsed.defaultQuality === 'string' ? parsed.defaultQuality : '';
       this.defaultQuality = savedQuality && QUALITY_LEVELS[savedQuality] != null
@@ -526,6 +530,27 @@ export const playerStore = reactive({
     this.persist();
   },
 
+  /** 将一批 track 追加到当前播放列表末尾，不替换已有队列。
+   *  - 按 (id + source) 组合键去重
+   *  - 允许歌曲和播客节目混合在同一队列中
+   *  - 返回实际追加数量
+   */
+  appendToQueue(tracks: any[]): number {
+    if (!tracks.length) return 0;
+
+    const incoming = tracks.map((t) => formatTrack(t));
+
+    // 组合键去重 (id:source)，避免歌曲与播客 id 碰撞
+    const existingKeys = new Set(this.playlist.map((t) => `${t.id}:${t.source}`));
+    const unique = incoming.filter((t) => t.id > 0 && !existingKeys.has(`${t.id}:${t.source}`));
+
+    if (!unique.length) return 0;
+
+    this.playlist.push(...unique);
+    this.persist();
+    return unique.length;
+  },
+
   async playIntelligenceList(): Promise<string | null> {
     let songId = this.currentSongId;
     const pid = this.currentPlaylistId;
@@ -679,6 +704,18 @@ export const playerStore = reactive({
   },
 
   async playTrack(track: Track, seekTo?: number) {
+    // 付费播客提示
+    if (track.source === 'podcast' && track.podcast?.feeTone === 'paid') {
+      showGlobalToast('该节目为付费内容，请前往播客详情页购买后收听', 'warning', 4000);
+      this.loading = false;
+      if (this.paidContentSkip) {
+        await this.next();
+      } else {
+        this.isPlaying = false;
+        this.persist();
+      }
+      return;
+    }
     this.qualityDowngradeInfo = null;
     // 切歌时重置播放速度为全局默认
     this.playbackRate = this.defaultPlaybackRate;

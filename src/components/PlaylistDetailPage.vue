@@ -79,6 +79,7 @@
           :loading="subscribeState.isLoading.value"
           @toggle="subscribeState.toggle"
         />
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="add-to-queue" @click="addAllToQueue">添加到播放列表</AnimatedAppear>
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playAll">播放全部</AnimatedAppear>
         <AnimatedAppear v-if="trackEnriching" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表补全中…</AnimatedAppear>
       </template>
@@ -596,6 +597,15 @@ async function playAll() {
   try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
   playerStore.setPlaylist(tracks.value, 0, props.playlistId);
   await playerStore.playByIndex(0);
+}
+
+function addAllToQueue() {
+  const list = tracks.value;
+  if (!list.length) return;
+  const added = playerStore.appendToQueue(list);
+  if (added > 0) {
+    showToast(`已添加 ${added} 首至播放列表`, 'success', 3000);
+  }
 }
 
 function onSongItemDblClick(event: MouseEvent, index: number) {

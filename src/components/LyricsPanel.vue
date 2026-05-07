@@ -22,7 +22,7 @@
     <template v-else>
       <!-- 加载中 / 暂无歌词：统一状态 -->
       <div v-if="isLoading" class="amll-status">歌词加载中...</div>
-      <div v-else-if="!lyricLines.length && podcastDescription" class="podcast-desc">{{ podcastDescription }}</div>
+      <div v-else-if="!lyricLines.length && podcastDescription" class="podcast-desc" v-html="podcastDescriptionHtml" @click="onPodcastDescClick"></div>
       <div v-else-if="!lyricLines.length" class="amll-status">暂无歌词</div>
       <!-- 有歌词数据：双渲染器层叠，v-show 保持两个组件始终挂载 -->
       <div v-else class="renderer-stack">
@@ -97,6 +97,42 @@ const podcastDescription = computed(() => {
   if (!isCurrentPodcast.value) return '';
   return playerStore.currentTrack?.description || '';
 });
+
+/** 将简介文本中的时间标签（MM:SS / H:MM:SS）替换为可点击 span */
+const timestampRe = /(\b\d{1,2}:\d{2})(?::(\d{2}))?\b/g;
+function parseTimestampToSeconds(text: string): number {
+  // text 可能是 "MM:SS" 或 "H:MM:SS"
+  const parts = text.split(':').map(Number);
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return 0;
+}
+const podcastDescriptionHtml = computed(() => {
+  const desc = podcastDescription.value;
+  if (!desc) return '';
+  // HTML-escape 原始文本，再对时间戳做替换
+  const escaped = desc
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  return escaped.replace(timestampRe, (match) => {
+    const sec = parseTimestampToSeconds(match);
+    return `<span class="podcast-ts" data-sec="${sec}">${match}</span>`;
+  });
+});
+
+function onPodcastDescClick(e: MouseEvent) {
+  const target = (e.target as HTMLElement)?.closest?.('.podcast-ts');
+  if (!target) return;
+  const sec = Number(target.getAttribute('data-sec'));
+  if (isNaN(sec) || sec < 0) return;
+  playerStore.seek(sec);
+  // 如果处于暂停状态则自动恢复播放
+  if (!playerStore.isPlaying) {
+    nextTick(() => playerStore.togglePlay());
+  }
+}
 
 const lyricVars = computed(() => {
   const fs = fontSizeMap[lyricsSettings.fontSize] || fontSizeMap[1];
@@ -307,6 +343,12 @@ startTick();
   -ms-overflow-style: none;
 }
 .podcast-desc::-webkit-scrollbar { display: none; }
+.podcast-desc :deep(.podcast-ts),
+:deep(.podcast-ts) { cursor: pointer; color: var(--accent, #c39c76); font-weight: 600; border-bottom: 1px dashed color-mix(in srgb, var(--accent, #c39c76) 40%, transparent); transition: all 120ms ease; }
+.podcast-desc :deep(.podcast-ts:hover),
+:deep(.podcast-ts:hover) { background: color-mix(in srgb, var(--accent, #c39c76) 12%, transparent); border-bottom-color: var(--accent, #c39c76); }
+.podcast-desc :deep(.podcast-ts:active),
+:deep(.podcast-ts:active) { background: color-mix(in srgb, var(--accent, #c39c76) 22%, transparent); }
 .renderer-stack { flex: 1; min-height: 0; display: flex; flex-direction: column; mask-image: linear-gradient(to bottom, transparent 0%, transparent 4%, black 14%, black 86%, transparent 96%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, transparent 0%, transparent 4%, black 14%, black 86%, transparent 96%, transparent 100%); }
 .renderer-layer { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .amll-player { flex: 1; min-height: 0; }

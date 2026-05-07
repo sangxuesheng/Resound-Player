@@ -58,8 +58,14 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
               </div>
               <div class="play-queue-song-info">
-                <p class="play-queue-song-name">{{ track.name }}</p>
-                <p class="play-queue-artist">{{ formatArtists(track.ar) }}</p>
+                <p class="play-queue-song-name">
+                  {{ track.name }}
+                </p>
+                <p class="play-queue-artist">
+                  <span v-if="track.source === 'podcast'" class="play-queue-source-badge">播客</span>
+                  <span v-if="track.podcast?.feeBadge" :class="['play-queue-fee-badge', `play-queue-fee-badge--${track.podcast.feeTone}`]">{{ track.podcast.feeBadge }}</span>
+                  {{ formatArtists(track.ar) }}
+                </p>
               </div>
               <button
                 class="play-queue-remove-btn"
@@ -261,6 +267,46 @@ function formatArtists(ar?: { name: string }[]): string {
   white-space: nowrap;
 }
 
+.play-queue-source-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: var(--theme-primary-strong, #6366f1);
+}
+
+.play-queue-fee-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.play-queue-fee-badge--paid {
+  color: #fff;
+  background: rgba(245,158,11,.85);
+}
+.play-queue-fee-badge--vip {
+  color: #fff;
+  background: var(--theme-primary-strong, #6366f1);
+}
+.play-queue-fee-badge--purchased {
+  color: #fff;
+  background: rgba(20,184,166,.85);
+}
+
 .play-queue-artist {
   margin: 2px 0 0;
   font-size: 11px;
@@ -268,6 +314,9 @@ function formatArtists(ar?: { name: string }[]): string {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* Remove button - visible on hover */
