@@ -539,22 +539,22 @@ function formatTime(sec: number) {
 .ctrl.main { width: 42px; height: 42px; border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: color-mix(in srgb, var(--accent) 22%, var(--bg-surface)); color: var(--text-main); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 .ctrl:focus-visible, .icon:focus-visible, .cover:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .right { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-2); min-width: 0; }
-.vol { display: flex; align-items: center; gap: var(--space-1); color: #374151; }
+.vol { display: flex; align-items: center; gap: var(--space-1); color: var(--text-sub); }
 .vol input { width: 88px; }
 .vol-icon-btn { width: 24px; height: 24px; border: none; background: transparent; color: inherit; cursor: pointer; display: inline-grid; place-items: center; border-radius: 5px; transition: color 0.16s ease, background 0.16s ease; flex-shrink: 0; }
-.vol-icon-btn:hover { color: #111827; background: rgba(0,0,0,0.06); }
-.vol-icon-btn:active { color: #6b7280; }
+.vol-icon-btn:hover { color: var(--text-main); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.vol-icon-btn:active { color: var(--text-soft); }
 .quality-wrap { position: relative; flex-shrink: 0; }
 .icon.quality-icon { width: auto; min-width: 32px; padding: 0 8px; }
 .quality-btn-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
 .settings-wrap { position: relative; flex-shrink: 0; }
-.icon { width: 32px; height: 32px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; display: grid; place-items: center; transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
+.icon { width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-surface); cursor: pointer; display: grid; place-items: center; transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
 .icon:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--accent); }
-.icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
-.icon.saved { border-color: color-mix(in srgb, var(--accent) 48%, #d1d5db); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
+.icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface)); }
+.icon.saved { border-color: color-mix(in srgb, var(--accent) 48%, var(--border)); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface)); }
 .icon.loading { opacity: 0.72; cursor: progress; }
 .icon.icon-fm { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; cursor: default; opacity: 0.55; }
-.icon.icon-fm:hover { transform: none; border-color: #d1d5db; color: inherit; opacity: 0.55; }
+.icon.icon-fm:hover { transform: none; border-color: var(--border); color: inherit; opacity: 0.55; }
 .icon.icon-fm::after { left: auto; right: 0; transform: translateY(4px); }
 .icon.icon-fm:hover::after { transform: translateY(0); }
 .icon.icon-fm::before { left: auto; right: 10px; transform: translateY(4px); }
