@@ -1,35 +1,63 @@
 <template>
   <div class="song-actions" @click.stop>
-    <BookmarkIconButton :song-id="Number(song?.id || 0)" />
-    <button class="sa-btn" title="下一首播放" @click.stop="$emit('play-next', song)">
+    <TooltipWrapper :text="userStore.likedSongIds.includes(Number(song?.id || 0)) ? '取消收藏' : '收藏'">
+    <BookmarkIconButton :song-id="Number(song?.id || 0)" :liked="userStore.likedSongIds.includes(Number(song?.id || 0))" />
+    </TooltipWrapper>
+    <TooltipWrapper text="下一首播放">
+    <button class="sa-btn" @click.stop="$emit('play-next', song)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" x2="19" y1="5" y2="19"/></svg>
     </button>
-    <button class="sa-btn" title="收藏至歌单" @click.stop="$emit('add-to-playlist', song)">
+    </TooltipWrapper>
+    <TooltipWrapper text="收藏至歌单">
+    <button class="sa-btn" @click.stop="$emit('add-to-playlist', song)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
     </button>
-    <button class="sa-btn" title="查看评论" @click.stop="$emit('open-comment', song.id)">
+    </TooltipWrapper>
+    <TooltipWrapper text="查看评论">
+    <button class="sa-btn" @click.stop="$emit('open-comment', song.id)">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </button>
-    <button class="sa-btn" title="查看专辑" @click.stop="openAlbum">
-      <svg width="15" height="15" viewBox="0 0 1024 1024" fill="currentColor" stroke="currentColor" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path d="M150.588235 542.117647a30.117647 30.117647 0 1 1 60.235294 0 271.058824 271.058824 0 0 0 271.058824 271.058824 30.117647 30.117647 0 1 1 0 60.235294C298.917647 873.411765 150.588235 725.082353 150.588235 542.117647z m722.82353-60.235294a30.117647 30.117647 0 1 1-60.235294 0 271.058824 271.058824 0 0 0-271.058824-271.058824 30.117647 30.117647 0 1 1 0-60.235294c182.964706 0 331.294118 148.329412 331.294118 331.294118zM512 1024C229.225412 1024 0 794.774588 0 512S229.225412 0 512 0s512 229.225412 512 512-229.225412 512-512 512z m0-60.235294c249.494588 0 451.764706-202.270118 451.764706-451.764706 0-249.494588-202.270118-451.764706-451.764706-451.764706C262.505412 60.235294 60.235294 262.505412 60.235294 512c0 249.494588 202.270118 451.764706 451.764706 451.764706z m0-331.294118a120.470588 120.470588 0 1 1 0-240.941176 120.470588 120.470588 0 0 1 0 240.941176z m0-60.235294a60.235294 60.235294 0 1 0 0-120.470588 60.235294 60.235294 0 0 0 0 120.470588z"/></svg>
+    </TooltipWrapper>
+    <TooltipWrapper text="更多操作">
+    <button
+      ref="moreTriggerRef"
+      class="sa-btn"
+      :class="{ active: moreMenuOpen }"
+      @click="toggleMoreMenu"
+      @mouseenter="onMoreEnter"
+      @mouseleave="onMoreLeave"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
     </button>
-    <button v-if="hasMv" class="sa-btn" title="查看 MV" @click.stop="openMv">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-    </button>
-    <button class="sa-btn" title="下载" @click.stop="openDownloadPopup">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    </button>
-    <button class="sa-btn" title="上传至云盘" @click.stop="uploadToCloud">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/>
-        <path d="M12 12v9"/>
-        <path d="m16 16-4-4-4 4"/>
-      </svg>
-    </button>
-    <button class="sa-btn" title="百科" @click.stop="openEncyclopedia">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
-    </button>
+    </TooltipWrapper>
   </div>
+  <Teleport to="body">
+    <div
+      v-if="moreMenuOpen"
+      ref="moreMenuRef"
+      class="more-menu"
+      :style="moreMenuStyle"
+      @mouseenter="onMenuEnter"
+      @mouseleave="onMenuLeave"
+    >
+      <button class="more-menu__item" type="button" @click="openAlbum">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>查看专辑</span>
+      </button>
+      <button class="more-menu__item" type="button" @click="openDownloadPopup">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span>下载</span>
+      </button>
+      <button class="more-menu__item" type="button" @click="uploadToCloud">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+        <span>上传至云盘</span>
+      </button>
+      <button class="more-menu__item" type="button" @click="openEncyclopedia">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <span>百科</span>
+      </button>
+    </div>
+  </Teleport>
   <Teleport to="body">
     <SongEncyclopediaModal
       :song-id="showEncyclopediaId"
@@ -115,9 +143,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import BookmarkIconButton from './BookmarkIconButton.vue';
 import SongEncyclopediaModal from './SongEncyclopediaModal.vue';
+import TooltipWrapper from './TooltipWrapper.vue';
 import { getSongUrlV1, getSongLyric, getSongLyricNew, importToCloud } from '../../api/music';
 import { userStore } from '../../stores/user';
 import { tryUnblockMatch } from '../../api/unblock';
@@ -453,6 +482,106 @@ async function uploadToCloud() {
   }
 }
 
+// ---- 更多操作下拉菜单 ----
+const moreMenuOpen = ref(false);
+const moreTriggerRef = ref<HTMLElement | null>(null);
+const moreMenuRef = ref<HTMLElement | null>(null);
+const moreMenuStyle = ref<Record<string, string>>({});
+const moreDirection = ref<'down' | 'up'>('down');
+let moreHoverTimer: ReturnType<typeof setTimeout> | null = null;
+
+function toggleMoreMenu() {
+  moreMenuOpen.value = !moreMenuOpen.value;
+  if (moreMenuOpen.value) updateMoreMenuPosition();
+}
+
+function updateMoreMenuPosition() {
+  const el = moreTriggerRef.value;
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const gap = 6;
+  const estimatedHeight = 4 * 42 + 12;
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  let top: number;
+
+  if (spaceBelow >= estimatedHeight) {
+    moreDirection.value = 'down';
+    top = rect.bottom + gap;
+  } else if (spaceAbove >= estimatedHeight) {
+    moreDirection.value = 'up';
+    top = rect.top - estimatedHeight - gap;
+  } else {
+    if (spaceAbove > spaceBelow) {
+      moreDirection.value = 'up';
+      top = Math.max(gap, rect.top - estimatedHeight - gap);
+    } else {
+      moreDirection.value = 'down';
+      top = rect.bottom + gap;
+    }
+  }
+
+  let left = rect.left;
+  const menuWidth = 180;
+  if (left + menuWidth > window.innerWidth - 8) {
+    left = Math.max(8, window.innerWidth - menuWidth - 8);
+  }
+
+  const originY = moreDirection.value === 'up' ? 'bottom' : 'top';
+  moreMenuStyle.value = {
+    position: 'fixed',
+    top: `${top}px`,
+    left: `${left}px`,
+    width: `${menuWidth}px`,
+    transformOrigin: `${originY} left`,
+    zIndex: '10000',
+  };
+}
+
+function onMoreEnter() {
+  if (moreHoverTimer) clearTimeout(moreHoverTimer);
+  moreMenuOpen.value = true;
+  updateMoreMenuPosition();
+}
+
+function onMoreLeave() {
+  moreHoverTimer = setTimeout(() => {
+    moreMenuOpen.value = false;
+  }, 150);
+}
+
+function onMenuEnter() {
+  if (moreHoverTimer) clearTimeout(moreHoverTimer);
+}
+
+function onMenuLeave() {
+  moreMenuOpen.value = false;
+}
+
+function onDocClick(e: MouseEvent) {
+  if (!moreTriggerRef.value) return;
+  const target = e.target as Node;
+  if (
+    !moreTriggerRef.value.contains(target) &&
+    moreMenuRef.value &&
+    !moreMenuRef.value.contains(target)
+  ) {
+    moreMenuOpen.value = false;
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onDocClick);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') moreMenuOpen.value = false;
+  });
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick);
+  if (moreHoverTimer) clearTimeout(moreHoverTimer);
+});
+
 </script>
 
 <style scoped>
@@ -490,6 +619,51 @@ async function uploadToCloud() {
 
 .sa-btn:active {
   transform: translateY(0);
+}
+
+.sa-btn.active {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.more-menu {
+  position: fixed;
+  background: var(--bg-solid);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: var(--space-1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2), var(--glass-highlight);
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.more-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 38px;
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.12s ease;
+}
+
+.more-menu__item:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid));
+}
+
+.more-menu__item svg {
+  flex-shrink: 0;
+  color: var(--text-soft);
 }
 
 /* 覆盖 BookmarkIconButton，使其与 sa-btn 视觉一致 */

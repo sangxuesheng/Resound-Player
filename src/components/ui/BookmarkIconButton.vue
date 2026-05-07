@@ -13,8 +13,24 @@
   >
     <span class="button-core">
       <span class="icon-wrap" aria-hidden="true">
-        <Heart class="outline-heart" :size="16" />
-        <Heart class="fill-heart" :size="16" />
+        <span
+          class="heart-svg"
+          :style="{
+            opacity: isSaved ? 0 : 0.96,
+            transform: isSaved ? 'scale(0.35) rotate(-8deg)' : 'none',
+          }"
+        >
+          <Heart :size="16" :style="{ color: 'var(--text-soft)' }" />
+        </span>
+        <span
+          class="heart-svg"
+          :style="{
+            opacity: isSaved ? 1 : 0,
+            transform: isSaved ? 'scale(1) rotate(0deg)' : 'scale(0.4)',
+          }"
+        >
+          <Heart :size="16" :style="{ color: 'var(--bookmark-heart-fill)', fill: 'currentColor' }" />
+        </span>
       </span>
     </span>
 
@@ -46,18 +62,25 @@ const isSaved = ref(Boolean(props.liked ?? (props.songId ? userStore.likedSongId
 const isLoading = ref(false);
 const burstSeed = ref(0);
 
-watch(
-  () => [props.liked, props.songId, userStore.likedSongIds.length, userStore.likedSongIds.join(',')] as const,
-  ([liked, songId]) => {
-    if (liked !== undefined) {
-      isSaved.value = liked;
-      return;
-    }
+function syncIsSaved() {
+  if (props.liked !== undefined) {
+    isSaved.value = props.liked;
+  } else if (props.songId) {
+    isSaved.value = userStore.likedSongIds.includes(props.songId);
+  } else {
+    isSaved.value = false;
+  }
+}
 
-    const normalizedSongId = Number(songId || 0);
-    isSaved.value = normalizedSongId > 0 && userStore.likedSongIds.includes(normalizedSongId);
+watch([() => props.liked, () => props.songId], syncIsSaved, { immediate: true });
+
+watch(
+  () => userStore.likedSongIds,
+  () => {
+    if (props.liked === undefined && props.songId) {
+      isSaved.value = userStore.likedSongIds.includes(props.songId);
+    }
   },
-  { immediate: true },
 );
 
 const sparkles = computed(() => {
@@ -210,35 +233,13 @@ async function toggleSaved() {
   place-items: center;
 }
 
-.outline-heart,
-.fill-heart {
+.heart-svg {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 220ms ease, transform 220ms ease;
-}
-
-.outline-heart {
-  color: var(--bookmark-heart-outline);
-  opacity: 0.96;
-  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--bookmark-accent) 10%, rgba(15, 23, 42, 0.12)));
-}
-
-.fill-heart {
-  color: var(--bookmark-heart-fill);
-  fill: currentColor;
-  opacity: 0;
-  transform: scale(0.4);
-  filter: drop-shadow(0 4px 10px color-mix(in srgb, var(--bookmark-accent) 30%, transparent));
-}
-
-.bookmark-icon-button.saved .outline-heart {
-  opacity: 0;
-  transform: scale(0.35) rotate(-8deg);
-}
-
-.bookmark-icon-button.saved .fill-heart {
-  opacity: 1;
-  transform: scale(1) rotate(0deg);
 }
 
 .glow,
@@ -317,8 +318,7 @@ async function toggleSaved() {
 
 @media (prefers-reduced-motion: reduce) {
   .bookmark-icon-button,
-  .outline-heart,
-  .fill-heart,
+  .heart-svg,
   .glow {
     transition: none;
   }

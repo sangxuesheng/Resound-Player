@@ -80,6 +80,7 @@ export const uiStore = reactive({
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   resumeAfterMv: true,
   showIntelligenceIndicator: true,
+  showPlayQueue: false,
   searchKeyword: '',
   searchType: 1,
   defaultSearchHint: '',
@@ -164,6 +165,9 @@ export const uiStore = reactive({
   setShowIntelligenceIndicator(enabled: boolean) {
     this.showIntelligenceIndicator = enabled;
     localStorage.setItem(SHOW_INTEL_KEY, enabled ? '1' : '0');
+  },
+  togglePlayQueue() {
+    this.showPlayQueue = !this.showPlayQueue;
   },
   async loadDefaultSearchKeyword(force = false) {
     if (this.defaultSearchLoading) return;

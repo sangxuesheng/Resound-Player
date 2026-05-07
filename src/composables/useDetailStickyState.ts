@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, type Ref } from 'vue';
 
 interface UseDetailStickyStateOptions {
   scrollHostSelector?: string | (() => string | undefined);
@@ -62,14 +62,20 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   }
 
   function refresh(): void {
-    headerEl = getHeaderEl();
-    scrollHost = getScrollHost();
-    if (headerEl && scrollHost) {
-      const hostRect = scrollHost.getBoundingClientRect();
-      const headerRect = headerEl.getBoundingClientRect();
-      initialOffset = Math.max(0, headerRect.top - hostRect.top);
-    }
-    update();
+    isSticky.value = false;
+    // 等 Vue 刷完 isSticky=false 的 DOM 更新（移除 is-sticky-header class）后再重算偏移，
+    // 否则 header 仍处于 position:sticky 粘顶状态，getBoundingClientRect 返回粘顶位置，
+    // 导致 initialOffset=0，update() 又把 isSticky 设回 true，卡死在粘顶态
+    nextTick(() => {
+      headerEl = getHeaderEl();
+      scrollHost = getScrollHost();
+      if (headerEl && scrollHost) {
+        const hostRect = scrollHost.getBoundingClientRect();
+        const headerRect = headerEl.getBoundingClientRect();
+        initialOffset = Math.max(1, headerRect.top - hostRect.top);
+      }
+      update();
+    });
   }
 
   onMounted(() => {

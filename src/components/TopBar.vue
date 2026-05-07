@@ -59,7 +59,7 @@
         </div>
       </AnimatedAppear>
 
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg" :attrs="intelligenceBtnAttrs" :title="intelligenceTooltip" @click="handleIntelligencePlay">
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg" :attrs="intelligenceBtnAttrs" :data-tooltip="playerStore.isIntelligenceActive ? '退出心动模式' : '心动模式'" data-tooltip-dir="down" @click="handleIntelligencePlay">
         <Sparkles :size="16" />
       </AnimatedAppear>
       <div class="user-menu-wrap">

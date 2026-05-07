@@ -14,7 +14,7 @@
         <div class="content-shell">
           <HomePanel
             v-if="activePage === 'home'"
-            @open-detail="openPlaylistDetail"
+            @open-detail="(id) => openPlaylistDetail(id, undefined, 'home')"
             @open-daily-list="openDailyList"
             @open-album-detail="openAlbumDetail"
             @open-playlist-category="openPlaylistByCategory"
@@ -55,6 +55,7 @@
             :back-label="albumBackLabel"
             @back="backToAlbum"
             @open-artist="openArtistFromDetail"
+            @open-comment="openSongComment"
             @open-album="(albumId) => openAlbumDetail(albumId, 'album-detail')"
             @open-language="(language) => openLanguageDetail(language, activePage)"
             @open-mv-player="openMvFromSearch"
@@ -68,6 +69,7 @@
             @back="backToArtist"
             @open-album-detail="(albumId, tab) => { artistActiveTabState = tab || 'songs'; openAlbumDetail(albumId, 'artist-detail'); }"
             @open-artist="openArtistDetail($event, 'artist-detail')"
+            @open-comment="openSongComment"
             @open-mv-player="openMvFromSearch"
             @open-language="(language) => openLanguageDetail(language, activePage)"
           />
@@ -150,6 +152,7 @@
     </div>
 
     <PlayerBar v-show="!playerStore.expanded" />
+    <PlayQueuePanel />
     <PlayerExpanded @open-artist="openArtistFromPlayer" @open-album="(albumId) => { playerStore.closeExpanded(); openAlbumDetail(albumId, activePage.value); }" @open-user="openUserFromComment" @open-podcast-detail="(item) => { playerStore.closeExpanded(); openPodcastDetail(item); }" />
     <LoginModal />
   </div>
@@ -159,6 +162,7 @@
 import { computed, onBeforeUnmount, onMounted, watch, ref } from 'vue';
 import HomePanel from './components/HomePanel.vue';
 import PlayerBar from './components/PlayerBar.vue';
+import PlayQueuePanel from './components/PlayQueuePanel.vue';
 import PlayerExpanded from './components/PlayerExpanded.vue';
 import PlaceholderPanel from './components/PlaceholderPanel.vue';
 import ScrollToTopFab from './components/ui/ScrollToTopFab.vue';
@@ -206,6 +210,7 @@ const activeMvReturnPage = ref('playlist');
 const activePlaylistReturnPage = ref('playlist');
 const activeAlbumReturnPage = ref('home');
 const activeArtistReturnPage = ref('search');
+const activeArtistIdStack = ref<number[]>([]);
 const podcastItems = ref<any[]>([]);
 const podcastRecentItems = ref<any[]>([]);
 const podcastSubscribedItems = ref<any[]>([]);
@@ -306,18 +311,23 @@ const playlistBackLabel = computed(() => {
   if (activePlaylistReturnPage.value === 'search') return '返回搜索结果';
   if (activePlaylistReturnPage.value === 'home') return '返回首页';
   if (activePlaylistReturnPage.value === 'user') return '返回用户中心';
+  if (activePlaylistReturnPage.value === 'user-detail') return '返回用户详情';
   if (activePlaylistReturnPage.value === 'history') return '返回收藏历史';
+  if (activePlaylistReturnPage.value === 'language-detail') return '返回语言详情';
   return '返回歌单分类';
 });
 
 const albumBackLabel = computed(() => {
   if (activeAlbumReturnPage.value === 'search') return '返回搜索结果';
+  if (activeAlbumReturnPage.value === 'playlist-detail') return '返回歌单详情';
   if (activeAlbumReturnPage.value === 'artist-detail') return '返回歌手详情';
   if (activeAlbumReturnPage.value === 'history') return '返回收藏历史';
   return '返回首页';
 });
 
 const artistBackLabel = computed(() => {
+  // 歌手链式跳转中时，显示通用返回
+  if (activeArtistIdStack.value.length > 0) return '返回上一页';
   if (activeArtistReturnPage.value === 'playlist-detail') return '返回歌单详情';
   if (activeArtistReturnPage.value === 'album-detail') return '返回专辑详情';
   if (activeArtistReturnPage.value === 'home') return '返回首页';
@@ -325,6 +335,7 @@ const artistBackLabel = computed(() => {
   if (activeArtistReturnPage.value === 'rank') return '返回排行榜';
   if (activeArtistReturnPage.value === 'song-comment') return '返回歌曲评论';
   if (activeArtistReturnPage.value === 'user') return '返回用户页';
+  if (activeArtistReturnPage.value === 'player') return '返回播放页';
   return '返回搜索结果';
 });
 
@@ -338,6 +349,9 @@ const userBackLabel = computed(() => {
   if (activeUserReturnPage.value === 'song-comment') return '返回歌曲评论';
   if (activeUserReturnPage.value === 'mv' || activeUserReturnPage.value === 'mv-play') return '返回 MV 播放';
   if (activeUserReturnPage.value === 'home') return '返回首页';
+  if (activeUserReturnPage.value === 'playlist-detail') return '返回歌单详情';
+  if (activeUserReturnPage.value === 'artist-detail') return '返回歌手详情';
+  if (activeUserReturnPage.value === 'album-detail') return '返回专辑详情';
   return '返回搜索结果';
 });
 
@@ -361,6 +375,10 @@ function openAlbumDetail(albumId: number, returnPage = 'home') {
 function backToAlbum() {
   if (activeAlbumReturnPage.value === 'search') {
     activePage.value = 'search';
+    return;
+  }
+  if (activeAlbumReturnPage.value === 'playlist-detail') {
+    activePage.value = 'playlist-detail';
     return;
   }
   if (activeAlbumReturnPage.value === 'artist-detail') {
@@ -772,8 +790,13 @@ function resolveArtistId(artist: any) {
 }
 
 function openArtistDetail(artist: any, returnPage = 'search') {
+  // 从歌手页内部跳转到另一个歌手时，压栈保存当前歌手ID，保留原始 returnPage
+  if (activePage.value === 'artist-detail' && activeArtistId.value > 0) {
+    activeArtistIdStack.value.push(activeArtistId.value);
+  } else {
+    activeArtistReturnPage.value = returnPage;
+  }
   activeArtistId.value = resolveArtistId(artist);
-  activeArtistReturnPage.value = returnPage;
   activePage.value = 'artist-detail';
 }
 
@@ -787,7 +810,7 @@ function openArtistFromHome(artist: any) {
 
 function openArtistFromPlayer(artist: any) {
   playerStore.closeExpanded();
-  openArtistDetail(artist, activePage.value);
+  openArtistDetail(artist, 'player');
 }
 
 function openUserFromHome(userId: number) {
@@ -844,8 +867,18 @@ function openArtistFromDetail(artist: any) {
 }
 
 function backToArtist() {
+  // 歌手链式跳转：弹出前一个歌手ID，留在歌手页
+  if (activeArtistIdStack.value.length > 0) {
+    const prevId = activeArtistIdStack.value.pop()!;
+    activeArtistId.value = prevId;
+    return;
+  }
   if (activeArtistReturnPage.value === 'rank-detail') {
     activePage.value = 'rank-detail';
+    return;
+  }
+  if (activeArtistReturnPage.value === 'player') {
+    playerStore.openExpanded();
     return;
   }
   activePage.value = activeArtistReturnPage.value || 'search';
@@ -890,6 +923,18 @@ function openMvFromSearch(item: any) {
     playerStore.audio.pause();
   }
 }
+
+// 页面跳转时重置滚动位置，避免新页面从中间显示 / sticky 态卡死
+function scrollContentToTop() {
+  const el = document.querySelector('.content') as HTMLElement | null;
+  if (el) el.scrollTop = 0;
+}
+
+watch(activePage, () => { scrollContentToTop(); });
+watch(
+  [activeArtistId, activeAlbumId, activePlaylistId, activeUserId, activeLanguage, activeRankId],
+  () => { scrollContentToTop(); },
+);
 
 watch(
   () => uiStore.searchType,

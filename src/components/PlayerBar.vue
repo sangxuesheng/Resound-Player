@@ -55,7 +55,7 @@
       </AnimatedAppear>
       <AnimatedAppear v-if="playerStore.isIntelligenceActive &amp;&amp; uiStore.showIntelligenceIndicator" tag="button" variant="control" rhythm="actions" class-name="icon intel-icon" aria-label="心动模式"><Sparkles :size="10" /></AnimatedAppear>
       <div class="quality-wrap" ref="qualityWrapRef">
-        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="icon quality-icon" :class="{ active: showQualityPopup }" aria-label="音质选择" @click.stop="toggleQualityPopup">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="icon quality-icon" :class="{ active: showQualityPopup }" data-tooltip="音质选择" aria-label="音质选择" @click.stop="toggleQualityPopup">
           <span class="quality-btn-label">{{ qualityLabel || playerStore.defaultQuality }}</span>
         </AnimatedAppear>
         <Teleport to="body">
@@ -86,7 +86,7 @@
         </Teleport>
       </div>
       <div class="speed-wrap" ref="speedWrapRef">
-        <button class="icon speed-btn" type="button" :class="{ active: showSpeedPopup }" aria-label="播放速度" @click.stop="toggleSpeedPopup">
+        <button class="icon speed-btn" type="button" :class="{ active: showSpeedPopup }" data-tooltip="播放速度" aria-label="播放速度" @click.stop="toggleSpeedPopup">
           <span class="speed-label">{{ playbackRateLabel }}</span>
         </button>
         <Teleport to="body">
@@ -112,15 +112,20 @@
           </transition>
         </Teleport>
       </div>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" aria-label="设置"><Settings :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="5" class-name="icon" aria-label="切换播放模式" @click="playerStore.cyclePlayMode()">
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" data-tooltip="歌词" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :data-tooltip="isCurrentLiked ? '取消收藏' : '收藏'" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" data-tooltip="设置" aria-label="设置"><Settings :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="5" class-name="icon" :data-tooltip="playModeTooltip" aria-label="切换播放模式" @click="playerStore.cyclePlayMode()">
         <Repeat v-if="playerStore.playMode === 'loop'" :size="14" />
         <Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" />
         <Shuffle v-else :size="14" />
       </AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="6" class-name="icon" aria-label="播放列表"><ListMusic :size="14" /></AnimatedAppear>
+      <template v-if="isPersonalFmCurrentTrack">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="6" class-name="icon icon-fm" data-tooltip="当前为私人 FM" aria-label="当前为私人 FM" disabled>FM</AnimatedAppear>
+      </template>
+      <template v-else>
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="6" class-name="icon" :class="{ active: uiStore.showPlayQueue }" data-tooltip="播放列表" aria-label="播放列表" @click="uiStore.togglePlayQueue()"><ListMusic :size="14" /></AnimatedAppear>
+      </template>
     </AnimatedAppear>
   </AnimatedAppear>
 </template>
@@ -428,6 +433,12 @@ const coverStyle = computed(() => {
   return { backgroundImage: `url(${url})` };
 });
 
+const playModeTooltip = computed(() => {
+  if (playerStore.playMode === 'loop') return '列表循环';
+  if (playerStore.playMode === 'single') return '单曲循环';
+  return '随机播放';
+});
+
 function onVolume(e: Event) {
   const value = Number((e.target as HTMLInputElement).value) / 100;
   playerStore.setVolume(value);
@@ -496,7 +507,6 @@ function formatTime(sec: number) {
   padding: 0 var(--space-5);
   z-index: 20;
   min-width: 0;
-  overflow-x: clip;
 }
 .left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
 .cover-wrap { position: relative; flex-shrink: 0; display: inline-flex; border-radius: 12px; overflow: hidden; }
@@ -542,6 +552,12 @@ function formatTime(sec: number) {
 .icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
 .icon.saved { border-color: color-mix(in srgb, var(--accent) 48%, #d1d5db); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
 .icon.loading { opacity: 0.72; cursor: progress; }
+.icon.icon-fm { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; cursor: default; opacity: 0.55; }
+.icon.icon-fm:hover { transform: none; border-color: #d1d5db; color: inherit; opacity: 0.55; }
+.icon.icon-fm::after { left: auto; right: 0; transform: translateY(4px); }
+.icon.icon-fm:hover::after { transform: translateY(0); }
+.icon.icon-fm::before { left: auto; right: 10px; transform: translateY(4px); }
+.icon.icon-fm:hover::before { transform: translateY(0); }
 
 .quality-popup-backdrop { position: fixed; inset: 0; z-index: 9999; }
 .quality-popup { position: fixed; background: var(--bg-solid); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18); overflow: hidden; display: flex; flex-direction: column; z-index: 10000; }
