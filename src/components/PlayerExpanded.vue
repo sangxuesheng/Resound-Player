@@ -115,6 +115,7 @@
                     <button class="volume-icon-btn" type="button" :aria-label="playerStore.muted ? '取消静音' : '静音'" @click="playerStore.toggleMute()"><VolumeX v-if="playerStore.muted || playerStore.volume === 0" :size="18" /><Volume v-else-if="playerStore.volume < 0.33" :size="18" /><Volume1 v-else-if="playerStore.volume < 0.66" :size="18" /><Volume2 v-else :size="18" /></button>
                     <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
                   </div>
+                  <button v-if="playerStore.isIntelligenceActive &amp;&amp; uiStore.showIntelligenceIndicator" class="ctrl intel-icon" type="button" aria-label="心动模式"><Sparkles :size="14" /></button>
                   <button class="ctrl favorite-ctrl" type="button" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="16" /></button>
                   <button class="ctrl volume-ctrl-comment" :class="{ active: showComments }" :disabled="!canComment" @click="showComments = !showComments" aria-label="评论区">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -225,6 +226,7 @@
             <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
           </div>
           <div class="cc-right">
+            <button v-if="playerStore.isIntelligenceActive &amp;&amp; uiStore.showIntelligenceIndicator" class="con-btn intel-icon" type="button" aria-label="心动模式"><Sparkles :size="10" /></button>
             <button v-if="isPersonalFmCurrentTrack" class="con-btn con-fm-label" type="button" aria-label="当前为私人 FM" disabled>FM</button>
             <button v-else class="con-btn" @click="scrollPlaylistIntoView" aria-label="查看播放列表"><AlignJustify :size="14" /></button>
             <div class="con-volume">
@@ -257,10 +259,11 @@
 </template>
 
 <script setup lang="ts">
-import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
+import { AlignJustify, ChevronDown, Copy, Heart, Minus, Plus, Repeat, Repeat1, Settings, Shuffle, SkipBack, SkipForward, Sparkles, Volume, Volume1, Volume2, VolumeX } from 'lucide-vue-next';
 import { computed, nextTick, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { toggleDjSubscribe, toggleSongLike, trashPersonalFm, deleteDjComment } from '../api/music';
 import { playerStore } from '../stores/player';
+import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import { lyricsSettings } from '../stores/lyricsSettings';
 import { useIridescence, type IridescenceConfig } from '../composables/useIridescence';
@@ -632,12 +635,13 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .ctrl.main { width: 52px; height: 52px; border: 1px solid color-mix(in srgb, var(--panel-bg-soft) 36%, #ffffff33); background: color-mix(in srgb, var(--panel-bg-soft) 52%, #f1d1b4 48%); box-shadow: 0 12px 22px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.34); }
 .volume-wrap { width: 300px; display: flex; justify-content: space-between; gap: var(--space-3); align-items: center; color: rgba(255,255,255,0.8);  }
 .volume-control { min-width: 0; flex: 1 1 auto; display: flex; justify-content: center; gap: var(--space-2); align-items: center; }
-.volume-control input { min-width: 0; flex: 1 1 auto; }
+.volume-control input { min-width: 0; flex: 1 1 auto; max-width: 110px; }
 .volume-icon-btn { width: 28px; height: 28px; border: none; background: transparent; color: rgba(255,255,255,0.8); cursor: pointer; display: inline-grid; place-items: center; border-radius: 6px; transition: color 0.16s ease, background 0.16s ease; flex-shrink: 0; }
 .volume-icon-btn:hover { color: #fff; background: rgba(255,255,255,0.08); }
 .favorite-ctrl { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .favorite-ctrl.saved { color: #ff6b8a !important; }
 .favorite-ctrl.saved :deep(svg) { fill: currentColor; }
+.intel-icon { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; }
 .volume-ctrl-comment { flex: 0 0 42px; border: none !important; background: transparent !important; box-shadow: none !important; outline: none; order: 1; }
 .volume-ctrl-comment.active { color: var(--accent, #fff) !important; }
 /* iridescence canvas */
@@ -1089,5 +1093,21 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .con-btn.active,
 .ctrl.active {
   color: var(--accent);
+}
+
+/* 心动模式指示器 */
+.intel-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+.intel-indicator svg,
+.intel-icon svg {
+  animation: intel-spin 5s linear infinite;
+}
+@keyframes intel-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

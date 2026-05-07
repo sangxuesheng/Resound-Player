@@ -53,6 +53,7 @@
         </button>
         <input type="range" min="0" max="100" :value="Math.round((playerStore.muted ? 0 : playerStore.volume) * 100)" @input="onVolume" />
       </AnimatedAppear>
+      <AnimatedAppear v-if="playerStore.isIntelligenceActive &amp;&amp; uiStore.showIntelligenceIndicator" tag="button" variant="control" rhythm="actions" class-name="icon intel-icon" aria-label="心动模式"><Sparkles :size="10" /></AnimatedAppear>
       <div class="quality-wrap" ref="qualityWrapRef">
         <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="icon quality-icon" :class="{ active: showQualityPopup }" aria-label="音质选择" @click.stop="toggleQualityPopup">
           <span class="quality-btn-label">{{ qualityLabel || playerStore.defaultQuality }}</span>
@@ -139,6 +140,7 @@ import {
   Shuffle,
   SkipBack,
   SkipForward,
+  Sparkles,
   Volume,
   Volume1,
   Volume2,
@@ -536,7 +538,7 @@ function formatTime(sec: number) {
 .speed-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
 .speed-wrap { position: relative; flex-shrink: 0; }
 .icon { width: 32px; height: 32px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; display: grid; place-items: center; transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
-.icon:hover { transform: translateY(-1px); border-color: #86efac; color: #16a34a; }
+.icon:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--accent); }
 .icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
 .icon.saved { border-color: color-mix(in srgb, var(--accent) 48%, #d1d5db); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }
 .icon.loading { opacity: 0.72; cursor: progress; }
@@ -560,5 +562,14 @@ function formatTime(sec: number) {
 .quality-fade-enter-from .quality-popup { transform: translateY(8px); opacity: 0; }
 .quality-fade-leave-active .quality-popup { transition: transform 0.18s ease, opacity 0.18s ease; }
 .quality-fade-leave-to .quality-popup { transform: translateY(8px); opacity: 0; }
+
+.intel-icon svg {
+  animation: intel-spin 5s linear infinite;
+  color: var(--accent);
+}
+@keyframes intel-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 </style>

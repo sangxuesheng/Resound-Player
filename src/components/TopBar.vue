@@ -59,8 +59,8 @@
         </div>
       </AnimatedAppear>
 
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg">
-        <Bell :size="16" />
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg" :attrs="intelligenceBtnAttrs" :title="intelligenceTooltip" @click="handleIntelligencePlay">
+        <Sparkles :size="16" />
       </AnimatedAppear>
       <div class="user-menu-wrap">
         <AnimatedAppear
@@ -119,11 +119,14 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { Bell, Search } from 'lucide-vue-next';
+import { Sparkles, Search } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
 
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
+import { playerStore } from '../stores/player';
+import { useAuthAction } from '../composables/useAuthAction';
+import { showGlobalToast } from '../stores/loginModal';
 
 const RECENT_KEY = 'tm_search_history';
 const emit = defineEmits<{
@@ -141,6 +144,73 @@ const isExpanded = ref(false);
 const isClicked = ref(false);
 const userMenuStyle = ref<Record<string, string>>({});
 const recentPanelStyle = ref<Record<string, string>>({});
+
+const isIntelligenceDisabled = computed(() => {
+  return playerStore.currentIntelligenceLoading;
+});
+
+const intelligenceBtnAttrs = computed(() => {
+  const cls: string[] = [];
+  if (playerStore.currentIntelligenceLoading) cls.push('msg--loading');
+  if (playerStore.isIntelligenceActive) cls.push('msg--active');
+  return {
+    disabled: playerStore.currentIntelligenceLoading,
+    class: cls.length ? cls.join(' ') : undefined,
+  };
+});
+
+const intelligenceTooltip = computed(() => {
+  if (playerStore.currentIntelligenceLoading) return '';
+  return '';
+});
+
+const { checkAuth } = useAuthAction(
+  '智能播放需要扫码或 Cookie 方式登录',
+  'playlist',
+);
+
+const isFirstIntelligenceSuccess = ref(true);
+
+async function handleIntelligencePlay() {
+  if (playerStore.currentIntelligenceLoading) return;
+
+  // 已开启 → 退出心动模式
+  if (playerStore.isIntelligenceActive) {
+    playerStore.isIntelligenceActive = false;
+    playerStore.clearPlaylist();
+    showGlobalToast('已退出心动模式', 'success');
+    return;
+  }
+
+  if (!checkAuth()) return;
+
+  // 从用户歌单列表中找一个有曲目的作为 pid
+  const validPlaylist = userStore.playlists.find(p => p.trackCount && p.trackCount > 0);
+  if (!validPlaylist) {
+    showGlobalToast('您的歌单列表暂无心动推荐', 'warning');
+    return;
+  }
+  playerStore.currentPlaylistId = validPlaylist.id;
+
+  const err = await playerStore.playIntelligenceList();
+  if (err) {
+    showGlobalToast(err, 'warning');
+  } else {
+    playerStore.isIntelligenceActive = true;
+    if (isFirstIntelligenceSuccess.value) {
+      isFirstIntelligenceSuccess.value = false;
+      showGlobalToast('已开启心动模式', 'success');
+    }
+  }
+}
+
+// 当心动模式激活时，如果用户切换了歌单播放，自动退出
+watch(() => playerStore.currentPlaylistId, () => {
+  if (playerStore.isIntelligenceActive) {
+    playerStore.isIntelligenceActive = false;
+    showGlobalToast('已退出心动模式', 'success');
+  }
+});
 
 const searchKeyword = computed({
   get: () => uiStore.searchKeyword,
@@ -639,6 +709,21 @@ onBeforeUnmount(() => {
 }
 .msg:active {
   transform: translateY(0) scale(0.99);
+}
+.msg:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+.msg--loading svg {
+  animation: msg-spin 1s linear infinite;
+}
+@keyframes msg-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.msg--active svg {
+  animation: msg-spin 5s linear infinite;
 }
 .user-menu-wrap {
   position: relative;

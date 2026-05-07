@@ -45,6 +45,13 @@
         </AnimatedAppear>
       </template>
       <template #actions>
+        <EntitySubscribeButton
+          v-if="artist?.id"
+          type="artist"
+          :subscribed="subscribeState.isSubscribed.value"
+          :loading="subscribeState.isLoading.value"
+          @toggle="subscribeState.toggle"
+        />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playTopSongs">播放热门</AnimatedAppear>
       </template>
       <template #tabs>
@@ -193,6 +200,8 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import SongActions from './ui/SongActions.vue';
+import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import { useEntitySubscribe } from '../composables/useEntitySubscribe';
 import { getArtistAlbums, getArtistDescription, getArtistDetail, getArtistMvs, getArtistTopSongs, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { resolveArtistImageUrl, normalizeImageUrl } from '../utils/image';
 import { playerStore } from '../stores/player';
@@ -233,6 +242,13 @@ const albums = ref<any[]>([]);
 const mvs = ref<any[]>([]);
 const bio = ref<any>(null);
 const isDescriptionExpanded = ref(false);
+
+const artistIdRef = computed(() => artist.value?.id || undefined);
+const subscribeState = useEntitySubscribe({
+  type: 'artist',
+  id: artistIdRef,
+  initialSubscribed: computed(() => artist.value?.subscribed ?? false),
+});
 const activeTab = computed({
   get: () => (props.initialTab || 'songs') as 'songs' | 'albums' | 'mvs' | 'bio',
   set: (v) => emit('update:active-tab', v),

@@ -1,6 +1,7 @@
 import { reactive } from 'vue';
 import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUserPlaylist, getVipInfo, logout as logoutRequest } from '../api/auth';
-import { getDjSublist } from '../api/music';
+import { getDjSublist, getAlbumSublist, getArtistSublist, getUserFollows } from '../api/music';
+import { playerStore } from './player';
 import { storageSetItem, storageGetItem, storageRemoveItem } from '../utils/storage';
 
 const LOGIN_COOKIE_KEY = 'ncm_login_cookie';
@@ -58,6 +59,10 @@ export const userStore = reactive({
   playlists: [] as UserPlaylist[],
   likedSongIds: [] as number[],
   subscribedDjIds: [] as number[],
+  subscribedPlaylistIds: [] as number[],
+  subscribedAlbumIds: [] as number[],
+  subscribedArtistIds: [] as number[],
+  subscribedUserIds: [] as number[],
   isVip: false,
   vipInfo: null as VipInfo | null,
   level: 0,
@@ -118,6 +123,10 @@ export const userStore = reactive({
     this.playlists = [];
     this.likedSongIds = [];
     this.subscribedDjIds = [];
+    this.subscribedPlaylistIds = [];
+    this.subscribedAlbumIds = [];
+    this.subscribedArtistIds = [];
+    this.subscribedUserIds = [];
     this.isVip = false;
     this.vipInfo = null;
     this.level = 0;
@@ -132,6 +141,7 @@ export const userStore = reactive({
     } catch {
       // 即使服务端退出失败，也要清理本地登录态，避免界面残留已登录状态
     } finally {
+      playerStore.clearPlaylistContext();
       await this.resetSession();
     }
   },
@@ -240,10 +250,14 @@ export const userStore = reactive({
     this.playlists = [];
     this.likedSongIds = [];
     this.subscribedDjIds = [];
+    this.subscribedPlaylistIds = [];
+    this.subscribedAlbumIds = [];
+    this.subscribedArtistIds = [];
+    this.subscribedUserIds = [];
     this.loginMode = 'uid';
     await this.saveCookie('uid=' + String(profile.userId));
 
-    await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+    await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs(), this.fetchSubscribedAlbums(), this.fetchSubscribedArtists(), this.fetchSubscribedPlaylists(), this.fetchSubscribedUsers(profile.userId)]);
     this.fetchVipInfo();
     logAuthDebug('loginWithUid:success', {
       requestId,
@@ -278,9 +292,13 @@ export const userStore = reactive({
       this.playlists = [];
       this.likedSongIds = [];
       this.subscribedDjIds = [];
+      this.subscribedPlaylistIds = [];
+      this.subscribedAlbumIds = [];
+      this.subscribedArtistIds = [];
+      this.subscribedUserIds = [];
       await this.saveCookie(UID_LOGIN_PREFIX + String(profile.userId));
 
-      await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+      await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs(), this.fetchSubscribedAlbums(), this.fetchSubscribedArtists(), this.fetchSubscribedPlaylists(), this.fetchSubscribedUsers(profile.userId)]);
       this.fetchVipInfo();
       logAuthDebug('restoreUidLogin:success', {
         requestId,
@@ -341,7 +359,7 @@ export const userStore = reactive({
     });
 
     if (this.isLogin && profile?.userId) {
-      const results = await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
+      const results = await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs(), this.fetchSubscribedAlbums(), this.fetchSubscribedArtists(), this.fetchSubscribedPlaylists(), this.fetchSubscribedUsers(profile.userId)]);
       this.fetchVipInfo();
       const rejected = results
         .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
@@ -359,6 +377,10 @@ export const userStore = reactive({
       this.playlists = [];
       this.likedSongIds = [];
       this.subscribedDjIds = [];
+      this.subscribedPlaylistIds = [];
+      this.subscribedAlbumIds = [];
+      this.subscribedArtistIds = [];
+      this.subscribedUserIds = [];
       logAuthDebug('refreshLoginStatus:clearedUserData', {
         requestId,
       });
@@ -366,7 +388,13 @@ export const userStore = reactive({
   },
   async fetchPlaylists(uid: number) {
     const { data } = await getUserPlaylist(uid);
-    this.playlists = data?.playlist || [];
+    const playlists = data?.playlist || [];
+    this.playlists = playlists;
+    // 从 /user/playlist 响应中提取已订阅歌单 ID（每条歌单包含 subscribed 字段）
+    this.subscribedPlaylistIds = (Array.isArray(playlists) ? playlists : [])
+      .filter((p: any) => p?.subscribed)
+      .map((p: any) => Number(p?.id || 0))
+      .filter((id: number) => Number.isFinite(id) && id > 0);
   },
   async fetchLikedSongs(uid: number) {
     const { data } = await getUserLikeList(uid);
@@ -382,6 +410,59 @@ export const userStore = reactive({
     this.subscribedDjIds = items
       .map((item: any) => Number(item?.id || item?.radio?.id || item?.program?.radio?.id || item?.rid || 0))
       .filter((id: number) => Number.isFinite(id) && id > 0);
+  },
+  async fetchSubscribedAlbums() {
+    try {
+      const { data } = await getAlbumSublist({ cookie: this.loginCookie || undefined });
+      // 尝试多种可能的响应路径
+      const candidates = [data?.data, data?.albums, data?.list];
+      const items = candidates.find((c) => Array.isArray(c)) || [];
+      this.subscribedAlbumIds = items
+        .map((item: any) => Number(item?.id || 0))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+    } catch {
+      this.subscribedAlbumIds = [];
+    }
+  },
+  async fetchSubscribedArtists() {
+    try {
+      const { data } = await getArtistSublist({ cookie: this.loginCookie || undefined });
+      const candidates = [data?.data, data?.artists, data?.list];
+      const items = candidates.find((c) => Array.isArray(c)) || [];
+      this.subscribedArtistIds = items
+        .map((item: any) => Number(item?.id || 0))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+    } catch {
+      this.subscribedArtistIds = [];
+    }
+  },
+  async fetchSubscribedPlaylists() {
+    // 从 /user/playlist 响应中提取已订阅的歌单 ID
+    try {
+      const uid = this.profile?.userId;
+      if (!uid) { this.subscribedPlaylistIds = []; return; }
+      const { data } = await getUserPlaylist(uid);
+      const playlists = data?.playlist || [];
+      this.subscribedPlaylistIds = (Array.isArray(playlists) ? playlists : [])
+        .filter((p: any) => p?.subscribed)
+        .map((p: any) => Number(p?.id || 0))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+    } catch {
+      this.subscribedPlaylistIds = [];
+    }
+  },
+  async fetchSubscribedUsers(uid: number) {
+    try {
+      const { data } = await getUserFollows(uid, { cookie: this.loginCookie || undefined });
+      // /user/follows 响应格式: { code: 200, data: { follows: [ { userId, ... }, ... ] } }
+      const candidates = [data?.data?.follows, data?.data, data?.follow, data?.follows, data?.list];
+      const items = candidates.find((c: any) => Array.isArray(c)) || [];
+      this.subscribedUserIds = items
+        .map((item: any) => Number(item?.userId || item?.id || 0))
+        .filter((id: number) => Number.isFinite(id) && id > 0);
+    } catch {
+      this.subscribedUserIds = [];
+    }
   },
   async fetchVipInfo() {
     try {

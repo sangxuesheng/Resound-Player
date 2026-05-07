@@ -45,6 +45,14 @@
         </AnimatedAppear>
       </template>
       <template #actions>
+        <EntitySubscribeButton
+          v-if="podcastRid"
+          type="podcast"
+          text
+          :subscribed="subscribeState.isSubscribed.value"
+          :loading="subscribeState.isLoading.value"
+          @toggle="subscribeState.toggle"
+        />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" type="button" @click="emit('play-all', displayedRawItems)">播放全部</AnimatedAppear>
       </template>
     </DetailStickyHeroHeader>
@@ -94,6 +102,8 @@ import HeroCoverMedia from './HeroCoverMedia.vue';
 import { playerStore } from '../stores/player';
 import { getVoiceDetail } from '../api/music';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
+import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import { useEntitySubscribe } from '../composables/useEntitySubscribe';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
 
@@ -137,6 +147,24 @@ const hero = computed(() => {
 const heroTitle = computed(() => hero.value.name || props.title || '当前播客');
 const heroDescription = computed(() => hero.value.description || '暂无简介，后续可继续补充节目说明和更完整的播客元数据。');
 const shouldShowDescriptionToggle = computed(() => heroDescription.value.length > DESC_COLLAPSE_THRESHOLD);
+
+// podcast radio ID — extracted from detail source or first item's radio
+const podcastRid = computed(() => {
+  const source = detail.value || {};
+  return Number(
+    source.id
+    || source.radio?.id
+    || source.mainTrackId
+    || props.items?.[0]?.program?.radio?.id
+    || props.items?.[0]?.program?.radioId
+    || props.items?.[0]?.rid
+    || 0,
+  ) || undefined;
+});
+const subscribeState = useEntitySubscribe({
+  type: 'podcast',
+  id: podcastRid as any,
+});
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = hero.value.coverUrl?.trim();
   return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};

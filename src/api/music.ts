@@ -417,6 +417,17 @@ export async function getAlbumSublist(params?: { limit?: number; offset?: number
   });
 }
 
+export async function getArtistSublist(params?: { limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/artist/sublist', {
+    params: {
+      limit: params?.limit ?? 25,
+      offset: params?.offset ?? 0,
+      ...(params?.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
 export async function getAllMvs(params: {
   area?: '全部' | '内地' | '港台' | '欧美' | '日本' | '韩国';
   type?: '全部' | '官方版' | '原生' | '现场版' | '网易出品';
@@ -776,6 +787,50 @@ export async function toggleDjSubscribe(params: { rid: number; subscribe: boolea
   });
 }
 
+export async function toggleArtistSubscribe(params: { id: number; subscribe: boolean; cookie?: string }) {
+  return apiClient.get('/artist/sub', {
+    params: {
+      id: params.id,
+      t: params.subscribe ? 1 : 0,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function toggleUserFollow(params: { id: number; follow: boolean; cookie?: string }) {
+  return apiClient.get('/follow', {
+    params: {
+      id: params.id,
+      t: params.follow ? 1 : 0,
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getUserMutualFollow(uid: number, cookie?: string) {
+  return apiClient.get('/user/mutualfollow/get', {
+    params: {
+      uid,
+      ...(cookie ? { cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+export async function getUserFollows(uid: number, params?: { limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/user/follows', {
+    params: {
+      uid,
+      limit: params?.limit ?? 30,
+      offset: params?.offset ?? 0,
+      ...(params?.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
 // 云盘导入歌曲（无需上传文件，直接导入网易云已有音源或已上传文件）
 export async function importToCloud(params: {
   song: string;      // 歌名/文件名
@@ -798,6 +853,28 @@ export async function importToCloud(params: {
       ...(params.id ? { id: params.id } : {}),
       ...(params.artist ? { artist: params.artist } : {}),
       ...(params.album ? { album: params.album } : {}),
+      ...(params.cookie ? { cookie: params.cookie } : {}),
+      timestamp: Date.now(),
+    },
+  });
+}
+
+/**
+ * 获取心动模式/智能播放列表
+ * 必选参数：id=歌曲id, pid=歌单id
+ * 可选参数：sid=要开始播放的歌曲的id
+ */
+export async function getIntelligenceList(params: {
+  id: number;
+  pid: number;
+  sid?: number;
+  cookie?: string;
+}) {
+  return apiClient.get('/playmode/intelligence/list', {
+    params: {
+      id: params.id,
+      pid: params.pid,
+      ...(typeof params.sid === 'number' ? { sid: params.sid } : {}),
       ...(params.cookie ? { cookie: params.cookie } : {}),
       timestamp: Date.now(),
     },

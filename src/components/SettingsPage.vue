@@ -273,6 +273,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'compact', label: '紧凑列表模式', desc: '减少列表行高以显示更多信息', type: 'switch' },
         { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
         { key: 'fontScale', label: '字体缩放', desc: '调整界面字体大小比例', type: 'range', min: 90, max: 130 },
+        { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
       ],
     },
   ],
@@ -336,6 +337,7 @@ const switchState = reactive<Record<string, boolean>>({
   compact: false,
   barLyric: lyricsSettings.showBarLyric,
   resumeAfterMv: uiStore.resumeAfterMv,
+  showIntelligenceIndicator: uiStore.showIntelligenceIndicator,
 });
 
 const selectState = reactive<Record<string, string>>({
@@ -489,6 +491,13 @@ watch(
   () => switchState.resumeAfterMv,
   (enabled) => {
     uiStore.setResumeAfterMv(Boolean(enabled));
+  },
+);
+
+watch(
+  () => switchState.showIntelligenceIndicator,
+  (enabled) => {
+    uiStore.setShowIntelligenceIndicator(Boolean(enabled));
   },
 );
 

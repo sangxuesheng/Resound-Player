@@ -71,6 +71,14 @@
           :option-colors="{}"
           @update:modelValue="onHistorySelect"
         />
+        <EntitySubscribeButton
+          v-if="playlist?.id"
+          type="playlist"
+          text
+          :subscribed="subscribeState.isSubscribed.value"
+          :loading="subscribeState.isLoading.value"
+          @toggle="subscribeState.toggle"
+        />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playAll">播放全部</AnimatedAppear>
         <AnimatedAppear v-if="trackEnriching" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表补全中…</AnimatedAppear>
       </template>
@@ -148,6 +156,8 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
 import SongActions from './ui/SongActions.vue';
+import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import { useEntitySubscribe } from '../composables/useEntitySubscribe';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
 
@@ -191,6 +201,13 @@ const isDescriptionExpanded = ref(false);
 const historyDates = ref<Array<{ value: string; label: string }>>([]);
 const selectedHistoryDate = ref('');
 const historyLoading = ref(false);
+
+const playlistIdRef = computed(() => playlist.value?.id || undefined);
+const subscribeState = useEntitySubscribe({
+  type: 'playlist',
+  id: playlistIdRef,
+  initialSubscribed: computed(() => playlist.value?.subscribed ?? false),
+});
 
 const tracks = computed<any[]>(() => playlist.value?.tracks || []);
 const playlistDescription = computed(() => playlist.value?.description?.trim() || '');
@@ -528,7 +545,7 @@ function recordPlaylistLocalHistory() {
 async function playAll() {
   if (!tracks.value.length) return;
   try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
-  playerStore.setPlaylist(tracks.value, 0);
+  playerStore.setPlaylist(tracks.value, 0, props.playlistId);
   await playerStore.playByIndex(0);
 }
 
@@ -541,7 +558,7 @@ function onSongItemDblClick(event: MouseEvent, index: number) {
 async function playOne(index: number) {
   if (!tracks.value.length) return;
   try { recordPlaylistLocalHistory(); } catch { /* localStorage may be full */ }
-  playerStore.setPlaylist(tracks.value, index);
+  playerStore.setPlaylist(tracks.value, index, props.playlistId);
   await playerStore.playByIndex(index);
 }
 

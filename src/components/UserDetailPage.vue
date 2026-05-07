@@ -25,6 +25,12 @@
         <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="desc">{{ userSignature }}</AnimatedAppear>
       </template>
       <template #actions>
+        <UserFollowButton
+          v-if="userId && userId !== userStore.profile?.userId"
+          :status="followState.status.value"
+          :loading="followState.isLoading.value"
+          @toggle="followState.toggle"
+        />
         <AnimatedAppear
           tag="button"
           variant="control"
@@ -87,6 +93,9 @@ import { useDominantColor } from '../composables/useDominantColor';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import { getUserCollectedPlaylist, getUserCreatedPlaylist, getUserDetail } from '../api/auth';
+import { userStore } from '../stores/user';
+import UserFollowButton from './ui/UserFollowButton.vue';
+import { useUserFollow } from '../composables/useUserFollow';
 
 const props = withDefaults(
   defineProps<{
@@ -115,6 +124,9 @@ const tabs = [
   { key: 'created', label: '创建歌单' },
   { key: 'collected', label: '收藏歌单' },
 ] as const;
+
+const userIdRef = computed(() => props.userId || undefined);
+const followState = useUserFollow({ id: userIdRef });
 
 const displayName = computed(() => userDetail.value?.profile?.nickname || userDetail.value?.nickname || '未命名用户');
 const avatarUrl = computed(() => normalizeImageUrl(userDetail.value?.profile?.avatarUrl || userDetail.value?.avatarUrl || ''));

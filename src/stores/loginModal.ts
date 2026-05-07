@@ -1,6 +1,6 @@
 import { reactive } from 'vue';
 
-export type LoginIntent = 'like' | 'playlist' | 'none';
+export type LoginIntent = 'like' | 'playlist' | 'subscribe' | 'none';
 
 export type ToastType = 'warning' | 'success' | 'error';
 

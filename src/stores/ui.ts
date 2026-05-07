@@ -13,6 +13,7 @@ const UNBLOCK_SRC_KEY = 'tm_unblock_sources';
 const ACCENT_KEY = 'tm_accent_mode';
 const ACCENT_COLOR_KEY = 'tm_accent_custom_color';
 const RESUME_AFTER_MV_KEY = 'tm_resume_after_mv';
+const SHOW_INTEL_KEY = 'tm_show_intel_indicator';
 let mediaQuery: MediaQueryList | null = null;
 let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
 
@@ -78,6 +79,7 @@ export const uiStore = reactive({
   unblockEnabled: true,
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   resumeAfterMv: true,
+  showIntelligenceIndicator: true,
   searchKeyword: '',
   searchType: 1,
   defaultSearchHint: '',
@@ -100,6 +102,8 @@ export const uiStore = reactive({
     try { this.unblockSources = savedUnblockSources ? JSON.parse(savedUnblockSources) : ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; } catch { this.unblockSources = ['bodian', 'kugou', 'migu', 'qq', 'bilibili']; }
     const savedResume = localStorage.getItem(RESUME_AFTER_MV_KEY);
     this.resumeAfterMv = savedResume === null ? true : savedResume === '1';
+    const savedIntel = localStorage.getItem(SHOW_INTEL_KEY);
+    this.showIntelligenceIndicator = savedIntel === null ? true : savedIntel === '1';
 
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
@@ -156,6 +160,10 @@ export const uiStore = reactive({
   setResumeAfterMv(enabled: boolean) {
     this.resumeAfterMv = enabled;
     localStorage.setItem(RESUME_AFTER_MV_KEY, enabled ? '1' : '0');
+  },
+  setShowIntelligenceIndicator(enabled: boolean) {
+    this.showIntelligenceIndicator = enabled;
+    localStorage.setItem(SHOW_INTEL_KEY, enabled ? '1' : '0');
   },
   async loadDefaultSearchKeyword(force = false) {
     if (this.defaultSearchLoading) return;

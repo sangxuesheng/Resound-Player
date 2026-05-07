@@ -93,6 +93,7 @@
             class="user-page-host"
             @open-podcast-list="() => openPodcastList('user')"
             @open-playlist="(playlistId) => openPlaylistDetail(playlistId, undefined, 'user')"
+            @open-artist="openArtistFromDetail"
           />
           <HistoryPanel
             v-else-if="activePage === 'history'"
@@ -323,6 +324,7 @@ const artistBackLabel = computed(() => {
   if (activeArtistReturnPage.value === 'rank-detail') return '返回榜单详情';
   if (activeArtistReturnPage.value === 'rank') return '返回排行榜';
   if (activeArtistReturnPage.value === 'song-comment') return '返回歌曲评论';
+  if (activeArtistReturnPage.value === 'user') return '返回用户页';
   return '返回搜索结果';
 });
 
@@ -834,7 +836,11 @@ function openArtistFromRank(artist: any) {
 }
 
 function openArtistFromDetail(artist: any) {
-  openArtistDetail(artist, activePage.value === 'album-detail' ? 'album-detail' : 'playlist-detail');
+  const returnPage =
+    activePage.value === 'album-detail' ? 'album-detail' :
+    activePage.value === 'user' ? 'user' :
+    'playlist-detail';
+  openArtistDetail(artist, returnPage);
 }
 
 function backToArtist() {

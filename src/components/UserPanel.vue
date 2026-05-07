@@ -28,6 +28,7 @@
           :embedded="true"
           scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
+          @open-artist="(artist) => emit('open-artist', artist)"
         />
 
         <AlbumDetailPage
@@ -37,6 +38,7 @@
           :embedded="true"
           scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
+          @open-artist="(artist) => emit('open-artist', artist)"
         />
 
         <PodcastDetailPage
@@ -59,6 +61,7 @@
           :injected-playlist="cloudPseudoPlaylist"
           scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
+          @open-artist="(artist) => emit('open-artist', artist)"
         />
       </template>
     </UserSplitView>
@@ -78,7 +81,7 @@ import { getAlbumDetail, getAlbumSublist, getCloudStorage, getCloudStorageDetail
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
 
-const emit = defineEmits<{ (e: 'open-playlist', playlistId: number, returnPage?: string): void }>();
+const emit = defineEmits<{ (e: 'open-playlist', playlistId: number, returnPage?: string): void; (e: 'open-artist', artist: any): void }>();
 
 const loading = ref(false);
 const detail = ref<any>(null);

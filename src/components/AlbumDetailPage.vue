@@ -54,6 +54,14 @@
         </AnimatedAppear>
       </template>
       <template #actions>
+        <EntitySubscribeButton
+          v-if="album?.id"
+          type="album"
+          text
+          :subscribed="subscribeState.isSubscribed.value"
+          :loading="subscribeState.isLoading.value"
+          @toggle="subscribeState.toggle"
+        />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playAll">播放全部</AnimatedAppear>
       </template>
     </DetailStickyHeroHeader>
@@ -127,6 +135,8 @@ import { recordLocalHistoryEntry } from '../utils/localHistory';
 import AnimatedAppear from './AnimatedAppear.vue';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import SongActions from './ui/SongActions.vue';
+import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import { useEntitySubscribe } from '../composables/useEntitySubscribe';
 import { userStore } from '../stores/user';
 import { useAuthAction } from '../composables/useAuthAction';
 import { getAlbumDetail, addTrackToPlaylist, getUserPlaylist } from '../api/music';
@@ -163,6 +173,13 @@ const isDescriptionExpanded = ref(false);
 const songs = computed<any[]>(() => album.value?.songs || []);
 const coverUrl = computed(() => album.value?.picUrl || '');
 useDominantColor(coverUrl);
+
+const albumIdRef = computed(() => album.value?.id || undefined);
+const subscribeState = useEntitySubscribe({
+  type: 'album',
+  id: albumIdRef,
+  initialSubscribed: computed(() => album.value?.subscribed ?? false),
+});
 const albumDescription = computed(() => album.value?.description?.trim() || '');
 const shouldShowDescriptionToggle = computed(() => albumDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const isUserDetail = computed(() => props.backLabel === '返回用户中心');

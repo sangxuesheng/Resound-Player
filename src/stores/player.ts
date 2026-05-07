@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
+import { getIntelligenceList, getPlaylistTrackAll, getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
 import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
@@ -136,6 +136,9 @@ export const playerStore = reactive({
   defaultPlaybackRate: 1,
   defaultQuality: '较高' as '标准' | '较高' | '极高(HQ)' | '无损(SQ)' | 'Hi-Res' | '高清臻音' | '高清环绕声' | '沉浸环绕声' | '杜比全景声' | '超清母带',
   lyricsOffset: 0,
+  currentPlaylistId: 0,
+  currentIntelligenceLoading: false,
+  isIntelligenceActive: false,
 
   init() {
     hydrateCache();
@@ -191,6 +194,7 @@ export const playerStore = reactive({
       personalFmTrackIds,
       personalFmHasMore: this.personalFmHasMore,
       defaultPlaylist,
+      currentPlaylistId: this.currentPlaylistId,
     };
     try {
       const json = JSON.stringify(payload);
@@ -277,6 +281,7 @@ export const playerStore = reactive({
       this.personalFmTrackIds = Array.isArray(parsed.personalFmTrackIds) ? parsed.personalFmTrackIds.map((id: unknown) => Number(id || 0)).filter((id: number) => id > 0) : [];
       this.personalFmHasMore = typeof parsed.personalFmHasMore === 'boolean' ? parsed.personalFmHasMore : true;
       this.defaultPlaylist = Array.isArray(parsed.defaultPlaylist) ? parsed.defaultPlaylist : [];
+      this.currentPlaylistId = typeof parsed.currentPlaylistId === 'number' ? parsed.currentPlaylistId : 0;
       this.audio.playbackRate = this.playbackRate;
       this.syncThemeState();
     } catch {
@@ -284,10 +289,59 @@ export const playerStore = reactive({
     }
   },
 
-  setPlaylist(list: any[], startIndex = 0) {
+  setPlaylist(list: any[], startIndex = 0, playlistId?: number) {
     this.playlist = list.map((x) => formatTrack(x));
     this.currentIndex = startIndex;
+    if (typeof playlistId === 'number') {
+      this.currentPlaylistId = playlistId;
+    }
     this.persist();
+  },
+
+  async playIntelligenceList(): Promise<string | null> {
+    let songId = this.currentSongId;
+    const pid = this.currentPlaylistId;
+    if (!pid) return '请先从歌单选择歌曲';
+    this.currentIntelligenceLoading = true;
+    try {
+      // 未播放时，取歌单第一首作为种子
+      if (!songId) {
+        const cookie = userStore.loginCookie || undefined;
+        const plRes = await getPlaylistTrackAll({ id: pid, limit: 1, cookie });
+        const firstTrack = plRes?.data?.songs?.[0];
+        if (firstTrack?.id) {
+          songId = firstTrack.id;
+        } else {
+          return '歌单暂无歌曲，无法开启心动模式';
+        }
+      }
+      const cookie = userStore.loginCookie || undefined;
+      const { data } = await getIntelligenceList({ id: songId, pid, cookie });
+      if (!data) return '网络请求失败，请稍后重试';
+      if (data.code === 400) return data.message || '该歌单暂不支持智能播放';
+      if (data.code !== 200 || !Array.isArray(data?.data)) {
+        return data?.message || '获取智能播放列表失败';
+      }
+      const rawList = data.data;
+      const tracks = rawList.map((item: any) => {
+        const info = item.songInfo || {};
+        return formatTrack({
+          id: info.id || item.id,
+          name: info.name,
+          ar: info.ar,
+          al: info.al,
+        });
+      }).filter((t: Track) => t.id > 0);
+      if (!tracks.length) return '暂无推荐歌曲';
+      this.setPlaylist(tracks, 0, pid);
+      await this.playByIndex(0);
+      return null;
+    } catch (e: any) {
+      console.warn('[intelligence] failed:', e);
+      return '智能播放请求异常，请稍后重试';
+    } finally {
+      this.currentIntelligenceLoading = false;
+    }
   },
 
   setPersonalFmPlaylist(list: any[], startIndex = 0) {
@@ -317,6 +371,11 @@ export const playerStore = reactive({
     this.personalFmFetcher = null;
     this.personalFmLoadingMore = false;
     this.personalFmHasMore = true;
+    this.persist();
+  },
+
+  clearPlaylistContext() {
+    this.currentPlaylistId = 0;
     this.persist();
   },
 
