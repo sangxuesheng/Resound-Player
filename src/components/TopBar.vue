@@ -326,6 +326,7 @@ function onSearchClick() {
   requestAnimationFrame(() => {
     searchInputRef.value?.focus();
   });
+  emit('search-submit', uiStore.searchKeyword || '');
 }
 
 function collapseSearch() {

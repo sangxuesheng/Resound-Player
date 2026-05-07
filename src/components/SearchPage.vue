@@ -596,9 +596,17 @@ const searchInputPlaceholder = computed(() => uiStore.defaultSearchHint || 'è¾“å
 const HOT_REFRESH_INTERVAL = 5 * 60 * 1000;
 let hotRefreshTimer: ReturnType<typeof setInterval> | undefined;
 
+let inputDebounceTimer: ReturnType<typeof setTimeout> | undefined;
+
 function onInput(e: Event) {
   keywords.value = (e.target as HTMLInputElement).value;
   uiStore.searchKeyword = keywords.value;
+  if (inputDebounceTimer) clearTimeout(inputDebounceTimer);
+  if (keywords.value.trim()) {
+    inputDebounceTimer = setTimeout(() => {
+      void onSearch();
+    }, 300);
+  }
 }
 
 function resolveSubtitle(item: any) {
