@@ -468,11 +468,7 @@ watch(() => props.albumId, (id) => {
 
 .playlist-detail-body { }
 
-:deep(.playlist-detail-header) {
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  align-items: center;
-}
+
 
 .cover {
   width: 308px;

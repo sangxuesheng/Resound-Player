@@ -81,6 +81,15 @@ onMounted(remeasureHeight);
 
 <style scoped>
 /* =========================================
+ * PageHeroHeader 公共间距 — 供所有详情页统一使用
+ * ========================================= */
+:deep(.playlist-detail-header) {
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  align-items: center;
+}
+
+/* =========================================
  * 基础容器 — position: sticky + 统一 transition 曲线
  * ========================================= */
 .playlist-detail-header-wrap {

@@ -700,13 +700,6 @@ watch(
   white-space: pre-wrap;
 }
 
-:deep(.playlist-detail-header) {
-  --hero-media-width: 308px;
-  gap: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  align-items: center;
-}
-
 @media (max-width: 767px) {
   .artist-tabs {
     gap: 10px;
