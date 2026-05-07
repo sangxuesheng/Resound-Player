@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { getIntelligenceList, getPlaylistTrackAll, getSongDetail, getSongUrlV1, trashPersonalFm } from '../api/music';
+import { getIntelligenceList, getPlaylistTrackAll, getSongDetail, trashPersonalFm } from '../api/music';
 import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
@@ -101,6 +101,11 @@ function formatQualityBr(br: number): string {
 
 function toApiLevel(label: string): string {
   return QUALITY_LEVELS[label] || 'exhigh';
+}
+
+const EQ_DEBUG = false;
+function logEqDebug(...args: unknown[]) {
+  if (EQ_DEBUG) console.debug('[EQ]', ...args);
 }
 
 export const playerStore = reactive({
@@ -282,7 +287,10 @@ export const playerStore = reactive({
       this.playbackRate = 1;
       this.defaultPlaybackRate = typeof parsed.defaultPlaybackRate === 'number' ? parsed.defaultPlaybackRate : 1;
       const savedQuality = localStorage.getItem('gm_quality_v1');
-      this.defaultQuality = QUALITY_LEVELS[savedQuality] != null ? savedQuality : (QUALITY_LEVELS[parsed.defaultQuality] != null ? parsed.defaultQuality : '较高');
+      const persistedQuality = typeof parsed.defaultQuality === 'string' ? parsed.defaultQuality : '';
+      this.defaultQuality = savedQuality && QUALITY_LEVELS[savedQuality] != null
+        ? savedQuality
+        : (QUALITY_LEVELS[persistedQuality] != null ? persistedQuality : '较高');
       console.debug('[player] hydrate defaultQuality:', parsed.defaultQuality, '→', this.defaultQuality);
       this.themePrimary = typeof parsed.themePrimary === 'string' && parsed.themePrimary ? parsed.themePrimary : 'var(--theme-primary)';
       this.themeMode = parsed.themeMode === '浅色' || parsed.themeMode === '深色' || parsed.themeMode === '跟随系统' ? parsed.themeMode : '跟随系统';
@@ -301,18 +309,17 @@ export const playerStore = reactive({
   /** 惰性创建 Web Audio 管线（MediaElementSourceNode + GainNode） */
   _ensureWebAudio() {
     if (this._audioCtx) {
-      console.log('[EQ-DEBUG] _ensureWebAudio: already exists, ctx.state:', this._audioCtx.state, '| sourceNode:', !!this._sourceNode, '| gainNode:', !!this._gainNode);
+      logEqDebug('web audio already exists', { state: this._audioCtx.state, hasSource: !!this._sourceNode, hasGain: !!this._gainNode });
       return;
     }
     // 已经尝试过但失败的，不再重试
     if (this._audioCtx === null && this._sourceNode === undefined) {
-      console.warn('[EQ-DEBUG] _ensureWebAudio: previously failed, skip');
+      console.warn('[EQ] web audio init previously failed, skip');
       return;
     }
-    console.log('[EQ-DEBUG] _ensureWebAudio: starting creation...');
+    logEqDebug('creating web audio pipeline');
     try {
       const ctx = new AudioContext();
-      console.log('[EQ-DEBUG] AudioContext created, initial state:', ctx.state);
       // MediaElementSourceNode 需要音频资源的 CORS 权限，确保 audio 元素带上凭据
       if (this.audio.crossOrigin !== 'anonymous') {
         this.audio.crossOrigin = 'anonymous';
@@ -324,7 +331,6 @@ export const playerStore = reactive({
         }
       }
       const src = ctx.createMediaElementSource(this.audio);
-      console.log('[EQ-DEBUG] MediaElementSourceNode created, audio element src:', this.audio.src, '| readyState:', this.audio.readyState, '| paused:', this.audio.paused);
       const gain = ctx.createGain();
       src.connect(gain);
       gain.connect(ctx.destination);
@@ -335,7 +341,7 @@ export const playerStore = reactive({
       // 确保原生 audio volume 为最大值，音量全部由 GainNode 控制
       this.audio.volume = 1;
       ctx.onstatechange = () => {
-        console.log('[EQ-DEBUG] AudioContext statechange:', ctx.state);
+        logEqDebug('audio context state changed', ctx.state);
         if (ctx.state === 'closed') {
           this._audioCtx = null;
           this._sourceNode = null;
@@ -344,9 +350,9 @@ export const playerStore = reactive({
           this._eqEnabled = false;
         }
       };
-      console.log('[EQ-DEBUG] pipeline initialized OK | ctx.state:', ctx.state, '| gainNode.gain:', gain.gain.value, '| audio.volume:', this.audio.volume, '| player.volume:', this.volume, '| muted:', this.muted);
+      logEqDebug('web audio pipeline ready', { state: ctx.state, gain: gain.gain.value });
     } catch (e) {
-      console.warn('[EQ-DEBUG] _ensureWebAudio: init FAILED:', e);
+      console.warn('[EQ] web audio init failed:', e);
       // 标记失败，避免重复重试
       this._audioCtx = null;
       this._sourceNode = undefined as any;
@@ -368,28 +374,25 @@ export const playerStore = reactive({
    */
   enableEq(on: boolean) {
     if (this._eqEnabled === on) {
-      console.log('[EQ-DEBUG] enableEq: already', on, 'skip');
+      logEqDebug('enableEq skipped, already in target state', on);
       return;
     }
-    console.log('[EQ-DEBUG] enableEq: switching to', on, '| isPlaying:', this.isPlaying, '| audioCtx:', !!this._audioCtx, '| gainNode:', !!this._gainNode);
+    logEqDebug('switching EQ', { on, isPlaying: this.isPlaying, hasAudioCtx: !!this._audioCtx, hasGain: !!this._gainNode });
     this._eqEnabled = on;
 
     if (on) {
       // 保存播放状态
       const wasPlaying = this.isPlaying;
       const savedTime = this.audio.currentTime;
-      console.log('[EQ-DEBUG] enableEq: wasPlaying:', wasPlaying, '| savedTime:', savedTime, '| audio.src:', this.audio.src, '| audio.readyState:', this.audio.readyState, '| audio.volume:', this.audio.volume);
 
       // 暂停音频后再初始化 Web Audio 管线
       if (wasPlaying) {
-        console.log('[EQ-DEBUG] enableEq: pausing audio...');
         this.audio.pause();
-        console.log('[EQ-DEBUG] enableEq: audio paused, isPlaying:', this.isPlaying);
       }
 
       this._ensureWebAudio();
       if (!this._audioCtx || !this._sourceNode || !this._gainNode) {
-        console.warn('[EQ-DEBUG] enableEq: pipeline init FAILED, fallback to native');
+        console.warn('[EQ] pipeline init failed, fallback to native');
         if (wasPlaying) {
           this.audio.currentTime = savedTime;
           this.audio.play().catch(() => {});
@@ -399,38 +402,27 @@ export const playerStore = reactive({
 
       // 强制 AudioContext resume
       if (this._audioCtx.state === 'suspended') {
-        console.log('[EQ-DEBUG] enableEq: AudioContext is suspended, calling resume()...');
-        this._audioCtx.resume().then(() => {
-          console.log('[EQ-DEBUG] enableEq: AudioContext resume() resolved, state:', this._audioCtx?.state);
-        }).catch((e) => {
-          console.warn('[EQ-DEBUG] enableEq: AudioContext resume() FAILED:', e);
+        this._audioCtx.resume().catch((e) => {
+          console.warn('[EQ] AudioContext resume failed:', e);
         });
-      } else {
-        console.log('[EQ-DEBUG] enableEq: AudioContext state:', this._audioCtx.state);
       }
 
-      console.log('[EQ-DEBUG] enableEq: before _rebuildEqChain, gainNode.gain:', this._gainNode.gain.value);
       this._rebuildEqChain();
-      console.log('[EQ-DEBUG] enableEq: after _rebuildEqChain, eqFilters.length:', this._eqFilters.length, '| gainNode.gain:', this._gainNode.gain.value);
 
       // 恢复播放
       if (wasPlaying) {
-        console.log('[EQ-DEBUG] enableEq: resuming playback at', savedTime, '...');
         this.audio.currentTime = savedTime;
-        this.audio.play().then(() => {
-          console.log('[EQ-DEBUG] enableEq: audio.play() resolved OK, isPlaying:', this.isPlaying, '| audioCtx.state:', this._audioCtx?.state);
-        }).catch((err) => {
-          console.warn('[EQ-DEBUG] enableEq: audio.play() FAILED:', err);
+        this.audio.play().catch((err) => {
+          console.warn('[EQ] resume playback failed:', err);
         });
       }
 
       // 同步音量
       if (this._gainNode && !this.muted) {
         this._gainNode.gain.value = this.volume;
-        console.log('[EQ-DEBUG] enableEq: synced gainNode.gain to', this.volume, '| audio.volume:', this.audio.volume);
       }
     } else {
-      console.log('[EQ-DEBUG] enableEq: switching EQ OFF');
+      logEqDebug('switching EQ off');
       // 关闭 EQ 时，清除 crossOrigin 并重载音频，使 unblock 源能正常 seek
       const wasPlaying = this.isPlaying;
       const savedTime = this.audio.currentTime;
@@ -439,7 +431,6 @@ export const playerStore = reactive({
       this._rebuildEqChain();
 
       if (this.audio.crossOrigin === 'anonymous' && this.audio.src) {
-        console.log('[EQ-DEBUG] enableEq: removing crossOrigin, reloading without CORS...');
         this.audio.crossOrigin = '';
         const savedSrc = this.audio.currentSrc || this.audio.src;
         this.audio.src = savedSrc;
@@ -455,45 +446,43 @@ export const playerStore = reactive({
 
   /**
    * 设置 10 段 EQ 增益值（单位 dB，范围 -12 ~ +12）
-   * 立即更新滤波器节点
+   * 仅在 EQ 运行态启用且滤波链存在时写入节点；未启用时只保留设置。
    */
   setEqGains(gains: number[]) {
     if (gains.length !== 10) {
-      console.warn('[EQ-DEBUG] setEqGains: invalid length:', gains.length);
+      console.warn('[EQ] setEqGains invalid length:', gains.length);
       return;
     }
-    console.log('[EQ-DEBUG] setEqGains:', gains.map(g => g.toFixed(1)).join(', '));
+    if (!this._eqEnabled) return;
+    if (this._eqFilters.length !== 10) {
+      this._rebuildEqChain();
+    }
+    if (this._eqFilters.length !== 10) return;
+
     for (let i = 0; i < 10; i++) {
-      const filter = this._eqFilters[i];
-      if (filter) {
-        filter.gain.value = Math.max(-12, Math.min(12, gains[i]));
-      } else {
-        console.warn('[EQ-DEBUG] setEqGains: filter', i, 'is null');
-      }
+      this._eqFilters[i].gain.value = Math.max(-12, Math.min(12, gains[i]));
     }
   },
 
   /** 在 sourceNode→gainNode 之间插入或移除 EQ 滤波链 */
   _rebuildEqChain() {
     if (!this._sourceNode || !this._gainNode || !this._audioCtx) {
-      console.warn('[EQ-DEBUG] _rebuildEqChain: skipped, nodes missing | sourceNode:', !!this._sourceNode, 'gainNode:', !!this._gainNode, 'audioCtx:', !!this._audioCtx);
+      console.warn('[EQ] rebuild skipped, nodes missing', { hasSource: !!this._sourceNode, hasGain: !!this._gainNode, hasCtx: !!this._audioCtx });
       return;
     }
     const mode = this._eqEnabled ? 'ENABLE' : 'BYPASS';
-    console.log('[EQ-DEBUG] _rebuildEqChain: ' + mode + ' | ctx.state:', this._audioCtx.state);
+    logEqDebug('rebuild chain', { mode, state: this._audioCtx.state });
 
     // 先断开所有现有连接
     this._sourceNode.disconnect();
     this._gainNode.disconnect();
     this._eqFilters.forEach((f) => { try { f.disconnect(); } catch {} });
-    console.log('[EQ-DEBUG] _rebuildEqChain: all nodes disconnected');
 
     if (!this._eqEnabled) {
       // EQ 关闭：直连 source → gain
       this._sourceNode.connect(this._gainNode);
       this._gainNode.connect(this._audioCtx.destination);
       this._eqFilters = [];
-      console.log('[EQ-DEBUG] _rebuildEqChain: bypass mode, source→gain→dest connected');
       return;
     }
 
@@ -525,7 +514,7 @@ export const playerStore = reactive({
     this._gainNode.connect(ctx.destination);
 
     this._eqFilters = filters;
-    console.log('[EQ-DEBUG] _rebuildEqChain: chain created, 10 filters connected | gains:', currentGains.map(g => g.toFixed(1)).join(', '));
+    logEqDebug('EQ filter chain ready', currentGains);
   },
 
   setPlaylist(list: any[], startIndex = 0, playlistId?: number) {
@@ -820,7 +809,14 @@ export const playerStore = reactive({
       if (this.currentSource !== 'official' && !playUrl.startsWith(location.origin + '/')) {
         playUrl = '/dl-proxy?url=' + encodeURIComponent(playUrl);
       }
+      if (eqSettings.enabled && this.audio.crossOrigin !== 'anonymous') {
+        this.audio.crossOrigin = 'anonymous';
+      }
       this.audio.src = playUrl;
+      if (eqSettings.enabled) {
+        this.enableEq(true);
+        this.setEqGains(eqSettings.gains);
+      }
       if (typeof seekTo === 'number' && seekTo > 0) {
         this.audio.currentTime = seekTo;
       }

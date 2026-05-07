@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <transition name="popover-fade">
-      <div v-if="visible" class="eq-mask" @click="close" @touchstart="close">
-        <div class="eq-panel" :style="panelStyle" @click.stop @touchstart.stop>
+      <div v-if="visible" class="eq-mask" @click="close" @touchstart.passive="close">
+        <div class="eq-panel" :style="panelStyle" @click.stop @touchstart.passive.stop>
           <header class="eq-head">
             <div class="eq-head-left">
               <h3>均衡器</h3>
@@ -20,7 +20,10 @@
               :key="p.name"
               type="button"
               class="preset-chip"
-              :class="{ active: eq.currentPreset === p.name }"
+              :class="{
+                active: eq.currentPreset === p.name,
+                'preset-chip--custom': eq.isCustomPreset(p.name),
+              }"
               @click="selectPreset(p)"
             >{{ p.name }}</button>
           </div>
@@ -45,8 +48,37 @@
             </div>
           </div>
 
-          <div class="eq-footer">
-            <button class="eq-reset" type="button" :disabled="!eq.enabled" @click="resetGains">重置</button>
+          <div v-if="isSaveEditorOpen" class="eq-save-row">
+            <input
+              v-model.trim="saveDraftName"
+              class="eq-save-input"
+              type="text"
+              maxlength="24"
+              placeholder="输入预设名称"
+              @keydown.enter="confirmSavePreset"
+              @keydown.esc="cancelSavePreset"
+            />
+            <button class="eq-action button-surface" type="button" @click="confirmSavePreset">保存</button>
+            <button class="eq-action button-surface" type="button" @click="cancelSavePreset">取消</button>
+            <p v-if="saveError" class="eq-save-error">{{ saveError }}</p>
+          </div>
+
+          <div class="eq-footer ui-safe-group">
+            <button class="eq-action button-surface" type="button" :disabled="!eq.enabled" @click="openSavePreset">保存预设</button>
+            <button
+              v-if="isSelectedCustomPreset"
+              class="eq-action button-surface"
+              type="button"
+              :disabled="!eq.enabled"
+              @click="overwritePreset"
+            >覆盖</button>
+            <button
+              v-if="isSelectedCustomPreset"
+              class="eq-action button-surface button-surface--danger"
+              type="button"
+              @click="deletePreset"
+            >删除</button>
+            <button class="eq-reset button-surface" type="button" :disabled="!eq.enabled" @click="resetGains">重置</button>
           </div>
         </div>
       </div>
@@ -55,8 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { eqSettings, DEFAULT_PRESETS, EQ_FREQ_LABELS, type EqPreset } from '../stores/eqSettings';
+import { computed, ref } from 'vue';
+import { eqSettings, EQ_FREQ_LABELS, type EqPreset } from '../stores/eqSettings';
 import { playerStore } from '../stores/player';
 import FancySwitch from './ui/FancySwitch.vue';
 
@@ -64,8 +96,14 @@ const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
 
 const eq = eqSettings;
-const presets = DEFAULT_PRESETS;
+const presets = computed(() => eq.getAllPresets());
 const freqLabels = EQ_FREQ_LABELS;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+const isSelectedCustomPreset = computed(() => eq.isCustomPreset(eq.currentPreset));
+const isSaveEditorOpen = ref(false);
+const saveDraftName = ref('');
+const saveError = ref('');
 
 function close() { emit('close'); }
 
@@ -106,11 +144,46 @@ function selectPreset(preset: EqPreset) {
 function onBandInput(index: number, event: Event) {
   const val = Number((event.target as HTMLInputElement).value);
   eq.gains[index] = val;
-  eq.currentPreset = '自定义';
-  eq.save();
+  if (!isSelectedCustomPreset.value) {
+    eq.currentPreset = '自定义';
+  }
   if (eq.enabled) {
     playerStore.setEqGains(eq.gains);
   }
+  // 拖拽停止后再持久化，避免连续 input 频繁写 localStorage。
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => eq.save(), 300);
+}
+
+function openSavePreset() {
+  saveDraftName.value = isSelectedCustomPreset.value ? eq.currentPreset : '';
+  saveError.value = '';
+  isSaveEditorOpen.value = true;
+}
+
+function cancelSavePreset() {
+  isSaveEditorOpen.value = false;
+  saveDraftName.value = '';
+  saveError.value = '';
+}
+
+function confirmSavePreset() {
+  const result = eq.upsertCustomPreset(saveDraftName.value);
+  if (!result.ok) {
+    saveError.value = result.reason || '保存失败';
+    return;
+  }
+  cancelSavePreset();
+}
+
+function overwritePreset() {
+  if (!isSelectedCustomPreset.value) return;
+  eq.upsertCustomPreset(eq.currentPreset);
+}
+
+function deletePreset() {
+  if (!isSelectedCustomPreset.value) return;
+  eq.removeCustomPreset(eq.currentPreset);
 }
 
 function resetGains() {
@@ -132,8 +205,13 @@ function resetGains() {
   background: transparent;
 }
 .eq-panel {
-  background: var(--bg-solid);
-  border: 1px solid var(--border);
+  background:
+    radial-gradient(ellipse 70% 35% at 50% 0%, rgba(255,255,255,0.07) 0%, transparent 100%),
+    radial-gradient(ellipse 60% 30% at 50% 100%, rgba(0,0,0,0.05) 0%, transparent 100%),
+    color-mix(in srgb, var(--expanded-panel-bg, var(--bg-solid)) 80%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--expanded-line-muted, var(--border));
   border-radius: var(--radius-lg, 14px);
   box-shadow: 0 16px 48px rgba(15, 23, 42, 0.18);
   display: grid;
@@ -298,28 +376,52 @@ function resetGains() {
   line-height: 1;
   white-space: nowrap;
 }
+.eq-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4) 0;
+  border-top: 1px solid var(--border-soft);
+}
+.eq-save-input {
+  min-width: 0;
+  height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--button-surface-border);
+  border-radius: var(--button-radius-pill, 999px);
+  background: var(--bg-solid);
+  color: var(--text-main);
+  font-size: 12px;
+  outline: none;
+}
+.eq-save-input:focus {
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.eq-save-error {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: var(--danger, #ef4444);
+  font-size: 11px;
+  font-weight: 600;
+}
 .eq-footer {
   display: flex;
   justify-content: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-4) var(--space-3);
   border-top: 1px solid var(--border-soft);
 }
+.eq-action,
 .eq-reset {
-  padding: 5px 20px;
-  border-radius: var(--button-radius-pill, 999px);
-  border: 1px solid var(--button-surface-border);
-  background: var(--button-surface-bg);
-  color: var(--text-sub);
+  min-height: 28px;
+  padding: 5px 16px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 120ms ease;
+  border-radius: var(--button-radius-pill, 999px);
 }
-.eq-reset:hover:not(:disabled) {
-  background: var(--button-surface-hover-bg);
-  border-color: var(--button-surface-hover-border);
-  color: var(--text-main);
-}
+.eq-action:disabled,
 .eq-reset:disabled {
   opacity: 0.4;
   cursor: not-allowed;

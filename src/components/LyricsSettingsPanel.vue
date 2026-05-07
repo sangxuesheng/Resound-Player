@@ -1,8 +1,8 @@
 <template>
   <Teleport to="body">
     <transition name="popover-fade">
-      <div v-if="visible" class="popover-backdrop" @click="close" @touchstart="close">
-        <div class="settings-popover" :style="popoverStyle" @click.stop @touchstart.stop>
+      <div v-if="visible" class="popover-backdrop" @click="close" @touchstart.passive="close">
+        <div class="settings-popover" :style="popoverStyle" @click.stop @touchstart.passive.stop>
           <header class="popover-head">
             <h3>歌词设置</h3>
             <button class="popover-close" type="button" @click="close" aria-label="关闭设置">

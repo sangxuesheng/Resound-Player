@@ -55,6 +55,44 @@ _eqEnabled: boolean                         // EQ 启用状态
 | `setVolume(v)` | 有 GainNode 时写入 `gainNode.gain.value`，否则写入 `audio.volume` |
 | `toggleMute()` | 同上，通过 GainNode 或 audio.volume 控制静音 |
 
+### 1.6 EQ 数据流总览
+
+```
+[用户操作]                [状态层]              [运行态]              [硬件输出]
+─────────────────────────────────────────────────────────────────────
+
+点击预设 chip
+  → eq.currentPreset = p.name        playerStore.setEqGains(p.gains)
+  → eq.gains = [...p.gains]                              ↓
+  → eq.save()                     BiquadFilterNode[n].gain.value = gains[n]
+                                                              ↓
+拖动滑块                                                       ↓
+  → eq.gains[i] = val              playerStore.setEqGains(gains)
+  → eq.currentPreset='自定义'                                    ↓
+  → (debounce 300ms) eq.save()    BiquadFilterNode[n].gain.value = gains[n]
+                                                              ↓
+开关 EQ                                                     AudioContext
+  → eq.enabled = bool              playerStore.enableEq(bool)    ↓
+  → eq.save()                        → _ensureWebAudio()     扬声器
+                                      → _rebuildEqChain()
+                                        → source → filter[10] → gain → dest.
+
+首次播放（刷新后 + EQ 持久化开启）
+  playTrack() 中:
+  → 设 audio.crossOrigin = 'anonymous'
+  → 设 audio.src = playUrl
+  → enableEq(true) → _ensureWebAudio() → _rebuildEqChain()
+  → setEqGains(eqSettings.gains)
+
+保存自定义预设
+  → 面板内输入框 → upsertCustomPreset(name)
+    → normalizeGains(gains)
+    → 校验名称（非空、不内置重名）
+    → customPresets 新增/覆盖
+    → currentPreset = name, gains = preset.gains
+    → save() → localStorage.setItem(gm_eq_settings_v1, JSON.stringify(...))
+```
+
 ---
 
 ## 2. CORS 处理
@@ -134,10 +172,50 @@ type EqSettings = {
   enabled: boolean;       // 全局 EQ 开关
   gains: number[];        // 10 段增益值
   currentPreset: string;  // 当前预设名称，滑块调节后自动变为 '自定义'
+  customPresets: EqPreset[]; // 用户保存的命名预设
+};
+
+type EqSettingsStore = EqSettings & {
+  save(): void;
+  getAllPresets(): EqPreset[];         // 内置预设 + 自定义预设合并列表
+  isCustomPreset(name: string): boolean; // 判断是否为用户保存的自定义预设
+  upsertCustomPreset(name: string, gains?: number[]): EqSaveResult;
+  removeCustomPreset(name: string): void;
 };
 ```
 
 **持久化：** localStorage key `gm_eq_settings_v1`
+
+存储结构兼容旧数据。旧版本没有 `customPresets` 时会在 `hydrate()` 中补为空数组；`gains` 和自定义预设的每个 `gains` 都会被归一化为 10 段、`-12 ~ +12`、0.5 dB 步进。
+
+**自定义预设：**
+
+- 用户点击“保存预设”后，在面板内输入名称并保存当前 `gains`
+- 自定义预设追加在内置预设之后展示
+- 自定义预设可覆盖、删除
+- 选中已保存的自定义预设后继续调节滑块时，选中态保持在该预设上，不自动跳回普通 `自定义`
+- 自定义预设名称不能为空，且不能与内置预设重名
+- 删除当前自定义预设时保留当前 `gains`，`currentPreset` 回退为 `自定义`
+
+**数据校验：**
+
+```ts
+normalizeGains(input): number[]       // 10 段、-12~12、0.5 步进，非法值补 0
+sanitizePresetName(name): string      // 去除首尾空白，最长 24 字符
+isBuiltinPresetName(name): boolean    // 禁止用户预设覆盖内置
+normalizePreset(input): EqPreset | null  // 整合校验，非法返回 null
+normalizeCustomPresets(input): EqPreset[]  // 去重（同名取后），过滤非法
+```
+
+**Store API 行为：**
+
+| 方法 | 行为 |
+|------|------|
+| `save()` | 将当前 `enabled` + `gains` + `currentPreset` + `customPresets` 完整写入 localStorage |
+| `getAllPresets()` | 返回 `[...BUILTIN_PRESETS, ...this.customPresets]` |
+| `isCustomPreset(name)` | 在 `customPresets` 中查找是否有同名项 |
+| `upsertCustomPreset(name, gains?)` | 新建或覆盖自定义预设，自动切换 `currentPreset` 和 `gains`，触发 `save()` |
+| `removeCustomPreset(name)` | 删除指定自定义预设，若删除的是当前选中态则回退到 `自定义` |
 
 **内置预设（8 个）：**
 
@@ -164,6 +242,8 @@ sourceNode → filter[0] → filter[1] → ... → filter[9] → gainNode → de
 
 创建滤波器时**直接使用当前增益值**（从 eqSettings.gains 读快照），不依赖后续异步调用。
 
+播放路径中会在设置音频地址前检查 `eqSettings.enabled`。如果持久化状态为开启，会先设置 `audio.crossOrigin = 'anonymous'`，再调用 `enableEq(true)` 创建 Web Audio 管线并应用当前 `gains`，确保刷新后首次播放也直接走 EQ 链。
+
 ### 3.4 UI 组件：`src/components/EqPanel.vue`
 
 **结构：**
@@ -172,20 +252,30 @@ sourceNode → filter[0] → filter[1] → ... → filter[9] → gainNode → de
 eq-panel (Teleport to body, 固定定位)
 ├── eq-head: 标题 + FancySwitch 开关
 ├── preset-rail (ui-safe-rail): 预设横向滚动选择
-│   └── preset-chip × 8
+│   └── preset-chip: 内置预设 + 自定义预设
 ├── eq-bands: 10 段竖排滑块
 │   └── eq-band-col × 10
 │       ├── eq-slider (input[type=range], writing-mode: vertical-lr)
 │       ├── eq-db-value (如 +3.0 dB)
 │       └── eq-freq-label (如 1k Hz)
-└── eq-footer: 重置按钮
+├── eq-save-row (v-if="isSaveEditorOpen"): 面板内预览输入、确认/取消按钮、错误提示
+└── eq-footer (ui-safe-group): 保存预设 / 覆盖 / 删除 / 重置
 ```
 
+**交互行为：**
+
+- **保存预设**：点击后展开 `.eq-save-row`，面板内输入名称 → Enter 确认或点击保存/取消。不再使用 `window.prompt()`
+- **覆盖预设**：仅在当前选中自定义预设时显示，用当前 `gains` 原地覆盖同名预设
+- **删除预设**：仅在当前选中自定义预设时显示，删除后 `currentPreset` 回退为 `自定义`
+- **滑块输入（debounce 保存）**：`@input` 触发 `playerStore.setEqGains()` 即时更新听感，但 `eq.save()` 延迟 300ms 执行。拖拽期间只更新最后一次值，避免高频滑块操作重复写入 localStorage
+- **选中态保持**：如果 `currentPreset` 是已保存的自定义预设，手动调节滑块时保留选中态，不跳回普通 `自定义`
+
 **样式规范：**
-- 面板背景：`var(--bg-solid)`（不透明）
+- 面板背景：与播放列表面板一致的磨砂半透明背景
 - 预设 chip：`button-surface` 体系
+- footer 按钮组：复用 `ui-safe-group` 和 `.button-surface` / `.button-surface--danger`
 - 滑块轨道/把手：主题色 `var(--accent)`，与全局 `input[type=range]` 风格一致
-- 禁用态：滑块 `opacity: 0.3`，重置按钮 `opacity: 0.4`
+- 禁用态：滑块 `opacity: 0.3`，操作按钮 `opacity: 0.4`
 
 ### 3.5 入口集成
 
@@ -249,3 +339,49 @@ const BUILTIN_PRESETS = [
 - `_gainNode` 保持 `null`
 - `setVolume()` / `toggleMute()` 自动回退到原生 `audio.volume`
 - 音频播放不受影响，仅 EQ 不可用
+
+---
+
+## 7. 历史修复记录
+
+### 7.1 持久化默认预设名称不匹配
+
+**问题：** `defaults.currentPreset` 初始值为 `'默认（平直）'`，但内置预设中不存在该名称。首次加载时没有任何 preset-chip 获得 active 高亮。
+
+**修复：** 改为 `'原声'`，与内置预设名称对齐。
+
+**涉及文件：** `src/stores/eqSettings.ts`
+
+### 7.2 刷新后首次播放 EQ 不生效
+
+**问题：** 页面刷新后持久化 `eqSettings.enabled = true`，但 `playerStore._eqEnabled` 初始为 `false`。播放时没有根据持久化状态创建 Web Audio 管线，音频走原生 `<audio>`。需要手动关闭再打开 EQ 后才生效。
+
+**根因：** `playTrack()` 在设置 `audio.src` 前后没有检查持久化 EQ 状态，导致 `enableEq()` 从未被调用。
+
+**修复：** 在 `playTrack()` 中设置 `audio.src` 前检查 `eqSettings.enabled`，如果为 true 则先设 `crossOrigin = 'anonymous'`，设置 src 后再调 `enableEq(true)` 和 `setEqGains(eqSettings.gains)`。
+
+**涉及文件：** `src/stores/player.ts`
+
+### 7.3 保存预设使用系统弹窗
+
+**问题：** `saveAsPreset()` 使用 `window.prompt()` 和 `window.alert()`，体验不一致且无法撤销。
+
+**修复：** 移除系统弹窗，改为面板内展开 `.eq-save-row`：输入框 + 保存/取消按钮 + 行内错误提示。`keydown.enter` 确认，`keydown.esc` 取消。
+
+**涉及文件：** `src/components/EqPanel.vue`
+
+### 7.4 已保存自定义预设调节滑块时丢失选中态
+
+**问题：** `onBandInput()` 无条件将 `currentPreset` 设为 `'自定义'`（普通状态）。选中已保存的自定义预设后拖拽滑块，选中态跳到 `自定义`，覆盖/删除按钮消失。
+
+**修复：** 在 `onBandInput()` 中先检查 `isSelectedCustomPreset.value`，仅当不是已保存预设时才切换为 `'自定义'`。
+
+**涉及文件：** `src/components/EqPanel.vue`
+
+### 7.5 滑块拖拽时频繁写入 localStorage
+
+**问题：** `onBandInput()` 每次 `@input` 都调 `eq.save()`，连续拖拽 12dB（24 档）产生 24 次 `JSON.stringify + setItem`。
+
+**修复：** `save()` 调用改为 300ms debounce，拖拽停止后才写入。`playerStore.setEqGains()` 仍即时执行，不影响听感。
+
+**涉及文件：** `src/components/EqPanel.vue`

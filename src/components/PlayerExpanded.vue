@@ -91,7 +91,7 @@
                   </AnimatedAppear>
                 </template>
                 <div v-show="showLeftControls" class="progress-wrap">
-                  <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
+                  <input class="progress" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart.passive="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
                   <div v-if="isSeeking" class="seek-preview">{{ formatTime(seekPreviewTime) }}</div>
                   <div class="times"><span class="time">{{ formatTime(playerStore.currentTime) }}</span><span class="time">{{ formatTime(playerStore.duration) }}</span></div>
                 </div>
@@ -165,8 +165,8 @@
 
         <Teleport to="body">
           <transition name="offset-fade">
-            <div v-if="showOffsetPanel" class="offset-mask" @click="showOffsetPanel = false" @touchstart="showOffsetPanel = false">
-              <div class="offset-popover" :style="offsetPopoverStyle" @click.stop @touchstart.stop>
+            <div v-if="showOffsetPanel" class="offset-mask" @click="showOffsetPanel = false" @touchstart.passive="showOffsetPanel = false">
+              <div class="offset-popover" :style="offsetPopoverStyle" @click.stop @touchstart.passive.stop>
                 <div class="offset-head">歌词偏移</div>
                 <div class="offset-body">
                   <button class="of-step" @click="playerStore.adjustLyricsOffset(-0.1)"><Minus :size="18" /></button>
@@ -184,8 +184,8 @@
         <!-- 翻译/音译设置弹窗 -->
         <Teleport to="body">
           <transition name="offset-fade">
-            <div v-if="showTransPanel" class="offset-mask" @click="showTransPanel = false" @touchstart="showTransPanel = false">
-              <div class="trans-popover" :style="transPopoverStyle" @click.stop @touchstart.stop>
+            <div v-if="showTransPanel" class="offset-mask" @click="showTransPanel = false" @touchstart.passive="showTransPanel = false">
+              <div class="trans-popover" :style="transPopoverStyle" @click.stop @touchstart.passive.stop>
                 <div class="trans-head">歌词内容显示</div>
                 <div class="trans-body">
                   <div class="trans-row">
@@ -223,7 +223,7 @@
           </div>
           <div class="console-progress">
             <span class="console-time">{{ formatTime(playerStore.currentTime) }}</span>
-            <input class="console-bar" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
+            <input class="console-bar" type="range" min="0" :max="Math.max(1, Math.floor(playerStore.duration || 0))" :value="Math.floor(playerStore.currentTime || 0)" @mousedown="onSeekStart" @touchstart.passive="onSeekStart" @input="onSeek" @change="onSeekEnd" @mouseup="onSeekEnd" @touchend="onSeekEnd" />
             <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
           </div>
           <div class="cc-right">
