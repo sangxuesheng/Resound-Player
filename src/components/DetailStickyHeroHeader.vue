@@ -263,6 +263,14 @@ onMounted(remeasureHeight);
 .playlist-detail-header-wrap.is-sticky-header :deep(.artist-tabs) {
   gap: 8px;
 }
+.playlist-detail-header-wrap.is-sticky-header :deep(.playlist-tab) {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.playlist-detail-header-wrap.is-sticky-header :deep(.playlist-tabs) {
+  gap: 8px;
+}
 
 /* 封面：保持原始比例 + 圆角 */
 .playlist-detail-header-wrap.is-sticky-header .hero-media-shell {

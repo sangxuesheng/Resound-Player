@@ -235,13 +235,16 @@ async function fetchComments(append = false) {
     const raw = data?.comments || [];
     const normalized = raw.map(normalizeComment);
     comments.value = append ? [...comments.value, ...normalized] : normalized;
-    await fetchHotComments();
   } catch (e: any) {
     error.value = e?.message || '加载失败';
   } finally {
     loading.value = false;
     loadingMore.value = false;
   }
+  // 独立加载热门评论，不影响主评论展示
+  try {
+    await fetchHotComments();
+  } catch { /* 热门评论错误已在内部处理 */ }
 }
 
 async function loadMore() {

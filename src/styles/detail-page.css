@@ -68,22 +68,25 @@
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* 返回按钮容器 — 用 opacity + max-height 过渡取代 v-if 移除，避免布局跳动 */
+/* 返回按钮容器 — 默认允许 hover 上浮外溢，隐藏态再裁切，避免按钮顶部被截断 */
 .playlist-detail-back,
 .artist-detail-back {
   max-height: 58px;
-  overflow: hidden;
+  overflow: visible;
+  padding-top: 2px;
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     max-height 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     margin 0.3s cubic-bezier(0.33, 0, 0.1, 1);
-  margin: var(--space-2) 0 var(--space-4);
+  margin: calc(var(--space-2) - 2px) 0 var(--space-4);
 }
 .playlist-detail-back.back-fade,
 .artist-detail-back.back-fade {
   opacity: 0;
   pointer-events: none;
   max-height: 0;
+  overflow: hidden;
+  padding-top: 0;
   margin: 0;
 }
 

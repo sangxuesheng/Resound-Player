@@ -10,7 +10,7 @@
     <div class="main-area">
       <TopBar @brand-click="onBrandClick" @search-submit="openSearchPage" @user-click="openUserLogin" @open-settings-page="() => openSettings('playback')" />
 
-      <main class="content" :class="{ 'content--user-page': activePage === 'user', 'content--hero-sticky': isHeroStickyPage }">
+      <main class="content" :class="{ 'content--user-page': activePage === 'user', 'content--hero-sticky': isHeroStickyPage }" :style="contentStyle">
         <div class="content-shell">
           <HomePanel
             v-if="activePage === 'home'"
@@ -48,6 +48,7 @@
             @open-album="(albumId) => openAlbumDetail(albumId, 'playlist-detail')"
             @open-language="(language) => openLanguageDetail(language, activePage)"
             @open-mv-player="openMvFromSearch"
+            @open-user="openUserFromComment"
           />
           <AlbumDetailPage
             v-else-if="activePage === 'album-detail'"
@@ -87,6 +88,7 @@
             back-label="返回排行榜"
             @back="backToRank"
             @open-artist="openArtistFromRank"
+            @open-user="openUserFromComment"
           />
           <MvPlayPage v-else-if="activePage === 'mv-play'" :mv="activeMvItem" :back-label="mvBackLabel" @back="goBackFromMvPlay" @open-user="openUserFromComment" />
           <MvPanel v-else-if="activePage === 'mv'" :initial-mv="activeMvItem" @open-user="openUserFromComment" @play-mv="openMvFromSearch" />
@@ -96,6 +98,7 @@
             @open-podcast-list="() => openPodcastList('user')"
             @open-playlist="(playlistId) => openPlaylistDetail(playlistId, undefined, 'user')"
             @open-artist="openArtistFromDetail"
+            @open-comment="(songId) => openSongComment(songId, 'user')"
           />
           <HistoryPanel
             v-else-if="activePage === 'history'"
@@ -199,6 +202,7 @@ const SIDEBAR_COLLAPSED_KEY = 'tm_sidebar_collapsed';
 const activePage = ref('home');
 const activePlaylistId = ref(0);
 const activeSongId = ref(0);
+const activeSongCommentReturnPage = ref('playlist-detail');
 const activeAlbumId = ref(0);
 const activeArtistId = ref(0);
 const artistActiveTabState = ref('songs');
@@ -261,6 +265,7 @@ const sidebarActiveKey = computed(() => {
 
 const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail', 'podcast-detail'].includes(activePage.value));
 const showBackToTop = computed(() => isHeroStickyPage.value || ['history', 'user', 'mv', 'playlist', 'rank', 'search', 'podcast-list', 'podcast-subscribed', 'podcast-category', 'song-comment'].includes(activePage.value));
+const contentStyle = computed<Record<string, string>>(() => (isHeroStickyPage.value ? {} : { '--cover-bg-url': 'none' }));
 
 function syncViewport() {
   // 平板端沿用桌面布局，仅在移动端（<=767）启用窄屏抽屉逻辑
@@ -821,12 +826,13 @@ function openUserLogin() {
   activePage.value = 'user';
 }
 
-function openSongComment(songId: number) {
+function openSongComment(songId: number, returnPage = activePage.value) {
   activeSongId.value = songId;
+  activeSongCommentReturnPage.value = returnPage;
   activePage.value = 'song-comment';
 }
 function goBackFromComment() {
-  activePage.value = 'playlist-detail';
+  activePage.value = activeSongCommentReturnPage.value || 'playlist-detail';
 }
 
 async function playSongFromComment(songId: number) {

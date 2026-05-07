@@ -1,6 +1,6 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="comment-page">
-    <div class="comment-page-bar">
+    <div class="playlist-detail-back">
       <button class="back-btn" @click="$emit('back')">← 返回</button>
     </div>
     <header class="comment-page-head">
@@ -75,14 +75,18 @@ onMounted(async () => {
 
 <style scoped>
 @import '../styles/detail-page.css';
-.comment-page { padding: var(--space-4); width: 100%; max-width: 100%; box-sizing: border-box; border: none; outline: none; }
-.comment-page-bar {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg-solid);
-  padding: var(--space-2) 0;
-  margin-bottom: var(--space-3);
+.comment-page {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: var(--space-4);
+  background: var(--glass-reflection), var(--bg-surface);
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  outline: none;
 }
 .comment-page-head { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
 .head-cover-wrap { position: relative; width: 80px; height: 80px; flex-shrink: 0; border-radius: 12px; overflow: hidden; }

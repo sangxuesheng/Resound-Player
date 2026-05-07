@@ -1,8 +1,10 @@
 <template>
   <AnimatedAppear tag="div" variant="content" rhythm="shell" class-name="daily-recommend-root" @click.self="closeHistoryMenu">
     <PageLayoutShell :shell-class="embedded ? '' : 'panel daily-detail-panel'" :header-class="['daily-detail-header', isSticky && 'is-sticky-header']" body-class="daily-detail-body">
-    <template #back v-if="!isSticky">
-      <button class="back-btn button-surface" @click="emit('back')">← {{ props.backLabel }}</button>
+    <template #back>
+      <div :class="['playlist-detail-back', { 'back-fade': isSticky }]">
+        <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
+      </div>
     </template>
 
     <template #header>

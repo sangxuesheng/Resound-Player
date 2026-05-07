@@ -1,6 +1,6 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="mv-play-page">
-    <div class="mv-play-back">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="mv-play-page playlist-detail-page">
+    <div class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel || '返回' }}</button>
     </div>
 
@@ -234,10 +234,6 @@ watch(
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-}
-
-.mv-play-back {
-  margin-bottom: var(--space-3);
 }
 
 .mv-play-content {

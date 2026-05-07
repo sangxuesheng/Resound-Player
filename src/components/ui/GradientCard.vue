@@ -67,6 +67,10 @@ const coverStyle = computed(() => {
   --card-radius: 12px;
 
   position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   isolation: isolate;
   border: none;
   background: transparent;

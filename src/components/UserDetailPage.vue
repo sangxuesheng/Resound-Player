@@ -1,6 +1,6 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-detail-page" :style="shellStyle">
-    <div v-if="!isSticky" class="user-detail-back">
+    <div :class="['playlist-detail-back', { 'back-fade': isSticky }]">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
@@ -226,10 +226,6 @@ onMounted(() => {
 
 .user-detail-page {
   min-height: 100%;
-}
-
-.user-detail-back {
-  display: block;
 }
 
 .cover {
