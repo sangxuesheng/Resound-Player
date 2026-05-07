@@ -91,7 +91,7 @@
         </AnimatedAppear>
         <EqPanel :visible="showEqPanel" @close="showEqPanel = false" />
       </div>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" data-tooltip="歌词" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" :class="{ active: lyricsSettings.showBarLyric }" data-tooltip="歌词" aria-label="歌词" @click.stop="lyricsSettings.showBarLyric = !lyricsSettings.showBarLyric; lyricsSettings.save()"><Captions :size="14" /></AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :data-tooltip="isCurrentLiked ? '取消收藏' : '收藏'" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
       <div class="settings-wrap" ref="settingsWrapRef">
         <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" :class="{ active: showSettings }" data-tooltip="设置" aria-label="设置" @click.stop="toggleSettings"><Settings :size="14" /></AnimatedAppear>
