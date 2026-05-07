@@ -4,6 +4,7 @@ import { tryUnblockMatch } from '../api/unblock';
 import { userStore } from './user';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
+import { eqSettings } from './eqSettings';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
@@ -140,6 +141,13 @@ export const playerStore = reactive({
   currentIntelligenceLoading: false,
   isIntelligenceActive: false,
 
+  // ---- Web Audio 管线 ----
+  _audioCtx: null as AudioContext | null,
+  _sourceNode: null as MediaElementAudioSourceNode | null,
+  _gainNode: null as GainNode | null,
+  _eqFilters: [] as BiquadFilterNode[],
+  _eqEnabled: false,
+
   init() {
     hydrateCache();
     this.audio.volume = this.volume;
@@ -267,6 +275,7 @@ export const playerStore = reactive({
       this.muted = typeof parsed.muted === 'boolean' ? parsed.muted : false;
       this.volumeBeforeMute = typeof parsed.volumeBeforeMute === 'number' ? parsed.volumeBeforeMute : this.volume;
       this.audio.volume = this.muted ? 0 : this.volume;
+
       this.autoplayNext = typeof parsed.autoplayNext === 'boolean' ? parsed.autoplayNext : true;
       this.playMode = parsed.playMode === 'single' || parsed.playMode === 'shuffle' ? parsed.playMode : 'loop';
       this.crossfadeSec = typeof parsed.crossfadeSec === 'number' ? parsed.crossfadeSec : 0;
@@ -287,6 +296,236 @@ export const playerStore = reactive({
     } catch {
       this.syncThemeState();
     }
+  },
+
+  /** 惰性创建 Web Audio 管线（MediaElementSourceNode + GainNode） */
+  _ensureWebAudio() {
+    if (this._audioCtx) {
+      console.log('[EQ-DEBUG] _ensureWebAudio: already exists, ctx.state:', this._audioCtx.state, '| sourceNode:', !!this._sourceNode, '| gainNode:', !!this._gainNode);
+      return;
+    }
+    // 已经尝试过但失败的，不再重试
+    if (this._audioCtx === null && this._sourceNode === undefined) {
+      console.warn('[EQ-DEBUG] _ensureWebAudio: previously failed, skip');
+      return;
+    }
+    console.log('[EQ-DEBUG] _ensureWebAudio: starting creation...');
+    try {
+      const ctx = new AudioContext();
+      console.log('[EQ-DEBUG] AudioContext created, initial state:', ctx.state);
+      // MediaElementSourceNode 需要音频资源的 CORS 权限，确保 audio 元素带上凭据
+      if (this.audio.crossOrigin !== 'anonymous') {
+        this.audio.crossOrigin = 'anonymous';
+        // 仅当当前有已加载的 src 时重载（首次启用 EQ 时触发）
+        if (this.audio.src && this.audio.src !== '') {
+          const savedSrc = this.audio.currentSrc || this.audio.src;
+          this.audio.src = savedSrc;
+          this.audio.load();
+        }
+      }
+      const src = ctx.createMediaElementSource(this.audio);
+      console.log('[EQ-DEBUG] MediaElementSourceNode created, audio element src:', this.audio.src, '| readyState:', this.audio.readyState, '| paused:', this.audio.paused);
+      const gain = ctx.createGain();
+      src.connect(gain);
+      gain.connect(ctx.destination);
+      this._audioCtx = ctx;
+      this._sourceNode = src;
+      this._gainNode = gain;
+      this._syncVolumeToGain();
+      // 确保原生 audio volume 为最大值，音量全部由 GainNode 控制
+      this.audio.volume = 1;
+      ctx.onstatechange = () => {
+        console.log('[EQ-DEBUG] AudioContext statechange:', ctx.state);
+        if (ctx.state === 'closed') {
+          this._audioCtx = null;
+          this._sourceNode = null;
+          this._gainNode = null;
+          this._eqFilters = [];
+          this._eqEnabled = false;
+        }
+      };
+      console.log('[EQ-DEBUG] pipeline initialized OK | ctx.state:', ctx.state, '| gainNode.gain:', gain.gain.value, '| audio.volume:', this.audio.volume, '| player.volume:', this.volume, '| muted:', this.muted);
+    } catch (e) {
+      console.warn('[EQ-DEBUG] _ensureWebAudio: init FAILED:', e);
+      // 标记失败，避免重复重试
+      this._audioCtx = null;
+      this._sourceNode = undefined as any;
+      this._gainNode = null;
+      this._eqFilters = [];
+    }
+  },
+
+  /** 将 this.volume + this.muted 同步到 GainNode */
+  _syncVolumeToGain() {
+    if (!this._gainNode) return;
+    this._gainNode.gain.value = this.muted ? 0 : this.volume;
+  },
+
+  /**
+   * 启用/停用 EQ 滤波链
+   * 首次启用时会惰性初始化 Web Audio 管线。
+   * 如果音频正在播放，会短暂暂停→重建→恢复，确保 createMediaElementSource 在可靠状态下执行。
+   */
+  enableEq(on: boolean) {
+    if (this._eqEnabled === on) {
+      console.log('[EQ-DEBUG] enableEq: already', on, 'skip');
+      return;
+    }
+    console.log('[EQ-DEBUG] enableEq: switching to', on, '| isPlaying:', this.isPlaying, '| audioCtx:', !!this._audioCtx, '| gainNode:', !!this._gainNode);
+    this._eqEnabled = on;
+
+    if (on) {
+      // 保存播放状态
+      const wasPlaying = this.isPlaying;
+      const savedTime = this.audio.currentTime;
+      console.log('[EQ-DEBUG] enableEq: wasPlaying:', wasPlaying, '| savedTime:', savedTime, '| audio.src:', this.audio.src, '| audio.readyState:', this.audio.readyState, '| audio.volume:', this.audio.volume);
+
+      // 暂停音频后再初始化 Web Audio 管线
+      if (wasPlaying) {
+        console.log('[EQ-DEBUG] enableEq: pausing audio...');
+        this.audio.pause();
+        console.log('[EQ-DEBUG] enableEq: audio paused, isPlaying:', this.isPlaying);
+      }
+
+      this._ensureWebAudio();
+      if (!this._audioCtx || !this._sourceNode || !this._gainNode) {
+        console.warn('[EQ-DEBUG] enableEq: pipeline init FAILED, fallback to native');
+        if (wasPlaying) {
+          this.audio.currentTime = savedTime;
+          this.audio.play().catch(() => {});
+        }
+        return;
+      }
+
+      // 强制 AudioContext resume
+      if (this._audioCtx.state === 'suspended') {
+        console.log('[EQ-DEBUG] enableEq: AudioContext is suspended, calling resume()...');
+        this._audioCtx.resume().then(() => {
+          console.log('[EQ-DEBUG] enableEq: AudioContext resume() resolved, state:', this._audioCtx?.state);
+        }).catch((e) => {
+          console.warn('[EQ-DEBUG] enableEq: AudioContext resume() FAILED:', e);
+        });
+      } else {
+        console.log('[EQ-DEBUG] enableEq: AudioContext state:', this._audioCtx.state);
+      }
+
+      console.log('[EQ-DEBUG] enableEq: before _rebuildEqChain, gainNode.gain:', this._gainNode.gain.value);
+      this._rebuildEqChain();
+      console.log('[EQ-DEBUG] enableEq: after _rebuildEqChain, eqFilters.length:', this._eqFilters.length, '| gainNode.gain:', this._gainNode.gain.value);
+
+      // 恢复播放
+      if (wasPlaying) {
+        console.log('[EQ-DEBUG] enableEq: resuming playback at', savedTime, '...');
+        this.audio.currentTime = savedTime;
+        this.audio.play().then(() => {
+          console.log('[EQ-DEBUG] enableEq: audio.play() resolved OK, isPlaying:', this.isPlaying, '| audioCtx.state:', this._audioCtx?.state);
+        }).catch((err) => {
+          console.warn('[EQ-DEBUG] enableEq: audio.play() FAILED:', err);
+        });
+      }
+
+      // 同步音量
+      if (this._gainNode && !this.muted) {
+        this._gainNode.gain.value = this.volume;
+        console.log('[EQ-DEBUG] enableEq: synced gainNode.gain to', this.volume, '| audio.volume:', this.audio.volume);
+      }
+    } else {
+      console.log('[EQ-DEBUG] enableEq: switching EQ OFF');
+      // 关闭 EQ 时，清除 crossOrigin 并重载音频，使 unblock 源能正常 seek
+      const wasPlaying = this.isPlaying;
+      const savedTime = this.audio.currentTime;
+      if (wasPlaying) this.audio.pause();
+
+      this._rebuildEqChain();
+
+      if (this.audio.crossOrigin === 'anonymous' && this.audio.src) {
+        console.log('[EQ-DEBUG] enableEq: removing crossOrigin, reloading without CORS...');
+        this.audio.crossOrigin = '';
+        const savedSrc = this.audio.currentSrc || this.audio.src;
+        this.audio.src = savedSrc;
+        this.audio.load();
+      }
+
+      if (wasPlaying) {
+        this.audio.currentTime = savedTime;
+        this.audio.play().catch(() => {});
+      }
+    }
+  },
+
+  /**
+   * 设置 10 段 EQ 增益值（单位 dB，范围 -12 ~ +12）
+   * 立即更新滤波器节点
+   */
+  setEqGains(gains: number[]) {
+    if (gains.length !== 10) {
+      console.warn('[EQ-DEBUG] setEqGains: invalid length:', gains.length);
+      return;
+    }
+    console.log('[EQ-DEBUG] setEqGains:', gains.map(g => g.toFixed(1)).join(', '));
+    for (let i = 0; i < 10; i++) {
+      const filter = this._eqFilters[i];
+      if (filter) {
+        filter.gain.value = Math.max(-12, Math.min(12, gains[i]));
+      } else {
+        console.warn('[EQ-DEBUG] setEqGains: filter', i, 'is null');
+      }
+    }
+  },
+
+  /** 在 sourceNode→gainNode 之间插入或移除 EQ 滤波链 */
+  _rebuildEqChain() {
+    if (!this._sourceNode || !this._gainNode || !this._audioCtx) {
+      console.warn('[EQ-DEBUG] _rebuildEqChain: skipped, nodes missing | sourceNode:', !!this._sourceNode, 'gainNode:', !!this._gainNode, 'audioCtx:', !!this._audioCtx);
+      return;
+    }
+    const mode = this._eqEnabled ? 'ENABLE' : 'BYPASS';
+    console.log('[EQ-DEBUG] _rebuildEqChain: ' + mode + ' | ctx.state:', this._audioCtx.state);
+
+    // 先断开所有现有连接
+    this._sourceNode.disconnect();
+    this._gainNode.disconnect();
+    this._eqFilters.forEach((f) => { try { f.disconnect(); } catch {} });
+    console.log('[EQ-DEBUG] _rebuildEqChain: all nodes disconnected');
+
+    if (!this._eqEnabled) {
+      // EQ 关闭：直连 source → gain
+      this._sourceNode.connect(this._gainNode);
+      this._gainNode.connect(this._audioCtx.destination);
+      this._eqFilters = [];
+      console.log('[EQ-DEBUG] _rebuildEqChain: bypass mode, source→gain→dest connected');
+      return;
+    }
+
+    // EQ 启用：创建 10 段 peaking 滤波器，串联插入
+    const ctx = this._audioCtx;
+    const frequencies = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+    const Q = 1.41;
+    const currentGains = [...(eqSettings.gains || [])];
+    // 确保是 10 段
+    while (currentGains.length < 10) currentGains.push(0);
+
+    // 创建新滤波器链，直接使用当前增益值
+    const filters: BiquadFilterNode[] = [];
+    for (let i = 0; i < 10; i++) {
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'peaking';
+      filter.frequency.value = frequencies[i];
+      filter.Q.value = Q;
+      filter.gain.value = Math.max(-12, Math.min(12, currentGains[i]));
+      filters.push(filter);
+    }
+
+    // 串联连接：source → filter[0] → filter[1] → ... → filter[9] → gain
+    this._sourceNode.connect(filters[0]);
+    for (let i = 0; i < 9; i++) {
+      filters[i].connect(filters[i + 1]);
+    }
+    filters[9].connect(this._gainNode);
+    this._gainNode.connect(ctx.destination);
+
+    this._eqFilters = filters;
+    console.log('[EQ-DEBUG] _rebuildEqChain: chain created, 10 filters connected | gains:', currentGains.map(g => g.toFixed(1)).join(', '));
   },
 
   setPlaylist(list: any[], startIndex = 0, playlistId?: number) {
@@ -577,6 +816,10 @@ export const playerStore = reactive({
         return false;
       }
 
+      // 非官方音源（unblock 匹配）的 URL 缺乏 CORS 头，通过 /dl-proxy 代理加载
+      if (this.currentSource !== 'official' && !playUrl.startsWith(location.origin + '/')) {
+        playUrl = '/dl-proxy?url=' + encodeURIComponent(playUrl);
+      }
       this.audio.src = playUrl;
       if (typeof seekTo === 'number' && seekTo > 0) {
         this.audio.currentTime = seekTo;
@@ -589,6 +832,7 @@ export const playerStore = reactive({
         return false;
       }
       this.isPlaying = true;
+
       if (typeof seekTo === 'number' && seekTo > 0 && wasPlaying) {
         this.audio.currentTime = seekTo;
       }
@@ -736,18 +980,34 @@ export const playerStore = reactive({
     if (this.muted) {
       this.muted = false;
     }
-    this.audio.volume = val;
+    if (this._gainNode) {
+      this._gainNode.gain.value = val;
+      this.audio.volume = 1;
+    } else {
+      this.audio.volume = val;
+    }
     this.persist();
   },
 
   toggleMute() {
     if (this.muted) {
       this.muted = false;
-      this.audio.volume = this.volumeBeforeMute;
+      const vol = this.volumeBeforeMute;
+      if (this._gainNode) {
+        this._gainNode.gain.value = vol;
+        this.audio.volume = 1;
+      } else {
+        this.audio.volume = vol;
+      }
     } else {
       this.volumeBeforeMute = this.volume;
       this.muted = true;
-      this.audio.volume = 0;
+      if (this._gainNode) {
+        this._gainNode.gain.value = 0;
+        this.audio.volume = 1;
+      } else {
+        this.audio.volume = 0;
+      }
     }
     this.persist();
   },

@@ -190,6 +190,53 @@ watch(() => lyricsSettings.useAmllRenderer, (useAmll) => {
   });
 });
 
+/* ---- AMLL hidePassedLines 补丁：翻译/音译子行同步隐藏 ---- */
+// AMLL 的 hidePassedLines 只设置 mainLine (children[0]) 的 opacity，
+// 不处理 subLine (children[1]/[2]，翻译/音译)，需手动同步。
+let amllSubLineRaf: number | null = null;
+
+function syncAmllSubLines() {
+  if (!lyricsSettings.hidePlayed || !lyricsSettings.useAmllRenderer) {
+    amllSubLineRaf = null;
+    return;
+  }
+  const player = amllPlayerCompRef.value?.lyricPlayer;
+  if (player?.currentLyricLineObjects) {
+    const currentIdx = player.scrollToIndex;
+    for (let i = 0; i < player.currentLyricLineObjects.length; i++) {
+      const line = player.currentLyricLineObjects[i];
+      if (!line?.element?.children) continue;
+      const shouldHide = i < currentIdx;
+      for (let j = 1; j < line.element.children.length; j++) {
+        const child = line.element.children[j] as HTMLElement;
+        if (child.style.opacity !== (shouldHide ? '0' : '')) {
+          child.style.opacity = shouldHide ? '0' : '';
+        }
+      }
+    }
+  }
+  amllSubLineRaf = requestAnimationFrame(syncAmllSubLines);
+}
+
+function resetAmllSubLines() {
+  const player = amllPlayerCompRef.value?.lyricPlayer;
+  if (!player?.currentLyricLineObjects) return;
+  for (const line of player.currentLyricLineObjects) {
+    if (!line?.element?.children) continue;
+    for (let j = 1; j < line.element.children.length; j++) {
+      (line.element.children[j] as HTMLElement).style.opacity = '';
+    }
+  }
+}
+
+watch([() => lyricsSettings.hidePlayed, () => lyricsSettings.useAmllRenderer], ([hide, useAmll]) => {
+  if (hide && useAmll) {
+    if (!amllSubLineRaf) amllSubLineRaf = requestAnimationFrame(syncAmllSubLines);
+  } else {
+    resetAmllSubLines();
+  }
+}, { immediate: true });
+
 /* 用户手动滑动歌词时暂停高亮跟随，3s 无操作恢复 */
 const isUserScrolling = ref(false);
 let scrollTimer: ReturnType<typeof setTimeout> | null = null;
@@ -209,6 +256,7 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   if (scrollTimer) clearTimeout(scrollTimer);
+  if (amllSubLineRaf) { cancelAnimationFrame(amllSubLineRaf); amllSubLineRaf = null; }
 });
 
 watch(currentLyricIndex, async (idx, prev) => {

@@ -85,14 +85,20 @@
           </transition>
         </Teleport>
       </div>
-      <div class="speed-wrap" ref="speedWrapRef">
-        <button class="icon speed-btn" type="button" :class="{ active: showSpeedPopup }" data-tooltip="播放速度" aria-label="播放速度" @click.stop="toggleSpeedPopup">
-          <span class="speed-label">{{ playbackRateLabel }}</span>
-        </button>
+      <div class="eq-wrap" ref="eqWrapRef">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="icon" :class="{ active: showEqPanel }" data-tooltip="均衡器" aria-label="均衡器" @click.stop="showEqPanel = !showEqPanel">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg>
+        </AnimatedAppear>
+        <EqPanel :visible="showEqPanel" @close="showEqPanel = false" />
+      </div>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" data-tooltip="歌词" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :data-tooltip="isCurrentLiked ? '取消收藏' : '收藏'" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
+      <div class="settings-wrap" ref="settingsWrapRef">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" :class="{ active: showSettings }" data-tooltip="设置" aria-label="设置" @click.stop="toggleSettings"><Settings :size="14" /></AnimatedAppear>
         <Teleport to="body">
           <transition name="quality-fade">
-            <div v-if="showSpeedPopup" class="quality-popup-backdrop" @click.self="showSpeedPopup = false" @wheel.passive @touchmove.passive>
-              <div class="quality-popup speed-popup" :style="speedPopupStyle">
+            <div v-if="showSettings" class="quality-popup-backdrop" @click.self="showSettings = false" @wheel.passive @touchmove.passive>
+              <div class="quality-popup speed-popup" :style="settingsPopupStyle">
                 <div class="quality-popup__header">播放速度</div>
                 <div class="quality-popup__list">
                   <button
@@ -112,9 +118,6 @@
           </transition>
         </Teleport>
       </div>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="icon" data-tooltip="歌词" aria-label="歌词"><Captions :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="3" class-name="icon" :class="{ saved: isCurrentLiked, loading: likeLoading }" :aria-pressed="isCurrentLiked" :data-tooltip="isCurrentLiked ? '取消收藏' : '收藏'" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></AnimatedAppear>
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="4" class-name="icon" data-tooltip="设置" aria-label="设置"><Settings :size="14" /></AnimatedAppear>
       <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="5" class-name="icon" :data-tooltip="playModeTooltip" aria-label="切换播放模式" @click="playerStore.cyclePlayMode()">
         <Repeat v-if="playerStore.playMode === 'loop'" :size="14" />
         <Repeat1 v-else-if="playerStore.playMode === 'single'" :size="14" />
@@ -158,6 +161,7 @@ import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from
 import { userStore } from '../stores/user';
 import { clearCacheEntry } from '../stores/unblock-cache';
 import AnimatedAppear from './AnimatedAppear.vue';
+import EqPanel from './EqPanel.vue';
 import { useLyrics } from '../composables/useLyrics';
 import { showGlobalToast } from '../stores/loginModal';
 
@@ -197,18 +201,17 @@ async function dislikeFmTrack() {
 
 const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 2.5, 3.0];
 
-const playbackRateLabel = computed(() => `${playerStore.playbackRate.toFixed(2).replace(/\.?0+$/, '')}x`);
+const showSettings = ref(false);
+const showEqPanel = ref(false);
+const settingsWrapRef = ref<HTMLElement | null>(null);
+const settingsPopupStyle = ref<Record<string, string>>({});
 
-const showSpeedPopup = ref(false);
-const speedWrapRef = ref<HTMLElement | null>(null);
-const speedPopupStyle = ref<Record<string, string>>({});
-
-function toggleSpeedPopup() {
-  showSpeedPopup.value = !showSpeedPopup.value;
-  if (showSpeedPopup.value) {
+function toggleSettings() {
+  showSettings.value = !showSettings.value;
+  if (showSettings.value) {
     nextTick(() => {
-      if (!speedWrapRef.value) return;
-      const rect = speedWrapRef.value.getBoundingClientRect();
+      if (!settingsWrapRef.value) return;
+      const rect = settingsWrapRef.value.getBoundingClientRect();
       const estimatedHeight = Math.min(speedOptions.length * 38 + 16, 380);
       const gap = 8;
       const spaceAbove = rect.top;
@@ -217,14 +220,14 @@ function toggleSpeedPopup() {
       const fitsBelow = spaceBelow >= estimatedHeight + gap;
 
       if (fitsAbove || (!fitsBelow && spaceAbove >= spaceBelow)) {
-        speedPopupStyle.value = {
+        settingsPopupStyle.value = {
           position: 'fixed',
           top: `${rect.top - gap}px`,
           right: `${window.innerWidth - rect.right}px`,
           transform: 'translateY(-100%)',
         };
       } else {
-        speedPopupStyle.value = {
+        settingsPopupStyle.value = {
           position: 'fixed',
           top: `${rect.bottom + gap}px`,
           right: `${window.innerWidth - rect.right}px`,
@@ -236,7 +239,7 @@ function toggleSpeedPopup() {
 
 function selectSpeed(rate: number) {
   playerStore.setPlaybackRate(rate);
-  showSpeedPopup.value = false;
+  showSettings.value = false;
 }
 
 async function fetchQualitySizes() {
@@ -544,9 +547,7 @@ function formatTime(sec: number) {
 .quality-wrap { position: relative; flex-shrink: 0; }
 .icon.quality-icon { width: auto; min-width: 32px; padding: 0 8px; }
 .quality-btn-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
-.speed-btn { width: auto !important; min-width: 32px; padding: 0 8px; }
-.speed-label { font-size: 10px; font-weight: 700; line-height: 1; white-space: nowrap; }
-.speed-wrap { position: relative; flex-shrink: 0; }
+.settings-wrap { position: relative; flex-shrink: 0; }
 .icon { width: 32px; height: 32px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; display: grid; place-items: center; transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease; }
 .icon:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); color: var(--accent); }
 .icon.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, #fff); }

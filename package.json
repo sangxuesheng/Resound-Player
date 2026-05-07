@@ -6,7 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "dev:web": "vite",
-    "dev:api": "node node_modules/@neteasecloudmusicapienhanced/api/app.js",
+    "dev:api": "node scripts/start-api.cjs",
     "dev:web:full": "concurrently -k \"PORT=38761 npm run dev:api\" \"npm run dev:unblock\" \"npm run dev:unblock-match\" \"VITE_API_PROXY_TARGET=http://127.0.0.1:38761 npm run dev:web\"",
     "dev:renderer": "vite",
     "dev:electron": "wait-on tcp:5173 && electron .",

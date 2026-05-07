@@ -55,40 +55,66 @@
         />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" type="button" @click="emit('play-all', displayedRawItems)">播放全部</AnimatedAppear>
       </template>
+      <template #tabs>
+        <DetailTabBar
+          v-model="activeTab"
+          :tabs="tabs"
+          aria-label="播客详情标签"
+          v-model:search-query="searchQuery"
+          :show-search="activeTab === 'episodes'"
+        />
+      </template>
     </DetailStickyHeroHeader>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="playlist-detail-body">
-      <AnimatedAppear v-if="loading" tag="div" variant="text" rhythm="body" class-name="state">播客详情加载中…</AnimatedAppear>
-      <AnimatedAppear v-else-if="items.length" tag="ul" variant="content" rhythm="list" class-name="song-list">
-        <AnimatedAppear
-          v-for="(item, idx) in normalizedItems"
-          :key="item.key"
-          tag="li"
-          variant="text"
-          rhythm="list"
-          :index="idx"
-          class-name="song-item podcast-song-item"
-          :class="{ 'song-item--playing': isCurrentTrack(item.raw) }"
-          @dblclick="emit('play-item', { item: item.raw, index: item.originalIndex })"
-        >
-          <PlayPauseButton
-            :song-id="item.trackId"
-            :index-label="item.index"
-            @play="emit('play-item', { item: item.raw, index: item.originalIndex })"
-          />
-          <img class="song-cover" :src="item.coverUrl" :alt="item.name" loading="lazy" />
-          <div class="song-meta">
-            <div class="episode-title-row">
-              <p class="song-name">{{ item.name }}</p>
-              <div v-if="item.badges.length" class="status-badge-group">
-                <span v-for="badge in item.badges" :key="`${item.key}-${badge.label}`" class="status-badge" :class="`status-badge--${badge.tone}`">{{ badge.label }}</span>
+      <template v-if="loading">
+        <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="state">播客详情加载中…</AnimatedAppear>
+      </template>
+      <template v-else-if="activeTab === 'episodes'">
+        <AnimatedAppear v-if="filteredItems.length" tag="ul" variant="content" rhythm="list" class-name="song-list" :key="`${tabContentKey}:episodes`">
+          <AnimatedAppear
+            v-for="(item, idx) in filteredItems"
+            :key="item.key"
+            tag="li"
+            variant="text"
+            rhythm="list"
+            :index="idx"
+            class-name="song-item podcast-song-item"
+            :class="{ 'song-item--playing': isCurrentTrack(item.raw) }"
+            @dblclick="emit('play-item', { item: item.raw, index: item.originalIndex })"
+          >
+            <PlayPauseButton
+              :song-id="item.trackId"
+              :index-label="item.index"
+              @play="emit('play-item', { item: item.raw, index: item.originalIndex })"
+            />
+            <img class="song-cover" :src="item.coverUrl" :alt="item.name" loading="lazy" />
+            <div class="song-meta">
+              <div class="episode-title-row">
+                <p class="song-name">{{ item.name }}</p>
+                <div v-if="item.badges.length" class="status-badge-group">
+                  <span v-for="badge in item.badges" :key="`${item.key}-${badge.label}`" class="status-badge" :class="`status-badge--${badge.tone}`">{{ badge.label }}</span>
+                </div>
               </div>
+              <p v-if="item.description" class="episode-description">{{ item.description }}</p>
             </div>
-            <p v-if="item.description" class="episode-description">{{ item.description }}</p>
-          </div>
+          </AnimatedAppear>
         </AnimatedAppear>
-      </AnimatedAppear>
-      <AnimatedAppear v-else tag="div" variant="text" rhythm="body" class-name="state">暂无声音列表数据</AnimatedAppear>
+        <AnimatedAppear v-else tag="div" variant="text" rhythm="body" class-name="state">暂无声音列表数据</AnimatedAppear>
+      </template>
+      <template v-else-if="activeTab === 'comments'">
+        <div :key="`${tabContentKey}:comments`" class="playlist-comment-section">
+          <CommentPanel
+            :resource-id="Number(podcastRid || 0)"
+            :resource-type="7"
+            :fetcher="commentApi.getRadioComments"
+            :sender="(params) => commentApi.sendComment({ ...params, type: 7 })"
+            :liker="(params) => commentApi.likeComment({ ...params, type: 7 })"
+            :deleter="commentApi.deleteDjComment"
+            @open-user="(uid) => emit('open-user', uid)"
+          />
+        </div>
+      </template>
     </AnimatedAppear>
   </AnimatedAppear>
 </template>
@@ -103,7 +129,10 @@ import { playerStore } from '../stores/player';
 import { getVoiceDetail } from '../api/music';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import DetailTabBar from './ui/DetailTabBar.vue';
+import CommentPanel from './CommentPanel.vue';
 import { useEntitySubscribe } from '../composables/useEntitySubscribe';
+import * as commentApi from '../api/music';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
 
@@ -125,7 +154,25 @@ const emit = defineEmits<{
   (e: 'back'): void;
   (e: 'play-item', payload: { item: any; index: number }): void;
   (e: 'play-all', items: any[]): void;
+  (e: 'open-user', userId: number): void;
 }>();
+
+const activeTab = ref<'episodes' | 'comments'>('episodes');
+const tabs = [
+  { key: 'episodes', label: '声音' },
+  { key: 'comments', label: '评论' },
+] as const;
+const searchQuery = ref('');
+const tabContentKey = computed(() => `${podcastRid.value || 'pending'}:${activeTab.value}`);
+
+const filteredItems = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return normalizedItems.value;
+  return normalizedItems.value.filter(item => {
+    const name = (item.name || '').toLowerCase();
+    return name.includes(q);
+  });
+});
 
 const isDescriptionExpanded = ref(false);
 
@@ -165,6 +212,7 @@ const subscribeState = useEntitySubscribe({
   type: 'podcast',
   id: podcastRid as any,
 });
+
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = hero.value.coverUrl?.trim();
   return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};

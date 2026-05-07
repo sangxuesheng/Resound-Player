@@ -760,8 +760,6 @@ function openAlbum(albumId: number) {
   box-shadow: none;
 }
 
-
-
 :deep(.playlist-detail-header) {
   --hero-media-width: 308px;
   gap: var(--space-4);

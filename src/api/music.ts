@@ -773,6 +773,20 @@ export async function getDjComments(params: { id: number; limit?: number; offset
   return apiClient.get('/comment/dj', { params: { ...params, timestamp: Date.now() } });
 }
 
+/** 电台（频道）评论 — type=7 映射 A_DR_14_ */
+export async function getRadioComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
+  return apiClient.get('/comment/new', {
+    params: {
+      id: params.id,
+      type: 7,
+      pageNo: ((params.offset || 0) / (params.limit || 20)) + 1,
+      pageSize: params.limit || 20,
+      sortType: 1,
+      timestamp: Date.now(),
+    },
+  });
+}
+
 export async function getVideoComments(params: { id: number; limit?: number; offset?: number; cookie?: string }) {
   return apiClient.get('/comment/video', { params: { ...params, timestamp: Date.now() } });
 }
