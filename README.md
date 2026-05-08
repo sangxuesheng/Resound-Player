@@ -119,13 +119,11 @@ npm start
 ### 6. 构建前端资源
 
 ```bash
+# 构建前端（仅 web，默认 base=/）
 npm run build:web
-```
 
-或：
-
-```bash
-npm run build:renderer
+# 构建前端（自定义部署路径）
+VITE_BASE_URL=/music/ npm run build:web
 ```
 
 ## 常用脚本
@@ -135,20 +133,33 @@ npm run build:renderer
 | `npm run dev` | 启动桌面端开发环境 |
 | `npm run dev:desktop` | 启动 Vite + Electron |
 | `npm run dev:web` | 仅启动前端页面 |
-| `npm run dev:web:full` | 启动前端与独立 API 调试环境 |
+| `npm run dev:web:full` | 启动前端与独立 API 调试环境（并行：API + Unblock + 前端） |
 | `npm run dev:api` | 单独启动 API 服务 |
-| `npm run build:web` | 构建前端资源 |
+| `npm run dev:unblock` | 启动音源替换代理（端口 38762） |
+| `npm run dev:unblock-match` | 启动音源匹配服务（端口 38763） |
+| `npm run build:web` | 构建前端资源（Vite 构建，支持 `VITE_BASE_URL` 环境变量） |
 | `npm run check:animated-rhythm` | 检查动画节奏规范 |
 | `npm run fix:animated-rhythm` | 自动补齐缺失的动画节奏配置 |
 | `npm start` | 直接启动 Electron 应用 |
+
+## 生产部署
+
+项目支持以下两种生产部署方式，详见 [`deploy/README.md`](./deploy/README.md)：
+
+- **pm2 + Nginx**（推荐）：适用于有 root 权限的 VPS 或专用服务器
+- **Docker Compose**：适用于容器化环境，一键编排前端、API、Unblock 三服务
+
+部署前构建前端时需通过 `VITE_BASE_URL` 指定部署子路径（如 `VITE_BASE_URL=/ npm run build:web`）。
 
 ## 目录结构
 
 ```text
 .
+├── deploy/             # 生产部署（Docker、Nginx、pm2、SSL）
 ├── docs/               # 项目文档与规范
 ├── electron/           # Electron 主进程、预加载与内嵌 API 启动逻辑
 ├── scripts/            # 工程辅助脚本
+├── server/             # 音源匹配服务
 ├── src/
 │   ├── api/            # 接口访问层
 │   ├── components/     # 页面组件与通用组件

@@ -1,0 +1,71 @@
+# Gemini Music — Docker Compose Production Stack
+#
+# Three services:
+#   1. nginx       — Reverse proxy + static file serving + /dl-proxy (via Node.js)
+#   2. netease-api — NeteaseCloudMusicApiEnhanced
+#   3. unblock     — Unblock match server + unblock proxy
+#
+# Usage:
+#   docker compose -f deploy/docker-compose.yml up -d
+#   docker compose -f deploy/docker-compose.yml logs -f
+#   docker compose -f deploy/docker-compose.yml down
+#
+# To build locally:
+#   docker compose -f deploy/docker-compose.yml build
+#
+# To use pre-built images from Docker Hub:
+#   docker compose -f deploy/docker-compose.yml pull
+#   docker compose -f deploy/docker-compose.yml up -d
+
+services:
+  # ── Nginx reverse proxy ──
+  nginx:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    image: 934029151/gemini-music-frontend:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - netease-api
+      - unblock
+    restart: unless-stopped
+    networks:
+      - gemini-net
+
+  # ── NeteaseCloudMusicApiEnhanced ──
+  netease-api:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.api
+    image: 934029151/gemini-music-api:latest
+    ports:
+      - "38761:38761"
+    environment:
+      PORT: "38761"
+      NODE_ENV: "production"
+    restart: unless-stopped
+    networks:
+      - gemini-net
+
+  # ── Unblock services ──
+  unblock:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.unblock
+    image: 934029151/gemini-music-unblock:latest
+    expose:
+      - "38762"
+      - "38763"
+    environment:
+      ENABLE_FLAC: "true"
+      PORT: "38763"
+      UNBLOCK_SOURCES: "bodian,kugou,migu,qq,bilibili"
+    restart: unless-stopped
+    networks:
+      - gemini-net
+
+networks:
+  gemini-net:
+    driver: bridge

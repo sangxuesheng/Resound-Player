@@ -77,11 +77,102 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
+  // ── /dl-proxy: proxy audio with CORS + Range/206 support ──
+  if (path === '/dl-proxy' && (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS')) {
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Range, Content-Type');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    const targetUrl = url.searchParams.get('url');
+    if (!targetUrl) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing url parameter');
+      return;
+    }
+
+    let target;
+    try {
+      target = new URL(targetUrl);
+    } catch {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Invalid URL');
+      return;
+    }
+
+    const cookie = url.searchParams.get('cookie') || '';
+    const isHead = req.method === 'HEAD';
+
+    const options = {
+      hostname: target.hostname,
+      port: target.port || (target.protocol === 'https:' ? 443 : 80),
+      path: target.pathname + target.search,
+      method: isHead ? 'HEAD' : 'GET',
+      headers: {},
+    };
+
+    if (cookie) options.headers.Cookie = cookie;
+    if (req.headers.range) options.headers.Range = req.headers.range;
+    if (req.headers['if-range']) options.headers['If-Range'] = req.headers['if-range'];
+
+    const mod = target.protocol === 'https:' ? await import('https') : await import('http');
+
+    const proxyReq = mod.request(options, (proxyRes) => {
+      const responseHeaders = {};
+      const passthroughHeaders = [
+        'content-type',
+        'content-length',
+        'content-range',
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified',
+      ];
+      for (const key of passthroughHeaders) {
+        const value = proxyRes.headers[key];
+        if (typeof value === 'string') responseHeaders[key] = value;
+      }
+      responseHeaders['Access-Control-Allow-Origin'] = '*';
+      responseHeaders['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges';
+
+      res.writeHead(proxyRes.statusCode || 200, responseHeaders);
+      if (isHead) {
+        res.end();
+        proxyRes.resume();
+      } else {
+        proxyRes.pipe(res);
+      }
+    });
+
+    proxyReq.on('error', (err) => {
+      res.writeHead(502, { 'Content-Type': 'text/plain' });
+      res.end(err.message);
+    });
+
+    proxyReq.setTimeout(30000, () => {
+      proxyReq.destroy();
+      if (!res.headersSent) {
+        res.writeHead(504, { 'Content-Type': 'text/plain' });
+        res.end('Upstream timeout');
+      }
+    });
+
+    proxyReq.end();
+    return;
+  }
+
   res.writeHead(404);
   res.end();
 });
 
-server.listen(PORT, '127.0.0.1', async () => {
+server.listen(PORT, '0.0.0.0', async () => {
   console.log(`[unblock-match] server running on http://127.0.0.1:${PORT}`);
   console.log(`[unblock-match] default sources: ${global.source.join(',')}`);
   // 预初始化：加载匹配模块 + 预热 DNS，避免首次匹配延迟

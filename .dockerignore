@@ -1,0 +1,34 @@
+# Git
+.git/
+.gitignore
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-build/
+dist-electron/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Env files (keep .env.example)
+.env
+.env.local
+.env.production.local
+
+# Temp
+tmp/
+temp/

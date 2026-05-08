@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:38761';
 
   return {
-    base: './',
+    base: env.VITE_BASE_URL || '/',
     plugins: [
       vue(),
       {
