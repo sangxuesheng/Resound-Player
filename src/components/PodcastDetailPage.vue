@@ -127,9 +127,7 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import { playerStore } from '../stores/player';
-import { userStore } from '../stores/user';
 import { showGlobalToast } from '../stores/loginModal';
-import { getVoiceDetail } from '../api/music';
 import PlayPauseButton from './ui/PlayPauseButton.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
 import DetailTabBar from './ui/DetailTabBar.vue';
@@ -182,8 +180,6 @@ const isDescriptionExpanded = ref(false);
 const { isSticky, refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
-const voiceDetailById = ref<Record<number, any>>({});
-const loadingVoiceDetailIds = new Set<number>();
 const detail = computed(() => props.detail?.voiceList || props.detail?.data?.voiceList || props.detail?.data || props.detail || props.items?.[0]?.voiceList || props.items?.[0]?.detail || props.items?.[0]?.program?.radio || props.items?.[0]?.program || props.items?.[0] || null);
 const hero = computed(() => {
   const source = detail.value || {};
@@ -223,21 +219,18 @@ const shellStyle = computed<Record<string, string>>(() => {
 const displayedRawItems = computed(() => [...props.items].reverse());
 const normalizedItems = computed(() => displayedRawItems.value.map((item, idx) => {
   const originalIndex = props.items.length - idx - 1;
-  const voiceId = resolveVoiceId(item);
-  const detailItem = voiceId ? voiceDetailById.value[voiceId] : null;
-  const mergedItem = detailItem ? { ...item, ...detailItem, rawListItem: item } : item;
-  const displayStatus = String(mergedItem.displayStatus || '').trim();
+  const displayStatus = String(item.displayStatus || '').trim();
   const statusMeta = resolveStatusMeta(displayStatus);
-  const feeMeta = resolveFeeMeta(mergedItem);
+  const feeMeta = resolveFeeMeta(item);
 
   return {
     key: item.id || item.voiceId || item.programId || `${item.name || item.programName || 'voice'}-${originalIndex}`,
     index: idx + 1,
     originalIndex,
-    trackId: Number(mergedItem?.mainTrackId || mergedItem?.mainSong?.id || mergedItem?.song?.id || mergedItem?.program?.mainTrackId || mergedItem?.program?.mainSong?.id || 0),
-    name: mergedItem.name || mergedItem.programName || mergedItem.title || '声音内容',
-    coverUrl: mergedItem.coverUrl || mergedItem.picUrl || mergedItem.imgUrl || mergedItem.program?.coverUrl || mergedItem.program?.blurCoverUrl || mergedItem.radio?.picUrl || mergedItem.mainSong?.al?.picUrl || fallbackCover,
-    description: resolveEpisodeDescription(mergedItem),
+    trackId: Number(item?.mainTrackId || item?.mainSong?.id || item?.song?.id || item?.program?.mainTrackId || item?.program?.mainSong?.id || 0),
+    name: item.name || item.programName || item.title || '声音内容',
+    coverUrl: item.coverUrl || item.picUrl || item.imgUrl || item.program?.coverUrl || item.program?.blurCoverUrl || item.radio?.picUrl || item.mainSong?.al?.picUrl || fallbackCover,
+    description: resolveEpisodeDescription(item),
     badges: [feeMeta, statusMeta].filter((meta) => meta.label),
     raw: item,
   };
@@ -265,41 +258,6 @@ function resolveEpisodeDescription(item: any) {
     || '',
   ).trim();
 }
-
-function extractVoiceDetailPayload(payload: any) {
-  return payload?.data?.data || payload?.data?.voice || payload?.data?.detail || payload?.data || payload?.voice || payload?.detail || payload || null;
-}
-
-async function loadMissingVoiceDetails(items: any[]) {
-  const targets = items
-    .map(resolveVoiceId)
-    .filter((id) => id > 0 && !voiceDetailById.value[id] && !loadingVoiceDetailIds.has(id));
-
-  await Promise.all(targets.map(async (id) => {
-    loadingVoiceDetailIds.add(id);
-    try {
-      const res = await getVoiceDetail(id, userStore.loginCookie || undefined);
-      const payload = extractVoiceDetailPayload(res.data || res);
-      if (payload && typeof payload === 'object') {
-        voiceDetailById.value = { ...voiceDetailById.value, [id]: payload };
-      }
-    } catch {
-      // Voice detail is a best-effort metadata supplement for badges.
-    } finally {
-      loadingVoiceDetailIds.delete(id);
-    }
-  }));
-}
-
-watch(
-  () => props.items,
-  (items) => {
-    if (items?.length) {
-      void loadMissingVoiceDetails(items);
-    }
-  },
-  { immediate: true },
-);
 
 function resolveStatusMeta(status: string) {
   if (status === 'ONLINE') return { label: '已发布', tone: 'online' };
