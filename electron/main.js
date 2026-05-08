@@ -7,8 +7,6 @@ import { startEmbeddedApi, waitApiReady } from './apiProcess.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.disableHardwareAcceleration();
-app.commandLine.appendSwitch('disable-gpu-compositing');
 app.commandLine.appendSwitch('no-sandbox');
 
 const API_PORT_BASE = 38761;
