@@ -40,14 +40,14 @@ const STORAGE_KEY = 'gm_lyrics_settings_v1';
 const defaults: LyricsSettings = {
   showCover: true,
   displayMode: 'cover',
-  centerAlign: false,
+  centerAlign: true,
   showTranslation: true,
   showRomalrc: false,
   showLyrics: true,
-  showMiniBar: false,
+  showMiniBar: true,
   useAmllRenderer: false,
   autoPlayOnSeek: true,
-  followCoverColor: true,
+  followCoverColor: false,
   showBarLyric: true,
   contentWidth: 45,
   fontSize: 5,
@@ -63,7 +63,7 @@ const defaults: LyricsSettings = {
   iriColors: ['#3A29FF', '#FF94B4', '#FF3232'],
   iriSpeed: 5,
   iriScale: 5,
-  iriBlur: 0,
+  iriBlur: 10,
 };
 
 function hydrate(): LyricsSettings {

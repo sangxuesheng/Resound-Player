@@ -75,7 +75,7 @@ export const uiStore = reactive({
   resolvedTheme: 'light' as ResolvedTheme,
   accentMode: '绿色' as AccentMode,
   accentCustomColor: '#22c55e',
-  liquidGlassEnabled: true,
+  liquidGlassEnabled: false,
   unblockEnabled: true,
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   resumeAfterMv: true,
@@ -95,7 +95,7 @@ export const uiStore = reactive({
     this.themeMode = saved;
     this.accentMode = savedAccent;
     this.accentCustomColor = normalizeHexColor(savedAccentColor);
-    this.liquidGlassEnabled = savedGlass === null ? true : savedGlass === '1';
+    this.liquidGlassEnabled = savedGlass === null ? false : savedGlass === '1';
     const savedUnblock = localStorage.getItem(UNBLOCK_KEY);
     const savedUnblockSources = localStorage.getItem(UNBLOCK_SRC_KEY);
     this.unblockEnabled = savedUnblock === null ? true : savedUnblock === '1';
