@@ -8,7 +8,7 @@
       @click.self="playerStore.closeExpanded()"
     >
       <!-- 全屏封面（独立层）：有自定义背景时隐藏，让自定义背景覆盖 -->
-      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen' && !isCustomBg" class="fullscreen-cover" :style="coverStyle"></div>
+      <div v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'fullscreen' && !isCustomBg" class="fullscreen-cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle"></div>
       <Transition name="cover-switch" mode="out-in" appear>
         <div :key="trackId" class="cover-aura" :style="coverAuraStyle"></div>
       </Transition>
@@ -60,7 +60,7 @@
                 <template v-if="lyricsSettings.showCover && lyricsSettings.displayMode === 'cover'">
                   <Transition name="cover-switch" mode="out-in" appear>
                     <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
-                      <div class="album-cover" :style="coverStyle"></div>
+                      <div class="album-cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle"></div>
                     </div>
                   </Transition>
                 </template>
@@ -72,7 +72,7 @@
                         <img class="needle" src="/images/needle.png" alt="pointer" />
                       </div>
                       <div class="vinyl-disc" :class="{ playing: playerStore.isPlaying }">
-                        <div class="record-cover" :style="coverStyle" />
+                        <div class="record-cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle" />
                       </div>
                     </div>
                   </Transition>
@@ -285,6 +285,7 @@ import * as api from '../api/music';
 import { openSelection } from '../stores/lyricsSelection';
 import FancySwitch from './ui/FancySwitch.vue';
 import EqPanel from './EqPanel.vue';
+import { useBgLoaded } from '../composables/useBgLoaded';
 
 const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number]; 'open-user': [userId: number]; 'open-podcast-detail': [item: any] }>();
 
@@ -295,6 +296,7 @@ function openAlbum(albumId: number | undefined | null) {
   if (id > 0) emit('open-album', id);
 }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
+const coverLoaded = useBgLoaded(() => playerStore.currentTrack?.al?.picUrl || '');
 function openUser(userId: number) { if (userId > 0) emit('open-user', userId); }
 function openPodcastDetail() {
   const rid = currentPodcastRid.value;

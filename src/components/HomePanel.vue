@@ -9,7 +9,7 @@
     <AnimatedAppear tag="section" variant="content" rhythm="head" class-name="home-top-reco">
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="0">
         <button v-if="dailyRecommendSongs.length" class="radar-hero poster" :title="dailyRecommendHeroTitle" @click="openDailyRecommendDetail">
-          <span class="radar-bg" :class="{ 'bg-loaded': dailyBgLoaded }" :style="{ backgroundImage: `url(${dailyRecommendCoverUrl || ''})` }"></span>
+          <span class="radar-bg fade-in-bg" :class="{ 'bg-loaded': dailyBgLoaded }" :style="{ backgroundImage: `url(${dailyRecommendCoverUrl || ''})` }"></span>
           <span class="radar-poster-top">
             <span class="radar-top-title">每日推荐</span>
           </span>
@@ -45,7 +45,7 @@
 
       <AnimatedAppear v-if="userStore.isLogin" tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
         <button v-if="topRecoCard" class="radar-hero poster" :title="topRecoCard.name" @click="openRecoDetail(topRecoCard.id)">
-          <span class="radar-bg" :class="{ 'bg-loaded': topRecoBgLoaded }" :style="{ backgroundImage: `url(${topRecoCardCoverUrl})` }"></span>
+          <span class="radar-bg fade-in-bg" :class="{ 'bg-loaded': topRecoBgLoaded }" :style="{ backgroundImage: `url(${topRecoCardCoverUrl})` }"></span>
           <span class="radar-poster-top">
             <span class="radar-top-title">{{ topRecoCardTitle }}</span>
             <button
@@ -91,7 +91,7 @@
         <p v-if="personalFmLoading" class="mini-desc">正在获取私人 FM…</p>
         <p v-else-if="personalFmError" class="mini-desc error">{{ personalFmError }}</p>
         <button v-else-if="personalFmTracks.length" class="fm-hero poster" :title="personalFmTracks[0]?.name" @click="playPersonalFmByIndex(0)">
-          <span class="fm-bg" :class="{ 'bg-loaded': fmBgLoaded }" :style="{ backgroundImage: `url(${personalFmCoverUrl})` }"></span>
+          <span class="fm-bg fade-in-bg" :class="{ 'bg-loaded': fmBgLoaded }" :style="{ backgroundImage: `url(${personalFmCoverUrl})` }"></span>
           <span class="fm-poster-top">
             <span class="fm-top-title">私人 FM</span>
           </span>
@@ -369,6 +369,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useBgLoaded } from '../composables/useBgLoaded';
 import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic } from '../api/music';
 import { getUserCreatedPlaylist } from '../api/auth';
 import { playerStore } from '../stores/player';
@@ -496,23 +497,6 @@ const personalFmCoverUrl = computed(() => {
   return first?.album?.picUrl || first?.al?.picUrl || first?.artists?.[0]?.img1v1Url || '';
 });
 
-// 预加载背景图片，防止 JPEG 逐行渲染导致的半图卡顿
-function useBgLoaded(src: () => string) {
-  const loaded = ref(false);
-  watch(
-    src,
-    (url) => {
-      if (!url) { loaded.value = false; return; }
-      loaded.value = false;
-      const img = new Image();
-      img.onload = () => { loaded.value = true; };
-      img.onerror = () => { loaded.value = true; };
-      img.src = url;
-    },
-    { immediate: true },
-  );
-  return loaded;
-}
 const dailyBgLoaded = useBgLoaded(() => dailyRecommendCoverUrl.value);
 const topRecoBgLoaded = useBgLoaded(() => topRecoCardCoverUrl.value);
 const fmBgLoaded = useBgLoaded(() => personalFmCoverUrl.value);
@@ -1485,8 +1469,7 @@ async function playLatestSong(index: number) {
 
 .radar-card { padding: 0; border-radius: 12px; overflow: hidden; }
 .radar-hero.poster { position: relative; width: 100%; height: 344px; border: none; padding: 0; margin: 0; background: #9ca3af; cursor: pointer; overflow: hidden; display: block; }
-.radar-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); opacity: 0; transition: opacity 0.25s ease; }
-.radar-bg.bg-loaded { opacity: 1; }
+.radar-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .radar-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .radar-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: var(--space-2); z-index: 2; }
 .radar-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
@@ -1509,8 +1492,7 @@ async function playLatestSong(index: number) {
 
 .fm-card { padding: 0; border-radius: 12px; overflow: hidden; }
 .fm-hero.poster { position: relative; width: 100%; height: 344px; border: none; padding: 0; margin: 0; background: #9ca3af; cursor: pointer; overflow: hidden; display: block; }
-.fm-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); opacity: 0; transition: opacity 0.25s ease; }
-.fm-bg.bg-loaded { opacity: 1; }
+.fm-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .fm-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .fm-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: 10px; z-index: 2; }
 .fm-top-title { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }

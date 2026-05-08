@@ -15,7 +15,7 @@
       >
         <template #media>
           <div class="hero-media-shell">
-            <div class="cover cover-fallback" :style="coverStyle">
+            <div class="cover cover-fallback fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle">
               <span class="cover-overlay"></span>
               <span class="cover-label">Daily</span>
               <span class="cover-title">Recommend</span>
@@ -85,6 +85,7 @@ import PlayPauseButton from './ui/PlayPauseButton.vue';
 import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getRecommendSongs } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
+import { useBgLoaded } from '../composables/useBgLoaded';
 
 const props = withDefaults(
   defineProps<{
@@ -139,6 +140,7 @@ const fallbackCover = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
 const coverStyle = computed(() => ({
   backgroundImage: `url(${dailyCoverUrl.value || fallbackCover})`,
 }));
+const coverLoaded = useBgLoaded(() => dailyCoverUrl.value || '');
 
 function formatArtists(song: any) {
   return song?.ar?.map((artist: any) => artist?.name).filter(Boolean).join(' / ') || '未知歌手';

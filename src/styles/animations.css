@@ -379,3 +379,12 @@ img.entity-cover.cover-image,
     filter: none !important;
   }
 }
+
+/* 图片预加载渐入：配合 useBgLoaded composable 使用 */
+.fade-in-bg {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.fade-in-bg.bg-loaded {
+  opacity: 1;
+}

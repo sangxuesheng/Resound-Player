@@ -2,7 +2,7 @@
   <AnimatedAppear tag="footer" variant="content" rhythm="overlay" class-name="bar">
     <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="left">
       <AnimatedAppear tag="div" variant="media" rhythm="list" class-name="cover-wrap">
-        <button class="cover" :style="coverStyle" @click="playerStore.openExpanded()" />
+        <button class="cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle" @click="playerStore.openExpanded()" />
         <button class="cover-fullscreen-btn" title="全屏" @click="playerStore.openExpanded()"><svg width="24" height="24" viewBox="0 0 1024 1024" fill="currentColor" transform="scale(-1,1)"><path d="M256 170.666667a128 128 0 0 0-128 128v213.333333a42.666667 42.666667 0 1 0 85.333333 0V298.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h213.333333a42.666667 42.666667 0 1 0 0-85.333333H256z m512 682.666666a128 128 0 0 0 128-128v-170.666666a42.666667 42.666667 0 1 0-85.333333 0v170.666666a42.666667 42.666667 0 0 1-42.666667 42.666667h-192a42.666667 42.666667 0 1 0 0 85.333333H768z"/></svg></button>
       </AnimatedAppear>
       <div class="meta">
@@ -164,6 +164,7 @@ import AnimatedAppear from './AnimatedAppear.vue';
 import EqPanel from './EqPanel.vue';
 import { useLyrics } from '../composables/useLyrics';
 import { showGlobalToast } from '../stores/loginModal';
+import { useBgLoaded } from '../composables/useBgLoaded';
 
 const qualityOptions = [
   { label: '标准', level: 'standard', vip: '' },
@@ -435,6 +436,7 @@ const coverStyle = computed(() => {
   if (!url) return {};
   return { backgroundImage: `url(${url})` };
 });
+const coverLoaded = useBgLoaded(() => playerStore.currentTrack?.al?.picUrl || '');
 
 const playModeTooltip = computed(() => {
   if (playerStore.playMode === 'loop') return '列表循环';
