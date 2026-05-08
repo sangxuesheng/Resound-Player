@@ -723,7 +723,10 @@ export const playerStore = reactive({
     this.loading = true;
     try {
       let playUrl = track.url || '';
-      // 直连获取 URL + fee（绕过 proxy 拦截器，不重复调用）
+      // 使用 apiClient 的 proxy 逻辑：通过 unblock proxy 获取歌曲 URL
+      const unblockProxyUrl = (typeof window !== 'undefined' && (window as any).appEnv?.unblockProxyUrl)
+        || import.meta.env.VITE_NCM_PROXY
+        || 'http://127.0.0.1:38762';
 
       // 并行：fee 探测 + uiStore 导入 + 音源匹配（三者同时发起）
       const nocookie = userStore.loginCookie || undefined;
@@ -732,6 +735,9 @@ export const playerStore = reactive({
       if (!userStore.isVip && VIP_ONLY_API_LEVELS.has(level)) {
         level = 'exhigh';
       }
+      // 不传 proxy 参数给 fee 探测 — 直连判断官方可播性
+      // unblock proxy 的 CONNECT 隧道对 music.163.com HTTPS 握手会失败
+      // 音源替换由下方的 tryUnblockMatch 独立负责
       const qs = `id=${track.id}&level=${level}${nocookie ? '&cookie=' + encodeURIComponent(nocookie) : ''}`;
       const feePromise = fetch(`/api/song/url/v1?${qs}`);
       const uiImport = import("../stores/ui");

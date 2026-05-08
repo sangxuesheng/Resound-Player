@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-const UNBLOCK_PROXY = import.meta.env.VITE_NCM_PROXY || 'http://127.0.0.1:38762';
-
 // 运行时由 uiStore.setUnblockEnabled() 设置，控制 apiClient 是否添加 proxy 参数
 let _unblockEnabled = true;
 export function setUnblockProxyEnabled(enabled: boolean) {
@@ -23,24 +21,6 @@ export const apiClient = axios.create({
   baseURL: getResolvedApiBaseUrl(),
   withCredentials: true,
   timeout: 15000,
-});
-
-const UNBLOCK_ENDPOINTS = ['/song/url', '/song/url/v1'];
-
-apiClient.interceptors.request.use((config) => {
-  if (!_unblockEnabled) {
-    return config;
-  }
-  const url = config.url || '';
-  const matches = UNBLOCK_ENDPOINTS.some((ep) => url.includes(ep));
-  if (!matches) {
-    return config;
-  }
-  config.params = {
-    ...(config.params || {}),
-    proxy: UNBLOCK_PROXY,
-  };
-  return config;
 });
 
 export async function waitForApiReady(options?: {

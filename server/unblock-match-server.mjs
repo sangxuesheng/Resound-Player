@@ -1,6 +1,6 @@
 import http from 'http';
 
-const PORT = 38763;
+const PORT = Number(process.env.PORT) || 38763;
 
 // FOLLOW_SOURCE_ORDER not set — uses Promise.any (race all sources, fastest wins)
 

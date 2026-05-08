@@ -1,10 +1,20 @@
 import { contextBridge } from 'electron';
 
-const arg = process.argv.find((s) => s.startsWith('--embedded-api-port='));
-const parsed = arg ? Number(arg.split('=')[1]) : NaN;
-const apiPort = Number.isFinite(parsed) ? parsed : 38761;
+// Parse the --service-ports argument injected by main.js
+const portsArg = process.argv.find((s) => s.startsWith('--service-ports='));
+let ports = { api: 38761, unblockProxy: 38762, unblockMatch: 38763 };
+if (portsArg) {
+  try {
+    const parsed = JSON.parse(portsArg.split('=')[1]);
+    ports = { ...ports, ...parsed };
+  } catch {
+    // fall back to defaults
+  }
+}
 
 contextBridge.exposeInMainWorld('appEnv', {
-  apiPort,
-  apiBaseUrl: `http://127.0.0.1:${apiPort}`,
+  apiPort: ports.api,
+  apiBaseUrl: `http://127.0.0.1:${ports.api}`,
+  unblockProxyUrl: `http://127.0.0.1:${ports.unblockProxy}`,
+  unblockMatchUrl: `http://127.0.0.1:${ports.unblockMatch}`,
 });

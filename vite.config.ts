@@ -6,6 +6,7 @@ import https from 'https';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const proxyTarget = env.VITE_API_PROXY_TARGET || 'http://127.0.0.1:38761';
+  const unblockMatchTarget = env.VITE_UNBLOCK_MATCH_TARGET || 'http://127.0.0.1:38763';
 
   return {
     base: env.VITE_BASE_URL || '/',
@@ -89,7 +90,7 @@ export default defineConfig(({ mode }) => {
           rewrite: (p) => p.replace(/^\/api/, ''),
         },
         '/unblock-api': {
-          target: 'http://127.0.0.1:38763',
+          target: unblockMatchTarget,
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/unblock-api/, ''),
         },
