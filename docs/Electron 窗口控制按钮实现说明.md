@@ -20,28 +20,52 @@
 
 ### 1. `electron/main.js` — 主进程事件监听
 
-在 `createMainWindow` 函数中添加 `page-title-updated` 监听：
+#### BrowserWindow 创建优化
 
 ```javascript
-// 窗口控制：通过 page-title-updated 事件监听（绕过 IPC / contextBridge 限制）
+win = new BrowserWindow({
+  // ...
+  show: false,                              // 先隐藏，等就绪再显示
+  backgroundColor: '#111827',               // 匹配暗色主题实际背景色
+  webPreferences: {
+    // ...
+    backgroundThrottling: false,            // 窗口动画期间不节流 RAF
+  },
+});
+
+// 内容就绪后再显示，避免首帧白屏 + resize 时 GPU 滞后
+win.once('ready-to-show', () => {
+  win.show();
+});
+```
+
+#### 窗口控制事件监听（必须在 loadURL 之前注册）
+
+`page-title-updated` 事件监听器必须在 `win.loadURL()` / `win.loadFile()` **之前**注册，确保从页面加载初期就能捕获 `document.title` 变更：
+
+```javascript
 let _originalTitle = '';
 win.webContents.on('page-title-updated', (event, title) => {
   if (title === 'cmd:minimize' || title === 'cmd:maximize') {
     event.preventDefault();
-    if (title === 'cmd:minimize') win.minimize();
-    else if (win.isMaximized()) win.unmaximize();
-    else win.maximize();
-    setTimeout(() => { if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic'); }, 50);
+    if (title === 'cmd:minimize') {
+      win.minimize();
+    } else if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+    // 延迟恢复原标题，确保 macOS 窗口动画完成后再重置
+    setTimeout(() => {
+      if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic');
+    }, 80);
   } else {
     _originalTitle = title;
   }
 });
-```
 
-关键点：
-- `event.preventDefault()` 阻止标题实际变更
-- `_originalTitle` 保存真实标题，操作后恢复
-- `setTimeout` 延迟恢复标题，确保窗口操作完成
+await win.loadURL(process.env.VITE_DEV_SERVER_URL);
+```
 
 ### 2. `src/components/TopBar.vue` — 渲染进程按钮
 
@@ -115,6 +139,10 @@ window.postMessage({ type: 'window-control', action: 'minimize' }, '*');
 2. **`postMessage` 不通** — `contextIsolation: true` 时，两个世界的 `window` 是隔离的，`postMessage` 无法跨世界通信。
 3. **`page-title-updated` 事件可靠** — `document.title` 是标准 Web API，`page-title-updated` 是 Electron 稳定的 WebContents 事件。
 4. **`window.close()` 原生可用** — 关闭窗口不需要任何 IPC。
+5. **监听器必须在 `loadURL` 前注册** — 确保从页面加载初期就能捕获标题变更，macOS 上尤为关键。
+6. **`backgroundThrottling: false` 消除动画卡顿** — 窗口最大化/还原动画期间，Electron 默认会节流 `requestAnimationFrame`，关闭后动画明显流畅。
+7. **`show: false` + `ready-to-show` 提升首屏体验** — 避免窗口在内容就绪前显示导致的 GPU 滞后和背景色闪变。
+8. **`backgroundColor` 必须匹配实际背景色** — 不匹配时窗口边缘会闪现色差，暗色主题应设为 `#111827`。
 
 ---
 
