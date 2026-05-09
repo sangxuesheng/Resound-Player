@@ -97,6 +97,7 @@
               <button class="menu-item" type="button" @click="emitMenuAction('open-user')">用户中心</button>
               <button class="menu-item" type="button" @click="emitMenuAction('open-settings-page')">设置页面</button>
               <button class="menu-item" type="button" @click="refreshLoginState">刷新登录状态</button>
+              <button v-if="platform.isDesktop" class="menu-item" type="button" @click="forceReload">强制重新加载</button>
             </div>
 
             <div class="menu-section">
@@ -127,6 +128,7 @@ import { userStore } from '../stores/user';
 import { playerStore } from '../stores/player';
 import { useAuthAction } from '../composables/useAuthAction';
 import { showGlobalToast } from '../stores/loginModal';
+import { platform } from '../utils/platform';
 
 const RECENT_KEY = 'tm_search_history';
 const emit = defineEmits<{
@@ -432,6 +434,10 @@ async function logoutUser() {
   await userStore.logout();
   closeUserMenu();
   emit('user-click');
+}
+
+function forceReload() {
+  window.location.reload();
 }
 
 function onDocClick(e: MouseEvent) {
