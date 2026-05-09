@@ -83,6 +83,104 @@ let serviceChildren = {};
 let win = null;
 
 /**
+ * 设置中文菜单
+ */
+function setupChineseMenu() {
+  const isMac = process.platform === 'darwin';
+
+  const template = [
+    // macOS 应用菜单（手动中文定义）
+    ...(isMac ? [{
+      label: 'Gemini Music',
+      submenu: [
+        {
+          label: '关于 Gemini Music',
+          click: async () => {
+            const { dialog } = await import('electron');
+            dialog.showMessageBox({
+              type: 'info',
+              title: '关于 Gemini Music',
+              message: 'Gemini Music',
+              detail: '基于 NeteaseCloudMusicApi 的跨平台音乐播放器\n版本 ' + app.getVersion(),
+            });
+          },
+        },
+        { type: 'separator' },
+        { role: 'services', label: '服务' },
+        { type: 'separator' },
+        { role: 'hide', label: '隐藏 Gemini Music' },
+        { role: 'hideOthers', label: '隐藏其他' },
+        { role: 'unhide', label: '显示全部' },
+        { type: 'separator' },
+        { role: 'quit', label: '退出 Gemini Music' },
+      ],
+    }] : []),
+
+    // 文件
+    {
+      label: '文件',
+      submenu: [
+        isMac ? { role: 'close', label: '关闭窗口' } : { role: 'quit', label: '退出' },
+      ],
+    },
+
+    // 编辑
+    {
+      label: '编辑',
+      submenu: [
+        { role: 'undo', label: '撤销' },
+        { role: 'redo', label: '重做' },
+        { type: 'separator' },
+        { role: 'cut', label: '剪切' },
+        { role: 'copy', label: '复制' },
+        { role: 'paste', label: '粘贴' },
+        { role: 'selectAll', label: '全选' },
+      ],
+    },
+
+    // 视图
+    {
+      label: '视图',
+      submenu: [
+        { role: 'reload', label: '重新加载' },
+        { role: 'forceReload', label: '强制重新加载' },
+        { role: 'toggleDevTools', label: '开发者工具' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: '重置缩放' },
+        { role: 'zoomIn', label: '放大' },
+        { role: 'zoomOut', label: '缩小' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: '全屏' },
+      ],
+    },
+
+    // 窗口
+    {
+      label: '窗口',
+      submenu: [
+        { role: 'minimize', label: '最小化' },
+        ...(isMac ? [
+          { role: 'zoom', label: '缩放' },
+          { type: 'separator' },
+          { role: 'front', label: '全部置于顶层' },
+        ] : [
+          { role: 'close', label: '关闭' },
+        ]),
+      ],
+    },
+
+    // 帮助
+    {
+      label: '帮助',
+      submenu: [],
+    },
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+/**
  * Create the main window with all service ports passed to preload.
  */
 async function createMainWindow(ports) {
@@ -207,6 +305,7 @@ async function bootstrap() {
 
   // ── Create main window ──
   console.log('[main] API 就绪，创建主窗口...');
+  setupChineseMenu();
   await createMainWindow(ports);
   console.log('[main] 启动流程完成，端口:', ports);
 }
