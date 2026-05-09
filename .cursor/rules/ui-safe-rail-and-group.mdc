@@ -1,0 +1,166 @@
+---
+description: Gemini 音乐项目 UI 防裁切规范，约束横向滚动容器、紧凑按钮组与 hover 上浮元素的安全写法
+---
+
+# Gemini 音乐项目 UI 防裁切规范
+
+本规范用于约束项目内所有按钮、横向分类、横向滚动列表、紧凑切换器等交互 UI，避免出现：
+
+- 按钮 hover 后上边缘缺一块
+- 圆角、边框、阴影被父级裁切
+- 横向分类项、标签项或卡片项被父级 `overflow` 挡住
+
+本规范是 `development-spec.mdc` 的补充细则。后续遇到同类 UI 问题，应优先回到公共样式基线处理，而不是在页面里继续散写临时补丁。
+
+## 1. 问题模式定义
+
+以下组合属于高风险 UI：
+
+1. 父级容器存在裁切行为
+   - `overflow: hidden`
+   - `overflow-y: hidden`
+   - 横向滚动容器默认隐藏纵向溢出
+
+2. 子级交互元素存在外溢行为
+   - `transform: translateY(-1px)` / `translateY(-2px)`
+   - hover 阴影向外扩散
+   - 激活态边框或光晕超出原始盒子
+
+只要这两类条件同时出现，就必须检查是否会发生视觉裁切。
+
+## 2. 公共样式基线
+
+项目已在 `src/styles/theme.css` 中沉淀两个公共安全类。
+
+### 2.1 `ui-safe-rail`
+
+用于：
+
+- 横向滚动标签栏
+- 横向分类 chips
+- 横向滚动卡片 rail
+- 历史记录 chips 区
+- 任何“可横向滚动 + 子项 hover 可能上浮”的容器
+
+职责：
+
+- 保留横向滚动能力
+- 允许纵向可见，避免 hover 被裁切
+- 提供轻微顶部安全空间
+- 统一隐藏滚动条表现
+
+使用方式：
+
+```html
+<div class="category-tabs ui-safe-rail">...</div>
+```
+
+### 2.2 `ui-safe-group`
+
+用于：
+
+- section switch
+- segmented controls
+- tab 容器
+- 紧凑按钮组
+- 任何“非滚动但内部按钮 hover 会上浮”的紧凑容器
+
+职责：
+
+- 保持容器 `overflow: visible`
+- 提供轻微顶部安全空间
+- 避免按钮 hover 后贴边被裁
+
+使用方式：
+
+```html
+<div class="section-switch ui-safe-group">...</div>
+```
+
+## 3. 强制约束
+
+### 3.1 横向交互容器
+
+新增横向交互容器时，如果满足以下任一条件，应优先挂 `ui-safe-rail`：
+
+- 子项有 hover 上浮
+- 子项有 hover 阴影增强
+- 子项有 active 态边框外扩
+- 容器存在横向滚动
+
+禁止继续在页面里重复散写以下组合，除非确有特殊布局原因：
+
+- `overflow-x: auto` + `overflow-y: visible`
+- `padding-top: 2px`
+- `scrollbar-width: none`
+- `-ms-overflow-style: none`
+
+这些能力应优先复用 `ui-safe-rail`。
+
+### 3.2 紧凑按钮组
+
+新增按钮组容器时，如果内部按钮存在 hover 上浮或 hover 阴影增强，应优先挂 `ui-safe-group`。
+
+禁止继续在页面里为了防裁切单独堆叠：
+
+- 额外顶部 padding 补丁
+- 临时 `overflow: visible`
+- 只为防裁切存在的局部容器修补
+
+这些能力应优先复用 `ui-safe-group`。
+
+## 4. 开发顺序
+
+遇到“按钮缺一块 / 被父级挡住”的问题时，处理顺序必须是：
+
+1. 先确认是否属于“父级裁切 + 子级外溢”的组合
+2. 先尝试接入 `ui-safe-rail` 或 `ui-safe-group`
+3. 再检查页面私有样式是否还能删除重复补丁
+4. 最后才考虑局部特例覆盖
+
+禁止一上来就在页面里继续补：
+
+- 单独 `padding-top: 2px`
+- 单独 `overflow-y: visible`
+- 单独 `overflow: visible`
+
+除非经过确认该场景无法复用公共基线。
+
+## 5. 适用范围
+
+本规范适用于但不限于：
+
+- 播客分类标签栏
+- 播客横向内容列表
+- 歌单分类标签栏
+- 搜索历史 chips 区
+- 设置页顶部 tabs
+- 排行榜横向推荐区
+- 详情页局部切换器
+- 历史页 / 用户页 / 搜索页后续新增的横向按钮组
+
+## 6. Code Review 检查项
+
+后续所有 UI 改动都必须额外检查：
+
+- 是否新增了 hover 上浮元素
+- 父级是否存在 `overflow` 裁切
+- 横向滚动容器是否已优先复用 `ui-safe-rail`
+- 紧凑按钮组是否已优先复用 `ui-safe-group`
+- 是否存在可以删除的重复局部补丁
+
+## 7. 落地要求
+
+如果后续新增页面、组件或样式出现以下关键词，应主动联想到本规范：
+
+- 横向分类
+- tabs
+- segmented
+- chips
+- rail
+- scroll
+- hover lift
+- 阴影增强
+- 按钮上浮
+
+发现这些场景时，不要等问题出现后再修，应该在开发时就主动套用公共安全类。

@@ -21,7 +21,6 @@ desktop-dist/
 !.env.example
 
 # editor / local tooling
-.cursor/
 .lingma/
 .claude/
 .codeartsdoer/

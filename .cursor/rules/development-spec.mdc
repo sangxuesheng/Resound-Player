@@ -1,0 +1,710 @@
+---
+description: Gemini 音乐项目开发规范，汇总样式统一、详情页公共样式、动画与收藏按钮标准
+---
+
+# Gemini 音乐项目开发规范
+
+本规范用于统一项目内页面、组件、样式、动画与收藏交互的开发方式。后续新增功能、页面、组件时，应优先遵循本文件，而不是在业务代码中临时补充局部约定。
+
+## 1. 总体原则
+
+- 优先复用现有组件、样式和状态管理，不重复造轮子
+- 新功能接入前先检查是否已有标准组件、公共样式或统一 API
+- 保持页面结构稳定，避免为了局部效果改网格、改尺寸、改布局层级
+- 所有改动完成后必须做 lint 自检
+- 样式优先使用 token 和公共样式，不在页面内堆叠硬编码数值
+
+## 2. 样式统一规范
+
+### 2.1 spacing 统一
+
+项目已统一 spacing 体系，新增样式优先使用以下 token：
+
+- `--space-1`
+- `--space-2`
+- `--space-3`
+- `--space-4`
+- `--space-5`
+- `--space-6`
+- `--space-8`
+
+要求：
+
+- `gap`、`padding`、`margin` 优先使用 token
+- 不在同一类页面中混用多套间距尺度
+- 列表项、卡片、操作区尽量保持一致节奏
+
+### 2.2 页面结构统一
+
+页面结构应尽量保持以下一致性：
+
+- 页面根容器使用统一的 shell 结构
+- 标题、说明、操作区、内容区的层级清晰
+- 卡片与面板的圆角、阴影、边距尽量统一
+- 复杂页面优先拆成可复用区块，不要在单页里重复实现多个近似结构
+
+### 2.3 原子控件统一
+
+`src/components/ui/` 下的原子控件应保持统一视觉和交互节奏：
+
+- 按钮高度一致
+- 下拉、开关、图标按钮等控件复用统一样式基线
+- 控件状态至少覆盖 `:hover` / `:active` / `:disabled`
+- 新增原子控件先考虑扩展现有组件，而不是新写一套风格
+
+## 3. 全局主题与设计系统
+
+### 3.1 theme.css 的定位
+
+`src/styles/theme.css` 是项目全局设计系统入口之一，主要负责：
+
+- 颜色 token
+- 圆角 token
+- 玻璃效果 token
+- 间距 token
+- 布局辅助变量
+- 统一交互状态
+- 兼容兜底规则
+
+### 3.2 使用原则
+
+- 优先使用 `--bg-*`、`--text-*`、`--border*`、`--accent*`、`--danger*`
+- 优先使用 `--radius-*`、`--glass-*`、`--space-*`、`--layout-*`
+- 避免在组件中重复定义接近主题能力的硬编码颜色和阴影
+- 兼容样式应保留，但不要把临时补丁继续扩展成新的主规范
+
+### 3.5 按钮体系与液态玻璃基线
+
+项目已在 `src/styles/theme.css` 中沉淀统一按钮体系，后续所有普通按钮、胶囊按钮、筛选按钮、tab 按钮、菜单项按钮、下拉触发器等，应优先接入按钮基线，而不是在页面内重复散写一套 border / background / box-shadow。
+
+当前可复用的按钮能力包括：
+
+- token：`--button-surface-*`
+- danger token：`--button-danger-*`
+- size / radius token：`--button-height-*`、`--button-radius-*`
+- 语义类：`.button-surface`、`.button-surface--danger`
+
+使用原则：
+
+- 普通操作按钮、返回按钮、搜索按钮、更多按钮、chip、tab、菜单项、下拉触发器优先接入统一按钮 surface
+- `AnimatedAppear` 包装出来的 `tag="button"` 也应通过 `class-name` 接入统一按钮语义，不要只在普通 `<button>` 上接入
+- 默认态、`:hover`、`:active`、`:disabled` 应优先复用主题层 token，不要在页面中重复散写同一套玻璃按钮状态
+- 如果按钮只是列表行内播放控制、波形状态、媒体卡片点击壳等特殊交互，不要强行套用普通按钮 surface
+- 危险操作优先使用 `.button-surface--danger`，不要在页面里散写私有 danger 玻璃态
+
+强制约束：
+
+- 新增按钮前，先判断它属于“标准按钮”还是“特例交互控件”
+- 属于标准按钮时，优先挂 `.button-surface` 或复用已接入按钮类
+- 页面里如果出现 `border: 1px solid var(--border)` + `background: var(--bg-muted)` + hover 阴影的组合，应先判断是否其实是在重复实现全局按钮基线
+- 处理顺序必须是：先接入全局按钮基线，再删除页面私有重复样式，最后才保留确有必要的特例
+
+特例边界：
+
+- `PlayPauseButton`：属于列表行内播放控制器，保留特例，不按普通玻璃按钮处理
+- `BookmarkIconButton`：属于标准收藏入口组件，应继续复用，但视觉扩展优先基于 token 调整，不要重新散写一套 heart 按钮
+- 卡片式 action 区、媒体卡片点击壳、列表大行点击块，默认按卡片 / 行交互处理，不强行归入普通按钮 surface
+
+### 3.6 弹窗/下拉窗/上拉窗背景必须不透明
+
+所有弹出层、下拉菜单、上滑面板等浮层组件的**内容面板**背景必须使用不透明色，禁止使用半透明或玻璃透明背景。
+
+**强制约束：**
+
+- 弹窗/下拉窗/上拉窗面板背景必须使用 `var(--bg-solid)`，禁止使用 `var(--bg-surface)`、`var(--bg-muted)` 等半透明 token
+- 弹窗内部列表项的 hover/active 背景也必须使用不透明色（如 `color-mix(in srgb, var(--accent) 6%, var(--bg-solid))`）
+- 菜单项（`.menu-item`）、下拉菜单（`.dd-menu`）、用户菜单（`.user-menu`）、搜索面板（`.recent-panel`）、编辑器弹窗（`.editor-modal`）等均受此约束
+- toast 提示条也必须使用不透明背景
+
+**正确示例：**
+
+```css
+.quality-popup {
+  background: var(--bg-solid);           /* ✅ 不透明 */
+  border: 1px solid var(--border);
+}
+.quality-popup__item:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); /* ✅ 不透明 */
+}
+.quality-popup__item.active {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-solid)); /* ✅ 不透明 */
+}
+```
+
+**错误示例：**
+
+```css
+.popup {
+  background: var(--bg-surface);         /* ❌ 半透明玻璃感 */
+}
+.popup-item:hover {
+  background: var(--bg-muted);           /* ❌ 半透明 */
+}
+.popup-item.active {
+  background: color-mix(in srgb, var(--accent) 12%, transparent); /* ❌ 混入透明 */
+}
+```
+
+**例外：**
+
+- 蒙版/遮罩层（backdrop/overlay）用于压暗背景时，保持原有的半透明黑色设计不变
+- 纯装饰性渐变叠加层（非内容面板）可保留透明
+
+## 4. 菜单/弹窗自适应规范
+
+项目中所有下拉菜单、弹窗、上拉面板、选择器等浮层组件，必须能够避免在屏幕边缘处出现裁切或溢出，并自动选择最佳展开方向。
+
+### 4.1 适配原则
+
+所有浮层面板在展开前应进行如下判断：
+
+1. **垂直方向**：优先向触发器下方展开；当下方空间不足以容纳完整菜单时，自动翻转为向上展开。
+2. **水平方向**：优先与触发器左对齐；当超出视口右边界时，自动右对齐或左移以防止溢出。
+3. **两者皆不足**：选择空间更大的一侧展开。
+4. **动画原点**：`transform-origin` 应根据实际展开方向动态调整（向下→`top`，向上→`bottom`，右对齐→`right`），使入场缩放动画始终从触发器一侧自然生长。
+
+### 4.2 组件级适配要求
+
+#### 4.2.1 通用下拉菜单 `DropdownSelect`
+
+`src/components/ui/DropdownSelect.vue` 是项目标准下拉菜单组件，使用 `Teleport to="body"` + `position: fixed` 定位。其 `updateMenuPosition` 函数已内置自适应逻辑：
+
+- 估算菜单高度（`options.length × 38 + 16`，上限 260px）
+- 比较 `spaceBelow` 与 `spaceAbove`，选择能完整容纳菜单的一侧
+- 超出视口右边界时右对齐，保留 8px 边距
+- `transform-origin` 随方向和水平对齐动态设置
+
+所有新增下拉选择交互应优先复用此组件，而非自行实现定位。
+
+#### 4.2.2 常规弹窗/浮层（Teleport + position: fixed）
+
+对于不使用 `DropdownSelect` 的自定义浮层（如音质选择、速度选择、歌词设置面板等），遵循以下开发模式：
+
+- 使用 `getBoundingClientRect()` 获取触发器位置
+- 估算浮层高度后比较视口上下空间
+- 下方空间不足时翻转至上方（使用 `bottom`/`top` 互换）
+- 超出右边界时约束 `right`/`left` 值，确保至少 8px 安全边距
+- 在 `onResize` / `onScroll` 中重算位置
+
+**已适配参考实现：**
+
+| 组件 | 浮层 | 适配方式 |
+|------|------|----------|
+| `PlayerBar.vue` | `.quality-popup` | `updatePopupPosition()` 动态计算上下方向 |
+| `PlayerBar.vue` | `.speed-popup` | `toggleSpeedPopup()` 动态计算上下方向 |
+| `LyricsSettingsPanel.vue` | `.settings-popover` | `popoverStyle` computed 含视口边界检测 |
+| `PlayerExpanded.vue` | `.offset-popover` / `.trans-popover` | 动态 inline style 避免溢出 |
+
+#### 4.2.3 CSS absolute 定位菜单
+
+对于使用 `position: absolute` 在父容器内定位的菜单（如 `TopBar.vue` 的 `.user-menu`、`.recent-panel`），当靠近视口底部时，应通过 inline style 将 `top` 覆盖为 `bottom`，实现向上展开：
+
+```ts
+// 示例模式
+const menuStyle = ref<Record<string, string>>({});
+
+function openMenu() {
+  const rect = wrap.getBoundingClientRect();
+  const gap = 8;
+  if (window.innerHeight - rect.bottom < estimatedHeight + gap) {
+    menuStyle.value = { bottom: 'calc(100% + var(--space-2))', top: 'auto' };
+  } else {
+    menuStyle.value = {};
+  }
+}
+```
+
+**已适配参考：** `TopBar.vue` 的 `user-menu` 和 `recent-panel`。
+
+#### 4.2.4 `data-tooltip` 工具提示自适应定位
+
+项目使用 CSS 伪元素实现轻量工具提示（`[data-tooltip]::after` / `[data-tooltip]::before`），默认定位在触发器上方居中。当触发器位于视口边缘时，可能发生溢出裁切：
+
+**常见风险场景：**
+
+- 触发器位于 `position: fixed` 的父容器内（如 PlayerBar），且父容器有 `overflow: clip` / `overflow: hidden` → 工具提示被父级裁切
+- 触发器靠近视口右侧 → 工具提示向右溢出，超出可视区域
+- 触发器靠近视口底部 → 工具提示向上溢出，超出可视区域
+
+**适配原则：**
+
+1. **父容器裁切**：`[data-tooltip]` 所在的父容器若使用 `position: fixed` + `overflow: clip/hidden`，会裁切绝对定位的 tooltip 伪元素。应移除或替换为更精确的溢出控制（如 `min-width: 0; overflow: hidden` 只加在需要约束的子元素上）。
+
+2. **水平溢出**：触发器在视图右侧 1/3 区域时，应右对齐工具提示避免向右溢出：
+
+```css
+/* 右对齐示例：从按钮右缘向左展开 */
+.selector::after {
+  left: auto;
+  right: 0;
+}
+.selector::before {
+  left: auto;
+  right: 10px;
+}
+```
+
+3. **垂直溢出**：触发器靠近视口底部时，应考虑使用 `data-tooltip-dir="down"` 将工具提示翻转向下展开（`theme.css` 中已预置该方向规则）。
+
+**强制约束：**
+
+- 新增 `[data-tooltip]` 元素时，必须检查父容器是否有裁切行为（`overflow: clip/hidden` + 创建包含块）
+- 新增 `[data-tooltip]` 元素时，必须评估触发器在视口中的位置，确认不会发生水平或垂直溢出
+- 禁止在已知会裁切的父容器内使用 `[data-tooltip]` 而不处理溢出
+- 当工具提示文本可能较长（超过 8 个中文字符）且触发器位于边缘时，必须手动验证边界情况
+
+**已适配参考：** `PlayerBar.vue` 的 `.icon.icon-fm`（移除父级 `overflow-x: clip`，`::after` 改为 `right: 0` 对齐）。
+
+### 4.3 开发顺序
+
+新增浮层组件时，处理顺序必须是：
+
+1. 先判断是否可直接复用 `DropdownSelect` 组件
+2. 若需自定义浮层，参照 4.2.2 的模式实现自适应定位
+3. 若使用 CSS absolute 定位，参照 4.2.3 的模式增加视口边界检测
+4. 新增完成后，在边界条件下手动验证（缩窄浏览器、贴近屏幕边缘触发等）
+5. lint 自检通过
+
+### 4.4 强制约束
+
+- 新增任何浮层组件都必须包含视口边界检测逻辑
+- 禁止写死 `top: Xpx` 或 `bottom: Xpx` 而不做空间判断
+- 禁止使用 `transform: translateY(-100%)` 硬编码向上展开而不考虑下方空间
+- 禁止在页面中重复实现已由公共组件提供的自适应能力
+- 浮层面板背景的 opacity 规范仍受 3.6 "弹窗/下拉窗/上拉窗背景必须不透明" 约束
+
+### 4.5 Code Review 检查项
+
+后续所有浮层相关改动都必须检查：
+
+- 是否在屏幕边缘会溢出或被裁切
+- 是否已检测垂直方向的可用空间并选择最优方向
+- 是否已处理水平方向溢出
+- 是否已复用 `DropdownSelect` 组件（如果适用）
+- resize/scroll 时是否需要重新定位
+
+## 5. 详情页规范
+
+### 5.1 detail-page.css 的定位
+
+`src/styles/detail-page.css` 是公共详情页样式基线，统一承载：
+
+- 详情页外壳
+- 头图区
+- 返回按钮
+- 封面样式
+- 标题 / 副标题 / 描述
+- 播放与操作按钮
+- 列表行
+- 状态提示区
+
+### 5.2 DetailStickyHeroHeader.vue 的定位
+
+`src/components/DetailStickyHeroHeader.vue` 是公共详情页吸顶头部组件，统一承载：
+
+- **连续吸顶进度**：`--sticky-progress` 从 0（完全展开）到 1（完全折叠），随滚动位置连续映射
+- **文档流恒定**：`min-height` 保持原始头部高度，下方列表永不移动
+- **内联样式驱动**：inline style 覆盖各详情页的二值 CSS，保证行为一致
+- **自动滚动容器**：向上查找最近 `overflow:auto` 父节点，兼容独立详情页与 `UserSplitView` 嵌入式场景
+- **clip-path 渐进裁剪**：吸顶时毛玻璃背景从底部向上渐进消失，多余区域完全透明
+
+所有使用 `DetailStickyHeroHeader` 的详情页（Playlist、Album、Artist、Podcast、User）吸顶行为统一，不再需要每页单独维护 `isSticky` 状态。
+
+### 5.3 使用原则
+
+- 新增详情页优先复用公共详情样式
+- 不要为同类详情页重复写一套头图、按钮、列表节奏
+- 局部差异尽量通过少量覆盖实现，不要复制整个详情页结构
+- 若需要调整详情页视觉，优先修改公共样式，再看页面局部补丁是否还能删除
+
+### 5.4 维护顺序
+
+详情页相关改动建议按以下顺序处理：
+
+1. 先改 `detail-page.css`
+2. 再检查具体页面是否仍需要覆盖
+3. 尽量减少页面私有样式与公共样式的重复定义
+
+## 6. 动画规范
+
+项目已建立统一入场动画体系，所有新增页面/组件默认应接入 `AnimatedAppear`。
+
+### 5.1 基础要求
+
+- 全局动画样式入口：`src/styles/animations.css`
+- 全局引入位置：`src/main.ts`
+- 统一动画包装组件：`src/components/AnimatedAppear.vue`
+
+### 5.2 设计约束
+
+- 只做首次出现动画，不做循环重播
+- 不改变原有布局流，不允许出现重叠错位
+- 时长范围：`300ms ~ 500ms`
+- 缓动函数统一使用 `ease-out`
+- 列表项支持错峰延迟，通过 `:index` 实现
+- 必须兼容 `prefers-reduced-motion: reduce`
+
+### 5.3 语义映射
+
+- 容器/区块：`variant="content"`
+- 标题：`variant="title"`
+- 普通文本/列表行：`variant="text"`
+- 图片/封面/媒体卡片：`variant="media"`
+- 按钮/图标/可点击控件：`variant="control"`
+- 导航项：`variant="nav"`
+- 侧边栏容器：`variant="sidebar"`
+- 弹窗/浮层：`variant="modal"`
+
+### 5.4 节奏槽位
+
+所有 `AnimatedAppear` 场景统一使用 `rhythm`：
+
+- `shell`
+- `head`
+- `title`
+- `body`
+- `actions`
+- `list`
+- `overlay`
+
+推荐映射：
+
+- 页面根容器：`rhythm="shell"`
+- 头部工具区：`rhythm="head"`
+- 标题：`rhythm="title"`
+- 主体内容：`rhythm="body"`
+- 操作按钮组：`rhythm="actions"`
+- 列表循环项：`rhythm="list"` + `:index="idx"`
+- 弹窗与浮层：`rhythm="overlay"`
+
+### 5.5 强制约束
+
+- 新增组件必须使用 `AnimatedAppear`
+- 新增节点必须先选语义 `variant`，再写样式
+- 必须明确设置 `rhythm`
+- 列表项必须错峰
+- 同一元素禁止叠加多重入场动画
+- 弹层必须使用 `overlay` 节奏
+- 不得破坏 `prefers-reduced-motion`
+- 扩展动画令牌只允许集中维护在 `animations.css`
+
+## 7. 收藏按钮规范
+
+项目中所有收藏/书签/喜欢/心形按钮必须遵循同一套实现标准。
+
+### 6.1 标准组件
+
+统一使用 `src/components/ui/BookmarkIconButton.vue` 作为唯一收藏入口组件。
+
+禁止在业务页面中直接散写：
+
+- 自定义 heart 按钮
+- 只做视觉态、没有状态回显的收藏图标
+- 直接在页面里调用收藏接口但不复用标准组件
+
+### 6.2 标准数据流
+
+1. 登录态由 `userStore` 管理
+2. `userStore` 维护 `likedSongIds`
+3. 登录成功后自动拉取 `/likelist`
+4. 组件通过 `songId` 判断初始收藏状态
+5. 点击后调用 `/song/like`
+6. 成功后同步本地状态，失败要有错误反馈
+
+### 6.3 标准接口
+
+- 获取收藏列表：`getUserLikeList(uid)`
+- 切换收藏状态：`toggleSongLike({ id, like, uid? })`
+
+### 6.4 标准组件参数
+
+`BookmarkIconButton` 推荐接收：
+
+- `songId?: number`
+- `liked?: boolean`
+
+判定优先级：
+
+1. `liked` 明确传入时优先使用
+2. 否则使用 `userStore.likedSongIds.includes(songId)`
+3. 再否则默认未收藏
+
+### 6.5 标准交互
+
+- 必须具备 `aria-pressed`
+- 必须具备 `aria-label`
+- 必须有 `loading` 禁用态
+- 必须尊重 `prefers-reduced-motion`
+
+### 6.6 页面级约定
+
+业务页面只负责：
+
+- 提供 `songId`
+- 提供可选 `liked`
+- 处理业务布局
+
+禁止把这些逻辑塞回页面：
+
+- 收藏状态本地缓存
+- 点赞图标切换动画
+- 收藏列表拉取逻辑
+- 收藏接口调用细节
+
+这些逻辑应统一放在：
+
+- `userStore`
+- `BookmarkIconButton`
+- `src/api/auth.ts`
+- `src/api/music.ts`
+
+## 8. 开发落地要求
+
+### 7.1 新增页面
+
+- 默认使用统一布局 shell
+- 标题、说明、操作区要有清晰层级
+- 优先复用现有区块组件
+- 页面样式优先使用 token 和公共样式
+
+### 7.2 新增组件
+
+- 先判断是否可复用现有组件
+- 新增组件默认接入 `AnimatedAppear`
+- 不要在业务组件中散写私有动画和私有间距体系
+
+### 7.3 新增列表
+
+- 循环项必须传 `:index="idx"`
+- 列表项使用统一节奏槽位 `list`
+- 不得为了动画破坏原布局
+
+### 7.4 新增收藏入口
+
+- 一律复用 `BookmarkIconButton`
+- 先接入 `songId`，再考虑 `liked` 回显
+- 不要在每个页面各写一套收藏逻辑
+
+### 7.5 新增详情页
+
+- 优先复用 `detail-page.css`
+- 吸顶头部直接使用 `DetailStickyHeroHeader.vue`，无需自行实现
+- 所有详情页吸顶行为统一由 `DetailStickyHeroHeader` 管理
+- 先改公共样式，再考虑页面覆盖
+- 不要复制同类详情页的整体结构
+
+## 9. 复核要求
+
+完成相关改动后，必须确认：
+
+- 登录态存在时能回显真实收藏状态
+- 未登录时不会错误点亮
+- 切换收藏后本地状态更新
+- lint 通过
+- 不改布局结构
+- 不破坏动画规范
+- 不绕开公共详情样式
+
+## 10. 维护建议
+
+如果后续需要新增更细的规则，应优先补充到本文件，而不是在业务组件里临时写注释式约定。
+
+如果发现某个页面或组件在重复定义相同的间距、圆角、按钮或详情布局，优先回到：
+
+- `src/styles/theme.css`
+- `src/styles/detail-page.css`
+- `src/components/DetailStickyHeroHeader.vue`
+- `src/components/AnimatedAppear.vue`
+- `src/components/ui/BookmarkIconButton.vue`
+- `src/components/ui/DropdownSelect.vue`
+
+进行统一，而不是继续叠加页面私有实现。
+
+## 11. 导航返回与吸顶（sticky）状态规范
+
+### 11.1 返回导航规范
+
+**核心原则**：每个详情页的返回按钮必须能回到用户跳转前的正确页面，不依赖页面类型判断，而是通过 `returnPage` 字段精确记录来源。
+
+#### 实现模式
+
+1. **`open*Detail` 函数必须接收 `returnPage` 参数**
+   - 所有打开详情页的函数（`openPlaylistDetail`、`openAlbumDetail`、`openArtistDetail`、`openUserDetail`、`openLanguageDetail`）必须接收 `returnPage: string` 参数
+   - 调用方必须传入正确的当前页面标识（如 `'home'`、`'search'`、`'playlist-detail'`）
+   - 禁止使用默认值硬编码来源
+
+2. **`backTo*` 函数使用 `active*ReturnPage` ref 决定目标**
+   - 不依赖硬编码的 if-else 逐个判断，优先使用 `activePage.value = activeXxxReturnPage.value || fallback`
+   - 必须覆盖所有可能的 `returnPage` 值，不能遗漏路由到 fallback
+
+3. **`*BackLabel` computed 必须覆盖所有 `returnPage` 值**
+   - 每种 `returnPage` 值都应有对应的人类可读标签
+   - 新增来源页面时必须同步更新 label computed
+
+4. **同类页面链式跳转使用 Stack**
+   - 歌手→歌手、专辑→专辑等同类页面间跳转时，使用 ID Stack 保存跳转历史
+   - `open*Detail` 检测到 `activePage` 与目标页面相同时，压栈保存当前 ID，保留原始 `returnPage`
+   - 返回时优先弹栈恢复上一个 ID，栈空后使用 `returnPage`
+
+#### 强制约束
+
+- 新增页面时，必须检查所有可能进入该页面的入口，为每个入口分配正确的 `returnPage`
+- 新增入口时，必须检查目标页面的 `backTo*` 和 `*BackLabel` 是否已覆盖该 `returnPage`
+- 禁止在 `backTo*` 中只写 `activePage.value = '固定值'`，必须通过 returnPage 路由
+
+### 11.2 吸顶（sticky）状态规范
+
+**核心原则**：`.content` 滚动容器全局共享，每次页面切换必须确保滚动位置归零且 `isSticky` 重置为 `false`。
+
+#### `useDetailStickyState` 使用规范
+
+1. **`refresh()` 必须使用 `nextTick` 等待 DOM 更新**
+   - `isSticky.value = false` 设置后，必须通过 `nextTick` 等待 Vue flush DOM（移除 `is-sticky-header` class）
+   - 禁止使用嵌套 `requestAnimationFrame` 替代 `nextTick`
+   - 在 `nextTick` 回调内重新查询 DOM 位置并计算 `initialOffset`
+
+2. **`initialOffset` 必须有安全兜底**
+   - `Math.max(1, headerRect.top - hostRect.top)`：最小为 1
+   - 防止 `getBoundingClientRect` 在 sticky 态下返回 0 导致 `isSticky` 锁死
+
+3. **使用详情页的组件必须在 ID prop 变化时调用 `refresh()`**
+   - 必须建立 `watch` 监听主 ID prop（如 `artistId`、`playlistId`）
+   - 在 watcher 中使用 `requestAnimationFrame(() => refresh())` 调用
+   - `onMounted` 中不需要手动调用 `refresh()`（`useDetailStickyState` 内部已处理首次初始化）
+
+#### 页面切换时滚动重置
+
+1. **App.vue 必须添加 `scrollContentToTop()`**
+   - 功能：将 `.content` 容器的 `scrollTop` 重置为 0
+   - 通过 `watch(activePage, ...)` 触发：页面类型切换时重置
+   - 通过 `watch([activeArtistId, activeAlbumId, ...], ...)` 触发：同类页面切换时重置
+
+2. **`scrollContentToTop()` 在 watcher 中同步执行，不依赖 RAF**
+   - `element.scrollTop = 0` 是同步 DOM 操作，立即生效
+   - 不需要额外的 RAF 或 `nextTick` 延迟
+
+#### 强制约束
+
+- 新增详情页时，必须先引入 `useDetailStickyState`，并在 watcher 中绑定 `refresh()`
+- 新增共享滚动容器的页面时，必须在 App.vue 的 `scrollContentToTop` watcher 列表中添加对应的 ID ref
+- `refresh()` 中禁止在同一次调用内同时修改 `isSticky` 和读取 DOM 位置 —— 必须通过 `nextTick` 分离
+
+### 11.3 复核要求
+
+完成导航或吸顶相关改动后，必须确认：
+
+- 从每个可能入口进入详情页，返回都能回到正确页面
+- 多次链式跳转后返回依然正确
+- 页面切换后新页面从头部开始显示
+- 页面切换后返回按钮可见
+- 页面切换后头部普通态正常（不卡死在粘顶态）
+- lint 通过
+
+## 12. 封面图片预加载渐入规范
+
+本规范约束项目中所有通过 CSS `background-image` 加载封面/背景图片的元素，防止 JPEG 逐行渲染导致的半图卡顿问题。
+
+### 12.1 公共实现
+
+项目已沉淀两处公共资源：
+
+1. **`src/composables/useBgLoaded.ts`** — 预加载 composable，接收 URL getter，返回 `loaded` ref
+2. **`src/styles/animations.css`** — 全局 CSS 类 `.fade-in-bg` + `.bg-loaded`
+
+```css
+.fade-in-bg { opacity: 0; transition: opacity 0.25s ease; }
+.fade-in-bg.bg-loaded { opacity: 1; }
+```
+
+### 12.2 使用方式
+
+任何组件中引入并使用的标准模式：
+
+```ts
+import { useBgLoaded } from '../composables/useBgLoaded'
+
+const loaded = useBgLoaded(() => someCoverUrl.value)
+```
+
+```html
+<span class="fade-in-bg" :class="{ 'bg-loaded': loaded }"
+      :style="{ backgroundImage: `url(${someCoverUrl})` }"></span>
+```
+
+### 12.3 强制约束
+
+1. **新增 `background-image: url()` 的封面元素时，必须使用 `useBgLoaded` + `.fade-in-bg`**
+   - 禁止直接通过 `:style` 或 CSS 设置 `background-image` 而不做预加载渐入
+   - 禁止在组件 scoped CSS 中重复定义 `opacity: 0; transition: opacity 0.25s` 等私有渐入规则
+
+2. **`useBgLoaded` 必须接收响应式 getter，而不是静态值**
+   - 正确：`useBgLoaded(() => someRef.value)`
+   - 错误：`useBgLoaded(someRef.value)`
+
+3. **URL 为空时必须兜底**
+   - 当封面 URL 为空或不存在时，`useBgLoaded` 返回 `false` 且不发起网络请求
+   - 元素应依赖 CSS 自身 `background-color` 或 fallback 样式展示占位，不依赖 loaded 状态
+
+4. **错误兜底**
+   - 图片加载失败时（`onerror`），`useBgLoaded` 仍会标记 `loaded = true`，确保页面不会永久空白
+
+### 12.4 已接入清单
+
+| 组件 | 元素 | loaded 变量名 |
+|------|------|--------------|
+| `HomePanel.vue` | 每日推荐卡片 `.radar-bg` | `dailyBgLoaded` |
+| `HomePanel.vue` | 私人雷达卡片 `.radar-bg` | `topRecoBgLoaded` |
+| `HomePanel.vue` | 私人 FM 卡片 `.fm-bg` | `fmBgLoaded` |
+| `PlayerBar.vue` | 底部栏封面 `.cover` | `coverLoaded` |
+| `PlayerExpanded.vue` | 全屏封面 `.fullscreen-cover` | `coverLoaded` |
+| `PlayerExpanded.vue` | 专辑封面 `.album-cover` | `coverLoaded` |
+| `PlayerExpanded.vue` | 唱片封面 `.record-cover` | `coverLoaded` |
+| `DailyRecommendPage.vue` | 页面封面 `.cover-fallback` | `coverLoaded` |
+
+### 12.5 Code Review 检查项
+
+- 新增或修改封面元素时，是否使用了 `useBgLoaded`？
+- 模板元素是否同时挂了 `fade-in-bg` class 和 `bg-loaded` class 绑定？
+- 是否删除了组件内重复的私有渐入 CSS（`opacity: 0; transition` / `.bg-loaded`）？
+
+## 13. 跨平台开发规范（Web / Desktop）
+
+本规范约束 Web 版与 Electron 桌面版共享同一代码库时的差异管理方式。
+
+### 13.1 平台检测入口
+
+所有平台检测必须走 `src/utils/platform.ts` 模块，禁止在业务代码中直接访问 `window.appEnv`。
+
+```ts
+// ✅ 正确
+import { platform } from '../utils/platform'
+if (platform.isDesktop) { /* ... */ }
+
+// ❌ 禁止
+if ((window as any).appEnv?.isDesktop) { /* ... */ }
+```
+
+### 13.2 新增 preload 字段要求
+
+在 `electron/preload.js` 中新增 `contextBridge` 暴露的字段时，必须同步：
+
+1. 更新 `global.d.ts` 中的 `Window.appEnv` 接口
+2. 考虑是否需要在 `src/utils/platform.ts` 中新增对应的 getter
+
+### 13.3 功能差异分级
+
+| 差异度 | 策略 | 适用场景 |
+|--------|------|---------|
+| 小 | 组件内 `v-if="platform.isDesktop"` 条件渲染 | 设置项、额外按钮 |
+| 中 | 包装层组件 + Web/Desktop 两个实现 | 设置页、播放页 |
+| 大 | Composable 提取 + 平台专用组件 | 托盘、下载、本地文件 |
+
+### 13.4 禁止行为
+
+- 禁止在业务代码中直接引用 `electron` 模块（Web 端会爆炸）
+- 禁止在 Web 端打包 Electron 特有代码
+- 禁止在业务代码中直接访问 `window.appEnv`
+
+### 13.5 文档参考
+
+详细规范见 `docs/跨平台开发规范.md`。

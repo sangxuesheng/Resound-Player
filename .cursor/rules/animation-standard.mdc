@@ -1,0 +1,11 @@
+---
+description: 全局入场动画规范，已合并入 development-spec.mdc
+---
+
+# 全局入场动画规范
+
+本文件保留为动画规则入口，详细约定已合并到：
+
+- `.cursor/rules/development-spec.mdc`
+
+后续所有动画相关开发请以 `development-spec.mdc` 中的“动画规范”章节为准。

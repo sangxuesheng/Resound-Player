@@ -1,0 +1,25 @@
+{
+  "name": "iOS应用开发",
+  "version": "1.0.0",
+  "description": "【MiniMax官方】iOS应用开发指南，涵盖UIKit、SnapKit和SwiftUI。包括触控区域、安全区域、导航模式、动态字体、深色模式、无障碍、集合视图和Apple HIG合规。",
+  "triggers": [
+    "ios",
+    "swift",
+    "swiftui",
+    "uikit",
+    "iOS开发",
+    "移动开发"
+  ],
+  "category": [
+    "开发辅助"
+  ],
+  "tags": [
+    "MiniMax",
+    "官方",
+    "iOS",
+    "Swift",
+    "SwiftUI",
+    "移动开发"
+  ],
+  "author": "MiniMaxAI"
+}
