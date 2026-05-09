@@ -5,6 +5,7 @@ import { userStore } from './user';
 import { showGlobalToast } from './loginModal';
 import { hydrateCache, getCache, setCache } from './unblock-cache';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
+import { platform } from '../utils/platform';
 import { eqSettings } from './eqSettings';
 
 type Artist = { name: string };
@@ -724,9 +725,7 @@ export const playerStore = reactive({
     try {
       let playUrl = track.url || '';
       // 使用 apiClient 的 proxy 逻辑：通过 unblock proxy 获取歌曲 URL
-      const unblockProxyUrl = (typeof window !== 'undefined' && (window as any).appEnv?.unblockProxyUrl)
-        || import.meta.env.VITE_NCM_PROXY
-        || 'http://127.0.0.1:38762';
+      const unblockProxyUrl = platform.unblockProxyUrl;
 
       // 并行：fee 探测 + uiStore 导入 + 音源匹配（三者同时发起）
       const nocookie = userStore.loginCookie || undefined;

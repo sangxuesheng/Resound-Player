@@ -17,4 +17,8 @@ contextBridge.exposeInMainWorld('appEnv', {
   apiBaseUrl: `http://127.0.0.1:${ports.api}`,
   unblockProxyUrl: `http://127.0.0.1:${ports.unblockProxy}`,
   unblockMatchUrl: `http://127.0.0.1:${ports.unblockMatch}`,
+  isDesktop: true,
+  platform: process.platform,
+  electronVersion: process.versions.electron,
+  nodeVersion: process.versions.node,
 });

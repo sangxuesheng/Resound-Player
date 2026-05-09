@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { platform } from '../utils/platform';
 
 // 运行时由 uiStore.setUnblockEnabled() 设置，控制 apiClient 是否添加 proxy 参数
 let _unblockEnabled = true;
@@ -10,11 +11,8 @@ export function isUnblockProxyEnabled() {
 }
 
 export function getResolvedApiBaseUrl() {
-  // Electron: 优先使用 preload 注入的动态端口
-  if (window.appEnv?.apiBaseUrl) return window.appEnv.apiBaseUrl;
-
-  // Web 模式默认走同源代理，避免 cookie 丢失
-  return '/api';
+  // 统一走 platform 模块，不再直接引用 window.appEnv
+  return platform.apiBaseUrl;
 }
 
 export const apiClient = axios.create({
