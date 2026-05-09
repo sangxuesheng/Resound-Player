@@ -1,4 +1,4 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 // Parse the --service-ports argument injected by main.js
 const portsArg = process.argv.find((s) => s.startsWith('--service-ports='));

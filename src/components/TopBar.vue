@@ -97,7 +97,7 @@
               <button class="menu-item" type="button" @click="emitMenuAction('open-user')">用户中心</button>
               <button class="menu-item" type="button" @click="emitMenuAction('open-settings-page')">设置页面</button>
               <button class="menu-item" type="button" @click="refreshLoginState">刷新登录状态</button>
-              <button v-if="platform.isDesktop" class="menu-item" type="button" @click="forceReload">强制重新加载</button>
+              <button class="menu-item" type="button" @click="forceReload">强制重新加载</button>
             </div>
 
             <div class="menu-section">
@@ -114,6 +114,17 @@
           </div>
         </transition>
       </div>
+      <div class="win-controls">
+        <button class="win-btn" type="button" title="最小化" @click="minimizeWindow">
+          <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="5.5" width="10" height="1" fill="currentColor"/></svg>
+        </button>
+        <button class="win-btn" type="button" title="最大化" @click="maximizeWindow">
+          <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        </button>
+        <button class="win-btn win-btn--close" type="button" title="关闭" @click="closeWindow">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+        </button>
+      </div>
     </div>
   </AnimatedAppear>
 </template>
@@ -128,7 +139,6 @@ import { userStore } from '../stores/user';
 import { playerStore } from '../stores/player';
 import { useAuthAction } from '../composables/useAuthAction';
 import { showGlobalToast } from '../stores/loginModal';
-import { platform } from '../utils/platform';
 
 const RECENT_KEY = 'tm_search_history';
 const emit = defineEmits<{
@@ -439,6 +449,10 @@ async function logoutUser() {
 function forceReload() {
   window.location.reload();
 }
+
+function minimizeWindow() { document.title = 'cmd:minimize'; }
+function maximizeWindow() { document.title = 'cmd:maximize'; }
+function closeWindow() { window.close(); }
 
 function onDocClick(e: MouseEvent) {
   const target = e.target as Node;
@@ -905,5 +919,31 @@ onBeforeUnmount(() => {
 .user-menu-fade-leave-to {
   opacity: 0;
   transform: translateY(-4px);
+}
+.win-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+.win-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-sub);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.win-btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
+  color: var(--text-main);
+}
+.win-btn--close:hover {
+  background: #e81123;
+  color: #fff;
 }
 </style>

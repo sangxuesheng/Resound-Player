@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveServicePorts } from './port-manager.js';
@@ -211,6 +211,20 @@ async function createMainWindow(ports) {
   } else {
     await win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
+
+  // 窗口控制：通过 page-title-updated 事件监听（绕过 IPC / contextBridge 限制）
+  let _originalTitle = '';
+  win.webContents.on('page-title-updated', (event, title) => {
+    if (title === 'cmd:minimize' || title === 'cmd:maximize') {
+      event.preventDefault();
+      if (title === 'cmd:minimize') win.minimize();
+      else if (win.isMaximized()) win.unmaximize();
+      else win.maximize();
+      setTimeout(() => { if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic'); }, 50);
+    } else {
+      _originalTitle = title;
+    }
+  });
 }
 
 /**
@@ -322,4 +336,29 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   killAllServices(serviceChildren);
+});
+
+// ── 窗口控制 IPC ──
+ipcMain.on('window-minimize', (event) => {
+  const bw = BrowserWindow.fromWebContents(event.sender);
+  bw?.minimize();
+});
+
+ipcMain.on('window-maximize', (event) => {
+  const bw = BrowserWindow.fromWebContents(event.sender);
+  if (bw?.isMaximized()) {
+    bw.unmaximize();
+  } else {
+    bw?.maximize();
+  }
+});
+
+ipcMain.handle('window-is-maximized', (event) => {
+  const bw = BrowserWindow.fromWebContents(event.sender);
+  return bw?.isMaximized() ?? false;
+});
+
+ipcMain.on('window-close', (event) => {
+  const bw = BrowserWindow.fromWebContents(event.sender);
+  bw?.close();
 });
