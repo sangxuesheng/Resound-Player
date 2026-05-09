@@ -12,6 +12,7 @@
 
       <main class="content" :class="{ 'content--user-page': activePage === 'user', 'content--hero-sticky': isHeroStickyPage }" :style="contentStyle">
         <div class="content-shell">
+          <KeepAlive :include="keepAliveNames">
           <HomePanel
             v-if="activePage === 'home'"
             @open-detail="(id) => openPlaylistDetail(id, undefined, 'home')"
@@ -151,6 +152,7 @@
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <LanguageDetailPage v-else-if="activePage === 'language-detail'" :language-name="activeLanguage" :back-label="activeLanguageReturnPage === 'song-comment' ? '评论' : undefined" @back="backToLanguage" @open-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, activePage)" />
           <PlaceholderPanel v-else :page-key="activePage" />
+        </KeepAlive>
         </div>
       </main>
       <ScrollToTopFab v-if="showBackToTop" :fixed="true" />
@@ -164,7 +166,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch, ref } from 'vue';
+import { computed, KeepAlive, onBeforeUnmount, onMounted, watch, ref } from 'vue';
 import HomePanel from './components/HomePanel.vue';
 import PlayerBar from './components/PlayerBar.vue';
 import PlayQueuePanel from './components/PlayQueuePanel.vue';
@@ -268,6 +270,19 @@ const sidebarActiveKey = computed(() => {
 const isHeroStickyPage = computed(() => ['playlist-detail', 'rank-detail', 'artist-detail', 'album-detail', 'user-detail', 'language-detail', 'podcast-detail'].includes(activePage.value));
 const showBackToTop = computed(() => isHeroStickyPage.value || ['history', 'user', 'mv', 'playlist', 'rank', 'search', 'podcast-list', 'podcast-subscribed', 'podcast-category', 'song-comment'].includes(activePage.value));
 const contentStyle = computed<Record<string, string>>(() => (isHeroStickyPage.value ? {} : { '--cover-bg-url': 'none' }));
+
+// ── 页面缓存策略（方案二：KeepAlive + include 显式控制）──
+// 核心页面缓存，切换时不销毁重建；详情页每次进入重新加载
+const keepAlivePages = new Set([
+  'home', 'search', 'playlist', 'rank', 'user',
+  'history', 'settings', 'mv', 'podcast-list',
+]);
+// KeepAlive include 匹配组件名需与文件名（PascalCase）一致
+const keepAliveNames = computed(() =>
+  [...keepAlivePages].map(p =>
+    p.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('') + 'Page'
+  )
+);
 
 function syncViewport() {
   // 平板端沿用桌面布局，仅在移动端（<=767）启用窄屏抽屉逻辑
@@ -956,7 +971,7 @@ function scrollContentToTop() {
   if (el) el.scrollTop = 0;
 }
 
-watch(activePage, () => { scrollContentToTop(); });
+watch(activePage, (page) => { if (!keepAlivePages.has(page)) scrollContentToTop(); });
 watch(
   [activeArtistId, activeAlbumId, activePlaylistId, activeUserId, activeLanguage, activeRankId],
   () => { scrollContentToTop(); },
