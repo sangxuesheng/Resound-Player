@@ -144,6 +144,22 @@ window.postMessage({ type: 'window-control', action: 'minimize' }, '*');
 7. **`show: false` + `ready-to-show` 提升首屏体验** — 避免窗口在内容就绪前显示导致的 GPU 滞后和背景色闪变。
 8. **`backgroundColor` 必须匹配实际背景色** — 不匹配时窗口边缘会闪现色差，暗色主题应设为 `#111827`。
 
+### 4. `src/styles/theme.css` — 窗口缩放白色闪烁兜底
+
+窗口最大化/还原时，CSS 变量 `var(--bg-app)` 在计算完成前浏览器默认使用白色背景，产生闪烁。在 `html` 上添加硬编码的暗色兜底：
+
+```css
+html {
+  /* 窗口缩放时的白色闪烁兜底，CSS 变量计算前使用硬编码暗色 */
+  background-color: #1a1a2e;
+}
+```
+
+注意点：
+- 必须放在 `html` 元素上，`body` 或 `#app` 在布局重排时可能来不及覆盖
+- 硬编码值需要在深色/浅色主题间切换时保持视觉一致
+- 该兜底与 `BrowserWindow` 的 `backgroundColor` 配置共同作用，一个在 Electron 层，一个在 CSS 层
+
 ---
 
 ## 跨平台注意事项
