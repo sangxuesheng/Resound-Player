@@ -196,14 +196,42 @@ async function createMainWindow(ports) {
     height: 820,
     minWidth: 1100,
     minHeight: 700,
-    show: true,
-    backgroundColor: '#1a1a2e',
+    show: false,
+    backgroundColor: '#111827',
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
+      backgroundThrottling: false,
       additionalArguments: portArgs,
     },
+  });
+
+  // 内容准备就绪后再显示窗口，避免 resize 时因 GPU 效果滞后导致卡顿
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+
+  // 窗口控制：先在 loadURL 前注册 page-title-updated 事件监听
+  // 确保从页面加载初期就能捕获 document.title 变更
+  let _originalTitle = '';
+  win.webContents.on('page-title-updated', (event, title) => {
+    if (title === 'cmd:minimize' || title === 'cmd:maximize') {
+      event.preventDefault();
+      if (title === 'cmd:minimize') {
+        win.minimize();
+      } else if (win.isMaximized()) {
+        win.unmaximize();
+      } else {
+        win.maximize();
+      }
+      // 延迟恢复原标题，确保 macOS 窗口动画完成后再重置
+      setTimeout(() => {
+        if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic');
+      }, 80);
+    } else {
+      _originalTitle = title;
+    }
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -211,20 +239,6 @@ async function createMainWindow(ports) {
   } else {
     await win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
   }
-
-  // 窗口控制：通过 page-title-updated 事件监听（绕过 IPC / contextBridge 限制）
-  let _originalTitle = '';
-  win.webContents.on('page-title-updated', (event, title) => {
-    if (title === 'cmd:minimize' || title === 'cmd:maximize') {
-      event.preventDefault();
-      if (title === 'cmd:minimize') win.minimize();
-      else if (win.isMaximized()) win.unmaximize();
-      else win.maximize();
-      setTimeout(() => { if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic'); }, 50);
-    } else {
-      _originalTitle = title;
-    }
-  });
 }
 
 /**
