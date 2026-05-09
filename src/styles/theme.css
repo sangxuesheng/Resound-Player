@@ -202,6 +202,11 @@ body,
   overflow-x: hidden;
 }
 
+html {
+  /* 窗口缩放时的白色闪烁兜底，CSS 变量计算前使用硬编码暗色 */
+  background-color: #1a1a2e;
+}
+
 body {
   margin: 0;
   -webkit-user-select: none;
