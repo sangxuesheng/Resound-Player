@@ -789,6 +789,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   flex-shrink: 0;
 }
 .con-btn:hover { transform: scale(1.12); background: rgba(255,255,255,0.1); }
+.con-btn:disabled { opacity: 0.35; cursor: default; background: transparent !important; transform: none !important; }
 .con-btn svg { stroke-width: 2.5; }
 .con-btn:active { transform: scale(0.95); }
 .con-play { width: 42px; height: 42px; background: rgba(255,255,255,0.15); font-size: 16px; }
