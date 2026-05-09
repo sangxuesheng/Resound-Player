@@ -160,7 +160,6 @@
           <button class="ra-btn" title="歌词提前0.5秒" @click="playerStore.adjustLyricsOffset(0.5)"><Plus :size="22" /></button>
           <button class="ra-btn ra-btn-rect ra-btn-trans" :class="{ active: showTransPanel }" title="翻译/音译设置" @click="showTransPanel = !showTransPanel">译</button>
           <button class="ra-btn" title="多选歌词" @click="onOpenLyricsSelection"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg></button>
-          <button class="ra-btn" :class="{ active: showEqPanel }" title="均衡器" @click="showEqPanel = !showEqPanel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></button>
         </div>
 
         <Teleport to="body">
@@ -227,6 +226,7 @@
             <span class="console-time">{{ formatTime(playerStore.duration) }}</span>
           </div>
           <div class="cc-right">
+            <button class="con-btn" :class="{ active: showEqPanel }" title="均衡器" @click="showEqPanel = !showEqPanel"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><circle cx="4" cy="12" r="2"/><circle cx="12" cy="10" r="2"/><circle cx="20" cy="14" r="2"/></svg></button>
             <button v-if="playerStore.isIntelligenceActive &amp;&amp; uiStore.showIntelligenceIndicator" class="con-btn intel-icon" type="button" aria-label="心动模式"><Sparkles :size="10" /></button>
             <button v-if="isPersonalFmCurrentTrack" class="con-btn con-fm-label" type="button" aria-label="当前为私人 FM" disabled>FM</button>
             <button v-else class="con-btn" @click="uiStore.togglePlayQueue()" data-tooltip="查看播放列表" aria-label="查看播放列表"><AlignJustify :size="14" /></button>

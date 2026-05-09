@@ -14,7 +14,7 @@
           </header>
 
           <!-- 预设选择 -->
-          <div class="preset-rail ui-safe-rail">
+          <HorizontalScrollRail content-layout="flex" content-class="preset-rail" hide-controls-on-mobile="false">
             <button
               v-for="p in presets"
               :key="p.name"
@@ -26,7 +26,7 @@
               }"
               @click="selectPreset(p)"
             >{{ p.name }}</button>
-          </div>
+          </HorizontalScrollRail>
 
           <!-- 10 段均衡滑块 -->
           <div class="eq-bands">
@@ -91,6 +91,7 @@ import { computed, ref } from 'vue';
 import { eqSettings, EQ_FREQ_LABELS, type EqPreset } from '../stores/eqSettings';
 import { playerStore } from '../stores/player';
 import FancySwitch from './ui/FancySwitch.vue';
+import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
 
 const props = defineProps<{ visible: boolean }>();
 const emit = defineEmits<{ (e: 'close'): void }>();
@@ -258,10 +259,6 @@ function resetGains() {
   gap: var(--space-1);
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--border-soft);
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-top: 6px;
-  padding-bottom: var(--space-2);
 }
 .preset-chip {
   flex-shrink: 0;
