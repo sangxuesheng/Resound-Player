@@ -1044,9 +1044,15 @@ onBeforeUnmount(() => {
   padding-bottom: var(--content-padding);
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   background: var(--bg-app);
   box-sizing: border-box;
   cursor: auto;
+}
+
+.content::-webkit-scrollbar {
+  display: none;
 }
 
 .content.content--hero-sticky {

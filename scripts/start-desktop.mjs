@@ -19,13 +19,28 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, '..');
 
-// ── Kill any leftover processes from previous sessions ──
-const KILL_PORTS = [38761, 38762, 38763, 5173];
-for (const port of KILL_PORTS) {
+// ── Cross-platform port killer ──
+function killProcessOnPort(port) {
   try {
-    execSync(`lsof -ti:${port} 2>/dev/null | xargs kill -9 2>/dev/null`, { stdio: 'ignore' });
-  } catch {}
+    if (process.platform === 'win32') {
+      const result = execSync(`netstat -ano | findstr ":${port} "`, { stdio: 'pipe', encoding: 'utf-8', timeout: 3000 });
+      const pids = new Set();
+      for (const line of result.split('\n')) {
+        const parts = line.trim().split(/\s+/);
+        const pid = parts[parts.length - 1];
+        if (pid && /^\d+$/.test(pid)) pids.add(pid);
+      }
+      for (const pid of pids) {
+        try { execSync(`taskkill /F /PID ${pid}`, { stdio: 'ignore', timeout: 3000 }); } catch {}
+      }
+    } else {
+      execSync(`lsof -ti:${port} 2>/dev/null | xargs kill -9 2>/dev/null`, { stdio: 'ignore' });
+    }
+  } catch { /* port not in use */ }
 }
+
+const KILL_PORTS = [38761, 38762, 38763, 5173];
+for (const port of KILL_PORTS) killProcessOnPort(port);
 
 // ── Resolve ports ──
 const ports = await resolveServicePorts();
@@ -109,7 +124,12 @@ function spawnProcess(label, command, args, env) {
 }
 
 // 1. Vite dev server
-spawnProcess('vite', 'npx', ['vite', '--port', String(ports.vite), '--strictPort'], viteEnv);
+const viteEntry = path.join(root, 'node_modules', 'vite', 'bin', 'vite.js');
+if (process.platform === 'win32') {
+  spawnProcess('vite', 'node', [viteEntry, '--port', String(ports.vite), '--strictPort'], viteEnv);
+} else {
+  spawnProcess('vite', 'npx', ['vite', '--port', String(ports.vite), '--strictPort'], viteEnv);
+}
 
 // 2. Unblock proxy
 spawnProcess('unblock-proxy', 'node', [

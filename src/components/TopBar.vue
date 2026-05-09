@@ -490,6 +490,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 120;
   overflow: visible;
+  -webkit-app-region: drag;
 }
 .brand {
   width: 100%;
@@ -504,6 +505,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   justify-self: start;
   text-align: left;
+  -webkit-app-region: no-drag;
 }
 .brand:hover {
   color: #16a34a;
@@ -529,6 +531,7 @@ onBeforeUnmount(() => {
   overflow: visible;
   transition: width 0.28s ease, min-width 0.28s ease, height 0.28s ease, border-radius 0.28s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  -webkit-app-region: no-drag;
 }
 .search-wrap.expanded {
   width: min(596px, calc(100vw - 320px));
@@ -691,6 +694,7 @@ onBeforeUnmount(() => {
   position: relative;
   z-index: 130;
   overflow: visible;
+  -webkit-app-region: no-drag;
 }
 .msg {
   width: 36px;
@@ -702,6 +706,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   display: grid;
   place-items: center;
+  -webkit-app-region: no-drag;
 }
 .msg:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
@@ -732,6 +737,7 @@ onBeforeUnmount(() => {
   place-items: center;
   z-index: 140;
   overflow: visible;
+  -webkit-app-region: no-drag;
 }
 .avatar {
   width: 36px;
@@ -747,6 +753,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   overflow: hidden;
   box-sizing: border-box;
+  -webkit-app-region: no-drag;
 }
 .avatar:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));

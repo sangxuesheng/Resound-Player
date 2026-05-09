@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveServicePorts } from './port-manager.js';
@@ -8,6 +8,76 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 app.commandLine.appendSwitch('no-sandbox');
+
+// ── 中文应用菜单 ──
+function buildAppMenu() {
+  const isMac = process.platform === 'darwin';
+  const template = [
+    {
+      label: '文件',
+      submenu: [
+        isMac ? { role: 'close', label: '关闭窗口' } : { role: 'quit', label: '退出' },
+      ],
+    },
+    {
+      label: '编辑',
+      submenu: [
+        { role: 'undo', label: '撤销' },
+        { role: 'redo', label: '重做' },
+        { type: 'separator' },
+        { role: 'cut', label: '剪切' },
+        { role: 'copy', label: '复制' },
+        { role: 'paste', label: '粘贴' },
+        { role: 'delete', label: '删除' },
+        { type: 'separator' },
+        { role: 'selectAll', label: '全选' },
+      ],
+    },
+    {
+      label: '视图',
+      submenu: [
+        { role: 'reload', label: '重新加载' },
+        { role: 'forceReload', label: '强制重新加载' },
+        { role: 'toggleDevTools', label: '开发者工具' },
+        { type: 'separator' },
+        { role: 'resetZoom', label: '重置缩放' },
+        { role: 'zoomIn', label: '放大' },
+        { role: 'zoomOut', label: '缩小' },
+        { type: 'separator' },
+        { role: 'togglefullscreen', label: '全屏' },
+      ],
+    },
+    {
+      label: '窗口',
+      submenu: [
+        { role: 'minimize', label: '最小化' },
+        { role: 'zoom', label: '缩放' },
+        ...(isMac ? [
+          { type: 'separator' },
+          { role: 'front', label: '全部置于顶层' },
+        ] : [{ role: 'close', label: '关闭' }]),
+      ],
+    },
+    {
+      label: '帮助',
+      submenu: [
+        {
+          label: '关于 GeminiMusic',
+          click: () => {
+            const { dialog } = require('electron');
+            dialog.showMessageBox({
+              type: 'info',
+              title: '关于 GeminiMusic',
+              message: 'GeminiMusic v0.1.0',
+              detail: '基于 NeteaseCloudMusicApi 的跨平台音乐播放器',
+            });
+          },
+        },
+      ],
+    },
+  ];
+  return Menu.buildFromTemplate(template);
+}
 
 let serviceChildren = {};
 let win = null;
@@ -81,6 +151,9 @@ p{color:rgba(255,255,255,0.65);line-height:1.6;font-size:14px}
 async function bootstrap() {
   console.log('[main] 应用启动中...');
   console.log('[main] 平台:', process.platform, 'cwd:', process.cwd());
+
+  // 设置中文菜单
+  Menu.setApplicationMenu(buildAppMenu());
 
   // ── In dev mode, ports may already be pre-resolved ──
   // When started via scripts/start-desktop.mjs, SERVICE_PORTS env is set.

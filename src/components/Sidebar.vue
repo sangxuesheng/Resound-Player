@@ -78,7 +78,13 @@ const items = [
   cursor: default;
   overflow: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   transition: width 0.26s ease, min-width 0.26s ease, padding 0.26s ease;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .profile {

@@ -181,6 +181,10 @@ export const playerStore = reactive({
       this.isPlaying = false;
     };
 
+    // 预热音频硬件，缩短首次 AudioContext 创建时间
+    // Windows 上首次 new AudioContext() 需初始化 WASAPI，延迟可达 500ms+
+    this._prewarmAudio();
+
     this.hydrate();
   },
 
@@ -309,6 +313,12 @@ export const playerStore = reactive({
     } catch {
       this.syncThemeState();
     }
+  },
+
+  /** 预热音频硬件，缩短首次 AudioContext() 创建延迟 */
+  /** 预热：直接初始化 Web Audio 管线，消除首次播放时的 AudioContext 创建延迟 */
+  _prewarmAudio() {
+    this._ensureWebAudio();
   },
 
   /** 惰性创建 Web Audio 管线（MediaElementSourceNode + GainNode） */
@@ -861,6 +871,10 @@ export const playerStore = reactive({
       }
       if (typeof seekTo === 'number' && seekTo > 0) {
         this.audio.currentTime = seekTo;
+      }
+      // 确保 AudioContext 处于运行态（预创建时可能为 suspended）
+      if (this._audioCtx && this._audioCtx.state === 'suspended' && !this._eqEnabled) {
+        this._audioCtx.resume().catch(() => {});
       }
       try {
         await this.audio.play();

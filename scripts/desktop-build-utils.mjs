@@ -55,13 +55,7 @@ export function runCommand(command, args, options = {}) {
 }
 
 export function buildRenderer() {
-  // Windows平台使用npx来执行npm命令
-  const isWindows = process.platform === 'win32';
-  if (isWindows) {
-    runCommand('npx', ['npm', 'run', 'build:renderer']);
-  } else {
-    runCommand('npm', ['run', 'build:renderer']);
-  }
+  runCommand('npm', ['run', 'build:renderer']);
 }
 
 export function runElectronBuilder(args) {

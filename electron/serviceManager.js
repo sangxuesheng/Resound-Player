@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -178,13 +178,27 @@ export function startAllServices(ports, skipUnblock = false) {
 }
 
 /**
+ * Kill a child process, using taskkill on Windows for process tree cleanup.
+ */
+function killProcess(name, child) {
+  if (!child || child.killed) return;
+  console.log(`[serviceManager] killing ${name} (pid ${child.pid})`);
+  if (process.platform === 'win32') {
+    try {
+      spawnSync('taskkill', ['/F', '/T', '/PID', String(child.pid)], { stdio: 'ignore' });
+    } catch {
+      child.kill('SIGTERM');
+    }
+  } else {
+    child.kill('SIGTERM');
+  }
+}
+
+/**
  * Kill all child processes gracefully.
  */
 export function killAllServices(children) {
   for (const [name, child] of Object.entries(children)) {
-    if (child && !child.killed) {
-      console.log(`[serviceManager] killing ${name} (pid ${child.pid})`);
-      child.kill('SIGTERM');
-    }
+    killProcess(name, child);
   }
 }
