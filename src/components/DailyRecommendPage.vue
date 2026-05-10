@@ -410,7 +410,7 @@ watch(
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  padding: 20px;
+  padding: var(--space-5);
   box-sizing: border-box;
   color: #fff;
   background-repeat: no-repeat;
@@ -440,7 +440,7 @@ watch(
 .cover-title {
   position: relative;
   z-index: 1;
-  font-size: 36px;
+  font-size: var(--text-headline-lg);
   font-weight: 900;
   line-height: 1;
   margin-top: 8px;

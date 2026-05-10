@@ -112,14 +112,12 @@ const textLabels: Record<EntityType, string> = {
     background 220ms ease,
     box-shadow 220ms ease;
   box-shadow:
-    var(--button-surface-shadow, 0 1px 2px rgba(15, 23, 42, 0.06)),
-    0 10px 24px color-mix(in srgb, var(--accent) 8%, rgba(15, 23, 42, 0.14));
+    var(--button-surface-shadow, 0 1px 2px rgba(15, 23, 42, 0.06));
 }
 
 .entity-subscribe-button:hover {
   transform: translateY(-1px) scale(1.02);
   border-color: color-mix(in srgb, var(--accent) 30%, var(--button-surface-hover-border, rgba(255, 255, 255, 0.62)));
-  box-shadow: var(--button-surface-hover-shadow, 0 4px 14px rgba(15, 23, 42, 0.1)), 0 14px 28px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .entity-subscribe-button:focus-visible {

@@ -3,13 +3,13 @@
     <div class="editor-toolbar">
       <AnimatedAppear tag="h3" variant="title" rhythm="title" class-name="title">组件网格布局</AnimatedAppear>
       <div class="actions">
-        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="btn" :class="{ active: editMode }" @click="toggleEditMode">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="btn button-surface" :class="{ active: editMode }" @click="toggleEditMode">
           {{ editMode ? '退出编辑' : '进入编辑' }}
         </AnimatedAppear>
-        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="btn" @click="saveLayout">
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="btn button-surface" @click="saveLayout">
           {{ saveState === 'saved' ? '已保存' : saveState === 'saving' ? '保存中...' : '保存布局' }}
         </AnimatedAppear>
-        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="btn danger" @click="resetLayout">还原示例</AnimatedAppear>
+        <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="2" class-name="btn button-surface danger" @click="resetLayout">还原示例</AnimatedAppear>
       </div>
     </div>
 
@@ -271,9 +271,9 @@ onMounted(() => {
 .editor-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-width: 0; }
 .title { margin: 0; font-size: 16px; color: var(--text-main); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.btn { height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-main); cursor: pointer; }
-.btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
-.btn.danger { border-color: color-mix(in srgb, #ef4444 45%, var(--border)); color: #ef4444; }
+.btn { height: 34px; padding: 0 12px; border-radius: 10px; color: var(--text-main); cursor: pointer; }
+.btn.active { color: var(--accent); }
+.btn.danger { color: #ef4444; }
 .catalog-bar { display: flex; gap: 8px; align-items: center; min-width: 0; flex-wrap: wrap; }
 .catalog-select { height: 34px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-muted); color: var(--text-main); padding: 0 10px; min-width: 0; flex: 1 1 220px; }
 .grid-canvas { position: relative; width: 100%; min-width: 0; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-surface); overflow: auto; padding: 6px; box-sizing: border-box; max-height: 58vh; }

@@ -552,7 +552,6 @@ watch(
 .artist-tab:hover {
   transform: translateY(-1px);
   border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
-  box-shadow: 0 12px 22px color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .artist-tab.active {

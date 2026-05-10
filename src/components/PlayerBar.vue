@@ -517,7 +517,7 @@ function formatTime(sec: number) {
 .cover-wrap { position: relative; flex-shrink: 0; display: inline-flex; border-radius: 12px; overflow: hidden; }
 .cover-wrap:hover .cover-fullscreen-btn { opacity: 1; pointer-events: auto; }
 .cover { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: #e5e7eb center/cover no-repeat; cursor: pointer; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
-.cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+.cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); }
 .cover-fullscreen-btn {
   position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 12px;
   border: none; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer;
@@ -536,7 +536,7 @@ function formatTime(sec: number) {
 .progress { width: 100%; }
 .time { color: var(--text-sub); font-size: 11px; text-align: center; }
 .ctrl { width: 36px; height: 36px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--border) 78%, transparent); background: color-mix(in srgb, var(--bg-surface) 92%, #fff 8%); color: var(--text-main); cursor: pointer; display: grid; place-items: center; line-height: 1; box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.35); transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease; }
-.ctrl:hover { transform: translateY(-1px); box-shadow: 0 8px 16px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+.ctrl:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 .ctrl:active { transform: translateY(0); box-shadow: 0 3px 8px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.28); }
 .ctrl.main { width: 42px; height: 42px; border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: color-mix(in srgb, var(--accent) 22%, var(--bg-surface)); color: var(--text-main); box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 20%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
 .ctrl:focus-visible, .icon:focus-visible, .cover:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -583,12 +583,8 @@ function formatTime(sec: number) {
 .quality-fade-leave-to .quality-popup { transform: translateY(8px); opacity: 0; }
 
 .intel-icon svg {
-  animation: intel-spin 5s linear infinite;
+  animation: an-spin 5s linear infinite;
   color: var(--accent);
-}
-@keyframes intel-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
 }
 
 </style>

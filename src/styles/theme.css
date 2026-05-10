@@ -19,16 +19,16 @@
  * - Preserve compatibility with :root[data-glass='off']
  */
 :root {
-  --bg-app: radial-gradient(1200px 900px at 8% 8%, #f7fbff 0%, #edf4ff 36%, #e9f2ff 64%, #eef4ff 100%);
-  --bg-surface: rgba(255, 255, 255, 0.34);
-  --bg-muted: rgba(255, 255, 255, 0.22);
-  --bg-soft: rgba(245, 249, 255, 0.36);
-  --bg-solid: #f4f8ff;
-  --text-main: #0f172a;
-  --text-sub: #475569;
-  --text-soft: #64748b;
-  --border: rgba(255, 255, 255, 0.58);
-  --border-soft: rgba(255, 255, 255, 0.34);
+  --bg-app: radial-gradient(1200px 900px at 8% 8%, #fcfcfc 0%, #f8f8f8 40%, #f5f5f4 70%, #fafaf9 100%);
+  --bg-surface: rgba(255, 255, 255, 0.36);
+  --bg-muted: rgba(248, 247, 246, 0.32);
+  --bg-soft: rgba(252, 251, 250, 0.44);
+  --bg-solid: #fafaf9;
+  --text-main: #1c1917;
+  --text-sub: #57534e;
+  --text-soft: #78716c;
+  --border: rgba(28, 25, 23, 0.10);   /* stone-900 @ 10% */
+  --border-soft: rgba(28, 25, 23, 0.05);
   --accent: #22c55e;
   --accent-soft: rgba(34, 197, 94, 0.18);
   --accent-green: #22c55e;
@@ -57,7 +57,7 @@
   --button-surface-shadow: var(--glass-highlight);
   --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
   --button-surface-hover-border: color-mix(in srgb, var(--accent) 32%, var(--border));
-  --button-surface-hover-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 10%, transparent), var(--glass-highlight);
+  --button-surface-hover-shadow: var(--glass-highlight);
   --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 18%, var(--bg-surface));
   --button-surface-active-border: color-mix(in srgb, var(--accent) 42%, var(--border));
 
@@ -91,6 +91,37 @@
   --layout-card-gap: var(--space-2);
   --layout-control-gap: var(--space-2);
   --layout-inline-gap: var(--space-1);
+
+  /* Typography scale — 参考 Nocturne Audio 排版体系 */
+  --text-display: 48px;
+  --text-display-weight: 700;
+  --text-display-line: 56px;
+  --text-display-letter: -0.02em;
+  --text-headline-lg: 32px;
+  --text-headline-lg-weight: 700;
+  --text-headline-lg-line: 40px;
+  --text-headline-lg-letter: -0.01em;
+  --text-headline-md: 24px;
+  --text-headline-md-weight: 600;
+  --text-headline-md-line: 32px;
+  --text-body-lg: 18px;
+  --text-body-lg-weight: 400;
+  --text-body-lg-line: 28px;
+  --text-body-md: 16px;
+  --text-body-md-weight: 400;
+  --text-body-md-line: 24px;
+  --text-label-md: 14px;
+  --text-label-md-weight: 500;
+  --text-label-md-line: 20px;
+  --text-label-md-letter: 0.01em;
+  --text-label-sm: 12px;
+  --text-label-sm-weight: 600;
+  --text-label-sm-line: 16px;
+  --text-label-sm-letter: 0.05em;
+
+  /* Layout margins — 流体网格边距规范 */
+  --layout-margin-mobile: 20px;
+  --layout-margin-desktop: 48px;
 }
 
 .page-stack {
@@ -120,16 +151,16 @@
 }
 
 :root[data-theme='dark'] {
-  --bg-app: radial-gradient(1400px 900px at 14% 10%, #0d1a31 0%, #0a1426 38%, #090f1e 72%, #070d19 100%);
-  --bg-surface: rgba(17, 25, 40, 0.46);
-  --bg-muted: rgba(15, 23, 42, 0.4);
-  --bg-soft: rgba(13, 20, 38, 0.5);
-  --bg-solid: #0f1728;
-  --text-main: #e2e8f0;
-  --text-sub: #a5b4c8;
-  --text-soft: #7b8aa1;
-  --border: rgba(255, 255, 255, 0.24);
-  --border-soft: rgba(148, 163, 184, 0.2);
+  --bg-app: radial-gradient(1400px 900px at 14% 10%, #1a1716 0%, #141210 38%, #100e0d 72%, #0d0c0b 100%);
+  --bg-surface: rgba(30, 27, 25, 0.50);
+  --bg-muted: rgba(28, 25, 23, 0.45);
+  --bg-soft: rgba(26, 23, 21, 0.55);
+  --bg-solid: #1a1715;
+  --text-main: #e7e5e4;
+  --text-sub: #a8a29e;
+  --text-soft: #78716c;
+  --border: rgba(255, 255, 255, 0.22);
+  --border-soft: rgba(148, 146, 144, 0.20);
   --accent: #22c55e;
   --accent-soft: rgba(34, 197, 94, 0.22);
   --accent-green: #22c55e;
@@ -154,7 +185,7 @@
   --button-surface-shadow: var(--glass-highlight);
   --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
   --button-surface-hover-border: color-mix(in srgb, var(--accent) 34%, var(--border));
-  --button-surface-hover-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 12%, transparent), var(--glass-highlight);
+  --button-surface-hover-shadow: var(--glass-highlight);
   --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 20%, var(--bg-surface));
   --button-surface-active-border: color-mix(in srgb, var(--accent) 44%, var(--border));
 
@@ -204,7 +235,7 @@ body,
 
 html {
   /* 窗口缩放时的白色闪烁兜底，CSS 变量计算前使用硬编码暗色 */
-  background-color: #1a1a2e;
+  background-color: #1a1716;
 }
 
 body {
@@ -330,7 +361,7 @@ textarea,
 }
 
 :root[data-theme='dark'][data-glass='off'] {
-  --glass-shadow: 0 12px 28px rgba(2, 6, 23, 0.28);
+  --glass-shadow: 0 12px 28px rgba(23, 18, 16, 0.28);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -785,7 +816,6 @@ a,
   .name:hover,
   .mv-title:hover {
     color: var(--accent) !important;
-    text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 18%, transparent);
   }
 
   .featured-card:hover,

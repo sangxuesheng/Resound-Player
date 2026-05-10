@@ -326,7 +326,7 @@
         <template v-else-if="widget.id === 'search-history'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">搜索历史</AnimatedAppear>
           <div class="history-tags">
-            <button v-for="item in searchHistory" :key="item" class="tag" @click="quickSearch(item)">{{ item }}</button>
+            <button v-for="item in searchHistory" :key="item" class="tag button-surface" @click="quickSearch(item)">{{ item }}</button>
             <p v-if="!searchHistory.length" class="custom-tip">暂无搜索历史</p>
           </div>
         </template>
@@ -353,7 +353,7 @@
       <AnimatedAppear tag="div" variant="modal" rhythm="overlay" class-name="editor-modal">
         <div class="editor-modal-head">
           <h3>首页布局编辑</h3>
-          <button class="close-btn" @click="showEditor = false">关闭</button>
+          <button class="close-btn button-surface" @click="showEditor = false">关闭</button>
         </div>
 
         <GridLayoutEditor
@@ -1449,7 +1449,7 @@ async function playLatestSong(index: number) {
 .daily-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .daily-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: var(--space-2); z-index: 2; }
 .daily-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
-.daily-top-title { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.daily-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .daily-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 0; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
 .daily-poster-bottom { display: block; padding: var(--space-4) var(--space-4) var(--space-5); color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .daily-hover-list { display: grid; gap: 6px; padding: 0 var(--space-3) var(--space-3); opacity: 0; max-height: 0; overflow: hidden; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; }
@@ -1467,13 +1467,13 @@ async function playLatestSong(index: number) {
 .daily-bottom-zone:hover .daily-hover-list,
 .daily-bottom-zone:focus-within .daily-hover-list { opacity: 1; max-height: 140px; transform: translateY(0); }
 
-.radar-card { padding: 0; border-radius: 12px; overflow: hidden; }
+.radar-card { padding: 0; border-radius: 12px; overflow: hidden; min-height: 344px; }
 .radar-hero.poster { position: relative; width: 100%; height: 344px; border: none; padding: 0; margin: 0; background: #9ca3af; cursor: pointer; overflow: hidden; display: block; }
 .radar-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .radar-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .radar-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: var(--space-2); z-index: 2; }
 .radar-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
-.radar-top-title { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.radar-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .radar-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 0; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
 .radar-poster-bottom { display: block; padding: 16px 18px 20px; color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .radar-hover-list { display: grid; gap: 6px; padding: 0 14px 14px; opacity: 0; max-height: 0; overflow: hidden; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; }
@@ -1490,12 +1490,12 @@ async function playLatestSong(index: number) {
 .radar-bottom-zone:hover .radar-hover-list,
 .radar-bottom-zone:focus-within .radar-hover-list { opacity: 1; max-height: 140px; transform: translateY(0); }
 
-.fm-card { padding: 0; border-radius: 12px; overflow: hidden; }
+.fm-card { padding: 0; border-radius: 12px; overflow: hidden; min-height: 344px; }
 .fm-hero.poster { position: relative; width: 100%; height: 344px; border: none; padding: 0; margin: 0; background: #9ca3af; cursor: pointer; overflow: hidden; display: block; }
 .fm-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .fm-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .fm-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: 10px; z-index: 2; }
-.fm-top-title { color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.fm-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .fm-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 12px; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
 .fm-poster-bottom { display: block; padding: 16px 18px 0; color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .fm-control-panel { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 4px 18px 18px; opacity: 0; max-height: 0; overflow: visible; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; will-change: transform, opacity; }
@@ -1568,8 +1568,8 @@ async function playLatestSong(index: number) {
 .card.albums { scrollbar-width: none; }
 .card h3 { margin: 0 0 var(--space-3); color: var(--text-main); }
 .tag-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-.tag { border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-sub); border-radius: 999px; padding: var(--space-1) var(--space-3); cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
-.tag:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 34%, var(--border)); box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 10%, transparent); }
+.tag { color: var(--text-sub); border-radius: 999px; padding: var(--space-1) var(--space-3); cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
+.tag:hover { transform: translateY(-1px); }
 .tag:active { transform: translateY(0) scale(0.99); }
 .music-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
 .list-hint { margin: var(--space-2) 0 0; text-align: center; font-size: 12px; color: var(--text-soft); }
@@ -1670,7 +1670,7 @@ async function playLatestSong(index: number) {
 .editor-modal { width: min(1080px, calc(100vw - 72px)); max-height: calc(100vh - 96px); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: var(--space-3); box-sizing: border-box; overflow: auto; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35); }
 .editor-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .editor-modal-head h3 { margin: 0; font-size: 16px; color: var(--text-main); }
-.close-btn { height: 32px; padding: 0 var(--space-3); border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-main); cursor: pointer; }
+.close-btn { height: 32px; padding: 0 var(--space-3); border-radius: 10px; color: var(--text-main); cursor: pointer; }
 @media (max-width: 980px) {
   .home-top-reco { flex-direction: column; }
   :deep(.top-artists-row) { --horizontal-scroll-gap: 16px; }

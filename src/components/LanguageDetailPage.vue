@@ -298,7 +298,7 @@ watch(() => props.languageName, (name) => {
 }
 
 .muted {
-  padding: 40px 0;
+  padding: var(--space-8) 0;
   text-align: center;
   color: var(--text-sub);
   font-size: 14px;
@@ -307,7 +307,7 @@ watch(() => props.languageName, (name) => {
 .load-more-wrap {
   display: flex;
   justify-content: center;
-  padding: 20px 0 32px;
+  padding: var(--space-5) 0 var(--space-8);
 }
 .load-more-btn {
   padding: 8px 32px;

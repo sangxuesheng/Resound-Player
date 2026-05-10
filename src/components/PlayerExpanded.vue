@@ -609,7 +609,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .expanded-panel { position: relative; z-index: 2; width: 100vw; height: 100vh; padding: var(--space-4) var(--space-6) var(--space-5); box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto; gap: 0; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
-.song-name-center { margin: 0; color: #fff !important; font-size: 36px; font-weight: 700; line-height: 1.2; }
+.song-name-center { margin: 0; color: #fff !important; font-size: var(--text-headline-lg); font-weight: 700; line-height: 1.2; }
 .song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 18px; }
 .song-artist-center .rate-badge { margin-left: 8px; }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
@@ -621,7 +621,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .album-shell.playing { transform: scale(1); }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
-.song-name { width: 480px; margin: var(--space-2) 0 0; color: #ffffff !important; font-size: 36px; font-weight: 700; text-align: center;  }
+.song-name { width: 480px; margin: var(--space-2) 0 0; color: #ffffff !important; font-size: var(--text-headline-lg); font-weight: 700; text-align: center;  }
 .song-artist { width: 480px; margin: 0; color: rgba(255,255,255,0.82); text-align: center;  }
 .progress-wrap { width: 300px; display: grid; gap: var(--space-1); position: relative; }
 .progress { width: 100%; }
@@ -695,15 +695,14 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .offset-popover {
   position: fixed; right: 60px;
   width: 200px; padding: var(--space-3) var(--space-4);
-  background: var(--bg-surface, #1a1c28);
+  background: var(--bg-solid, #1a1c28);
   border: 1px solid var(--border, rgba(255,255,255,0.12));
   border-radius: var(--radius-lg, 14px);
   box-shadow: 0 8px 32px rgba(0,0,0,0.45);
   display: grid; gap: var(--space-2);
   transform-origin: right center;
-  animation: offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
+  animation: an-offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
 }
-@keyframes offset-in { from { opacity: 0; transform: translateY(-50%) scale(0.92) translateX(8px); } to { opacity: 1; } }
 .offset-head { color: var(--text-main,#fff); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-align: center; }
 .offset-body { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
 .of-step {
@@ -820,7 +819,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .playlist-popup li:hover .track-remove-btn { opacity: 1; }
 .track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
 .playlist-empty { color: rgba(255,255,255,0.35); text-align: center; padding: var(--space-6) 0; margin: 0; }
-@keyframes seek-fade-in { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: translateY(0); } }
 /* 切歌过渡 */
 .cover-switch-enter-active, .cover-switch-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
 .cover-switch-enter-from { opacity: 0; transform: scale(0.95); }
@@ -978,14 +976,10 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
     linear-gradient(in oklch longer hue to right, oklch(0.95 0.07 var(--hue1) / 60%), oklch(0.92 0.08 var(--hue2) / 60%)),
     linear-gradient(in oklch longer hue to bottom, oklch(0.95 0.07 var(--hue1) / 60%), oklch(0.92 0.08 var(--hue2) / 60%));
   background-size: 100% 100%;
-  animation-name: anim_bg;
+  animation-name: an-bg-hue;
   animation-duration: 7s;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
-}
-@keyframes anim_bg {
-  0% { --hue1: 30deg; --hue2: 180deg; }
-  100% { --hue1: 390deg; --hue2: 540deg; }
 }
 
 
@@ -1111,10 +1105,6 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 .intel-indicator svg,
 .intel-icon svg {
-  animation: intel-spin 5s linear infinite;
-}
-@keyframes intel-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  animation: an-spin 5s linear infinite;
 }
 </style>

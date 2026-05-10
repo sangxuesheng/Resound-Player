@@ -17,7 +17,7 @@
             v-if="activePage === 'home'"
             @open-detail="(id) => openPlaylistDetail(id, undefined, 'home')"
             @open-daily-list="openDailyList"
-            @open-album-detail="openAlbumDetail"
+            @open-album-detail="(albumId) => openAlbumDetail(albumId, 'home')"
             @open-playlist-category="openPlaylistByCategory"
             @open-search="openSearchPage"
             @open-artist="openArtistFromHome"
@@ -36,7 +36,7 @@
           <PlaylistPanel
             v-else-if="activePage === 'playlist'"
             :initial-cat="playlistInitialCategory"
-            @open-detail="openPlaylistDetail"
+            @open-detail="(id) => openPlaylistDetail(id, undefined, 'home')"
           />
           <PlaylistDetailPage
             v-else-if="activePage === 'playlist-detail'"
@@ -307,10 +307,10 @@ function onSelectMenu(key: string) {
   }
 }
 
-function openPlaylistDetail(playlistId: number, _coverUrl?: string, returnPage = 'playlist') {
+function openPlaylistDetail(playlistId: number, _coverUrl?: string, returnPage?: string) {
   dailyInjectedPlaylist.value = null;
   activePlaylistId.value = playlistId;
-  activePlaylistReturnPage.value = returnPage;
+  activePlaylistReturnPage.value = returnPage || 'home';
   activePage.value = 'playlist-detail';
 }
 
@@ -395,27 +395,7 @@ function openAlbumDetail(albumId: number, returnPage = 'home') {
 }
 
 function backToAlbum() {
-  if (activeAlbumReturnPage.value === 'search') {
-    activePage.value = 'search';
-    return;
-  }
-  if (activeAlbumReturnPage.value === 'playlist-detail') {
-    activePage.value = 'playlist-detail';
-    return;
-  }
-  if (activeAlbumReturnPage.value === 'artist-detail') {
-    activePage.value = 'artist-detail';
-    return;
-  }
-  if (activeAlbumReturnPage.value === 'history') {
-    activePage.value = 'history';
-    return;
-  }
-  if (activeAlbumReturnPage.value === 'song-comment') {
-    activePage.value = 'song-comment';
-    return;
-  }
-  activePage.value = 'home';
+  activePage.value = activeAlbumReturnPage.value || 'home';
 }
 
 function openRankDetail(playlistId: number) {

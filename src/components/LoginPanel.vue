@@ -406,7 +406,7 @@ onBeforeUnmount(() => {
 
 .title {
   margin: 0;
-  font-size: 28px;
+  font-size: var(--text-headline-md);
   line-height: 1.1;
   color: var(--text-main);
 }
@@ -464,8 +464,8 @@ onBeforeUnmount(() => {
 
 .panel-card {
   display: grid;
-  gap: 16px;
-  padding: 20px;
+  gap: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--border);
   border-radius: 20px;
   background: color-mix(in srgb, var(--bg-surface) 92%, transparent);

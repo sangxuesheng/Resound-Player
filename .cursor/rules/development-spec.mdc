@@ -43,6 +43,37 @@ description: Gemini 音乐项目开发规范，汇总样式统一、详情页公
 - 卡片与面板的圆角、阴影、边距尽量统一
 - 复杂页面优先拆成可复用区块，不要在单页里重复实现多个近似结构
 
+#### 2.2.1 流体网格规范
+
+项目遵循流体网格布局模型，以保持跨端视觉一致性：
+
+| 断点 | 列数 | 侧边距 | 容器行为 |
+|------|------|--------|---------|
+| 移动端 | 4 列 | `--layout-margin-mobile: 20px` | 内容卡片全宽或 2 列网格 |
+| 桌面端 | 12 列 | `--layout-margin-desktop: 48px` | 侧栏 280px 固定，主内容区流体填充 |
+
+**使用原则：**
+
+- 页面级容器优先使用已定义的 `--layout-margin-mobile` / `--layout-margin-desktop` token，不在组件内散写 `padding: 20px` 或 `padding: 48px`
+- 各页面具体内容区域增加内边距时，继续使用 `--space-*` 体系
+- 侧栏宽度保持 280px 固定，不做 100% 流体侧栏
+
+#### 2.2.2 嵌套协调原则（Nested Harmony）
+
+卡片与面板容器的 `border-radius` 与内部 `padding` 应保持相互协调，避免内容从圆角处溢出视觉界线：
+
+- 容器的 `padding` 应接近或等于 `border-radius`，保证内部子元素距离容器边缘至少一个圆角半径
+- 当前参考：`--radius-lg: 14px`，卡片 padding 使用 `--space-4: 16px`（padding ≥ radius，符合套嵌安全）
+- 新增容器时，检查 padding 与 radius 的关系，避免 `padding < radius` 导致内容压角
+
+#### 2.2.3 卡片无边框变体
+
+部分场景下（侧栏内嵌卡片、列表嵌套卡片、紧凑信息区）可选用无边框卡片变体：
+
+- 移除 `border: 1px solid var(--border)`，仅保留 `background` 和 `box-shadow`
+- 适用范围：空间有限的信息密度区、视觉层级已由背景色区分的场景
+- 禁止在主要操作区、表单区、需要明确边界感的位置使用无边框变体
+
 ### 2.3 原子控件统一
 
 `src/components/ui/` 下的原子控件应保持统一视觉和交互节奏：
@@ -73,7 +104,56 @@ description: Gemini 音乐项目开发规范，汇总样式统一、详情页公
 - 避免在组件中重复定义接近主题能力的硬编码颜色和阴影
 - 兼容样式应保留，但不要把临时补丁继续扩展成新的主规范
 
-### 3.5 按钮体系与液态玻璃基线
+### 3.3 排版体系
+
+项目已在 `src/styles/theme.css` 中引入统一排版 token，参考 Apple HIG 风格的层级结构，按语义分为四个层级：
+
+| 层级 | Token 前缀 | 典型 fontSize | 用途 |
+|------|-----------|--------------|------|
+| Display | `--text-display-*` | 48px | 品牌入口、落地大标题 |
+| Headline | `--text-headline-*` | 32px / 24px | 页面标题、区块标题 |
+| Body | `--text-body-*` | 18px / 16px | 正文、描述、元数据 |
+| Label | `--text-label-*` | 14px / 12px | 导航项、标签、按钮文字 |
+
+所有排版 token 的命名规范为 `--text-{层级}-{尺寸}`，每个 token 含 font-size、font-weight、line-height、letter-spacing 四个维度：
+
+```css
+--text-display: 48px;
+--text-display-weight: 700;
+--text-display-line: 56px;
+--text-display-letter: -0.02em;
+```
+
+**使用原则：**
+
+- 标题优先使用 `--text-headline-lg/md`，避免在页面中散写 `font-size: 28px` 等硬编码值
+- 正文优先使用 `--text-body-lg/md`，统一项目内正文节奏
+- 辅助文字、导航、按钮文字优先使用 `--text-label-md/sm`
+- 不使用 `--text-display` 作为普通页面标题（仅限品牌/落地场景）
+- 新增页面时，先确定层级归属（display / headline / body / label），再引用对应 token
+- 列表项、详情页等密集信息区域统一使用 `--text-body-md`，保持可读性和扫描效率
+
+### 3.4 层级与深度规范
+
+项目通过透明度、模糊和描边建立视觉层次，参考 Apple HIG 的玻璃材质层级体系，共定义 4 级：
+
+| 层级 | 实现方式 | 用途 |
+|------|---------|------|
+| **Level 0 — 基底** | `--bg-app` 纯色/渐变背景 | 页面底层画布，不重叠其他内容 |
+| **Level 1 — 内联表面** | `--bg-solid` + 1px `--border` 描边 | 普通卡片、面板、列表行、设置组 |
+| **Level 2 — 玻璃覆盖层** | `--bg-soft`/`--bg-surface` + `backdrop-filter: blur(18-20px)` | 侧栏、顶栏、浮动播放器、固定工具条 |
+| **Level 3 — 模态层** | `--bg-solid` + 高对比描边，全不透明背景 | 弹窗、下拉菜单、上滑面板、编辑器 |
+
+**设计约束：**
+
+- **Level 0**：使用 `--bg-app`，确保各页面底色统一
+- **Level 1**：卡片/面板优先使用 `--bg-solid`，hover 时通过 `color-mix` 混入 accent 色指示交互态
+- **Level 2**：玻璃覆盖层应配合 `backdrop-filter` 实现磨砂效果，hover 时不改变图层级
+- **Level 3**：内容面板背景必须使用 `var(--bg-solid)` 不透明色（详见 3.7 弹窗规范），避免玻璃重叠带来的文字可读性问题
+- 避免使用 `box-shadow` 作为主要层级手段——项目的纵深通过透明度、模糊、描边和色彩混合建立，`--glass-shadow` 仅在玻璃系统内作为容器边缘的微妙光晕使用，不用于表达元素间的层次关系
+- 阴影仅限从封面色彩溢出的环境光晕（如 `PlayerExpanded.vue` 的 palette extraction），不作为通用层级手段
+
+### 3.6 按钮体系与液态玻璃基线
 
 项目已在 `src/styles/theme.css` 中沉淀统一按钮体系，后续所有普通按钮、胶囊按钮、筛选按钮、tab 按钮、菜单项按钮、下拉触发器等，应优先接入按钮基线，而不是在页面内重复散写一套 border / background / box-shadow。
 
@@ -105,7 +185,7 @@ description: Gemini 音乐项目开发规范，汇总样式统一、详情页公
 - `BookmarkIconButton`：属于标准收藏入口组件，应继续复用，但视觉扩展优先基于 token 调整，不要重新散写一套 heart 按钮
 - 卡片式 action 区、媒体卡片点击壳、列表大行点击块，默认按卡片 / 行交互处理，不强行归入普通按钮 surface
 
-### 3.6 弹窗/下拉窗/上拉窗背景必须不透明
+### 3.7 弹窗/下拉窗/上拉窗背景必须不透明
 
 所有弹出层、下拉菜单、上滑面板等浮层组件的**内容面板**背景必须使用不透明色，禁止使用半透明或玻璃透明背景。
 

@@ -50,6 +50,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { platform } from '../utils/platform'
 
 const errorMessage = ref('内嵌API服务启动失败，应用无法正常运行。')
 const showDetails = ref(false)
@@ -63,8 +64,8 @@ const retryStartup = () => {
 }
 
 const exitApp = () => {
-  if (window.electronAPI) {
-    window.electronAPI.quitApp()
+  if (platform.isDesktop) {
+    window.electronAPI!.quitApp()
   } else {
     window.close()
   }

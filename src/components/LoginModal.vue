@@ -45,7 +45,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKeydown));
   position: fixed; inset: 0; z-index: 300;
   background: rgba(0,0,0,0.5);
   display: grid; place-items: center;
-  overflow-y: auto; padding: 20px;
+  overflow-y: auto; padding: var(--space-5);
 }
 .lm-wrapper {
   position: relative;

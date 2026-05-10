@@ -161,8 +161,9 @@ const items = [
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: 12px;
-  border: 1px solid transparent;
-  background: transparent;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: var(--text-main);
   cursor: pointer;
   transition: all 0.22s ease;

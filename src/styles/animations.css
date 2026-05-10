@@ -388,3 +388,25 @@ img.entity-cover.cover-image,
 .fade-in-bg.bg-loaded {
   opacity: 1;
 }
+
+/* 通用旋转动画 — 跨组件共享，避免各组件私有定义 */
+@keyframes an-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 组件级入场动画 — 弹窗/浮层 */
+@keyframes an-offset-in {
+  from { opacity: 0; transform: translateY(-50%) scale(0.92) translateX(8px); }
+  to { opacity: 1; }
+}
+
+@keyframes an-seek-fade-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes an-bg-hue {
+  0% { --hue1: 30deg; --hue2: 180deg; }
+  100% { --hue1: 390deg; --hue2: 540deg; }
+}

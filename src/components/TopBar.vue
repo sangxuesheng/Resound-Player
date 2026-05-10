@@ -59,7 +59,7 @@
         </div>
       </AnimatedAppear>
 
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg" :attrs="intelligenceBtnAttrs" :data-tooltip="playerStore.isIntelligenceActive ? '退出心动模式' : '心动模式'" data-tooltip-dir="down" @click="handleIntelligencePlay">
+      <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="msg button-surface" :attrs="intelligenceBtnAttrs" :data-tooltip="playerStore.isIntelligenceActive ? '退出心动模式' : '心动模式'" data-tooltip-dir="down" @click="handleIntelligencePlay">
         <Sparkles :size="16" />
       </AnimatedAppear>
       <div class="user-menu-wrap">
@@ -68,7 +68,7 @@
           variant="control"
           rhythm="actions"
           :index="2"
-          class-name="avatar"
+          class-name="avatar button-surface"
           :attrs="{ type: 'button', 'aria-label': userStore.isLogin ? '打开用户菜单' : '登录', 'aria-expanded': userStore.isLogin ? String(showUserMenu) : undefined }"
           @click.stop="onUserButtonClick"
         >
@@ -720,8 +720,6 @@ onBeforeUnmount(() => {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--glass-reflection), var(--bg-muted);
   color: var(--text-main);
   cursor: pointer;
   display: grid;
@@ -729,8 +727,6 @@ onBeforeUnmount(() => {
   -webkit-app-region: no-drag;
 }
 .msg:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
   transform: translateY(-1px);
 }
 .msg:active {
@@ -742,14 +738,10 @@ onBeforeUnmount(() => {
   transform: none;
 }
 .msg--loading svg {
-  animation: msg-spin 1s linear infinite;
-}
-@keyframes msg-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  animation: an-spin 1s linear infinite;
 }
 .msg--active svg {
-  animation: msg-spin 5s linear infinite;
+  animation: an-spin 5s linear infinite;
 }
 .user-menu-wrap {
   position: relative;
@@ -764,8 +756,6 @@ onBeforeUnmount(() => {
   height: 36px;
   padding: 0;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--glass-reflection), var(--bg-muted);
   color: var(--text-main);
   cursor: pointer;
   display: block;
@@ -776,8 +766,6 @@ onBeforeUnmount(() => {
   -webkit-app-region: no-drag;
 }
 .avatar:hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
   transform: translateY(-1px);
 }
 .avatar:active {
@@ -805,7 +793,8 @@ onBeforeUnmount(() => {
   width: 286px;
   padding: var(--space-3);
   border-radius: 18px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
 }
 .user-card {
@@ -874,12 +863,15 @@ onBeforeUnmount(() => {
   border: 1px solid color-mix(in srgb, #f5a623 24%, transparent);
 }
 .menu-section {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   padding-top: var(--space-2);
   border-top: 1px solid var(--border);
 }
 .menu-item {
+  box-sizing: border-box;
+  width: 100%;
   min-height: 36px;
   border: 0;
   border-radius: 12px;
@@ -887,7 +879,6 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-3);
   padding: 0 var(--space-3);
   font: inherit;
@@ -895,6 +886,7 @@ onBeforeUnmount(() => {
   text-align: left;
 }
 .menu-item span {
+  margin-left: auto;
   color: var(--text-sub);
   font-size: 12px;
 }
