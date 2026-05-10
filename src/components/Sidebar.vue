@@ -161,7 +161,7 @@ const items = [
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: 12px;
-  border: 1px solid transparent !important;
+  border: 1px solid var(--border) !important;
   background: transparent !important;
   box-shadow: none !important;
   color: var(--text-main);

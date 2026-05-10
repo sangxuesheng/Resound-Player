@@ -20,7 +20,6 @@
           <span class="history-time">{{ formatTime(item.time) }}</span>
         </span>
         <span class="history-actions">
-          <span class="history-arrow">↗</span>
           <button
             class="history-delete"
             type="button"
@@ -129,16 +128,17 @@ function formatTime(time: number) {
   min-width: 0;
   max-width: min(100%, 320px);
   color: var(--text-main);
-  padding: 12px 14px;
+  padding: 10px 16px;
   cursor: pointer;
-  transition: background .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition: transform .18s ease, border-color .18s ease;
 }
 
 .history-item:hover {
-  background: color-mix(in srgb, var(--theme-primary, var(--accent)) 14%, var(--bg-surface));
-  border-color: color-mix(in srgb, var(--theme-primary, var(--accent)) 30%, var(--border));
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+  border-color: var(--accent);
 }
 
 .history-main {
@@ -168,20 +168,6 @@ function formatTime(time: number) {
   gap: 6px;
 }
 
-.history-arrow {
-  display: none;
-  color: var(--theme-primary, var(--accent));
-  font-size: 12px;
-  border-radius: 999px;
-  padding: 2px;
-  transition: color .18s ease, background .18s ease, opacity .18s ease;
-}
-
-.history-item:hover .history-arrow {
-  display: block;
-  background: color-mix(in srgb, var(--theme-primary, var(--accent)) 14%, var(--bg-surface));
-}
-
 .history-delete {
   width: 22px;
   height: 22px;
@@ -201,8 +187,7 @@ function formatTime(time: number) {
 }
 
 .history-delete:hover {
-  background: color-mix(in srgb, var(--theme-primary, var(--accent)) 16%, var(--bg-surface));
-  color: var(--theme-primary, var(--accent));
+  color: var(--accent);
 }
 
 @media (max-width: 767px) {

@@ -47,23 +47,23 @@
   --theme-primary-hover: color-mix(in srgb, var(--theme-primary) 18%, var(--bg-surface));
   --theme-primary-active: color-mix(in srgb, var(--theme-primary) 26%, var(--bg-surface));
 
-  --glass-blur: 18px;
-  --glass-shadow: 0 14px 34px rgba(15, 23, 42, 0.14), 0 2px 10px rgba(15, 23, 42, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.62), inset 0 -1px 0 rgba(255, 255, 255, 0.16);
-  --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.2) 22%, rgba(255, 255, 255, 0.06) 58%, rgba(255, 255, 255, 0.02) 100%);
+  --glass-blur: 0px;
+  --glass-shadow: none;
+  --glass-highlight: none;
+  --glass-reflection: none;
 
-  --button-surface-bg: var(--glass-reflection), var(--bg-muted);
+  --button-surface-bg: var(--bg-muted);
   --button-surface-border: color-mix(in srgb, var(--border) 88%, transparent);
-  --button-surface-shadow: var(--glass-highlight);
-  --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
+  --button-surface-shadow: none;
+  --button-surface-hover-bg: color-mix(in srgb, var(--accent) 12%, var(--bg-surface));
   --button-surface-hover-border: color-mix(in srgb, var(--accent) 32%, var(--border));
-  --button-surface-hover-shadow: var(--glass-highlight);
-  --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 18%, var(--bg-surface));
+  --button-surface-hover-shadow: none;
+  --button-surface-active-bg: color-mix(in srgb, var(--accent) 18%, var(--bg-surface));
   --button-surface-active-border: color-mix(in srgb, var(--accent) 42%, var(--border));
 
-  --button-danger-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 10%, var(--bg-surface));
+  --button-danger-bg: color-mix(in srgb, var(--danger, #ef4444) 10%, var(--bg-surface));
   --button-danger-border: color-mix(in srgb, var(--danger, #ef4444) 28%, var(--border));
-  --button-danger-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 16%, var(--bg-surface));
+  --button-danger-hover-bg: color-mix(in srgb, var(--danger, #ef4444) 16%, var(--bg-surface));
   --button-danger-hover-border: color-mix(in srgb, var(--danger, #ef4444) 40%, var(--border));
 
   --button-height-md: 34px;
@@ -175,23 +175,23 @@
   --theme-primary-hover: color-mix(in srgb, var(--theme-primary-strong) 20%, var(--bg-surface));
   --theme-primary-active: color-mix(in srgb, var(--theme-primary-strong) 28%, var(--bg-surface));
 
-  --glass-blur: 20px;
-  --glass-shadow: 0 16px 38px rgba(2, 6, 23, 0.45), 0 3px 14px rgba(2, 6, 23, 0.3);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(255, 255, 255, 0.08);
-  --glass-reflection: linear-gradient(155deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.08) 22%, rgba(255, 255, 255, 0.03) 58%, rgba(255, 255, 255, 0) 100%);
+  --glass-blur: 0px;
+  --glass-shadow: none;
+  --glass-highlight: none;
+  --glass-reflection: none;
 
-  --button-surface-bg: var(--glass-reflection), var(--bg-muted);
+  --button-surface-bg: var(--bg-muted);
   --button-surface-border: color-mix(in srgb, var(--border) 90%, transparent);
-  --button-surface-shadow: var(--glass-highlight);
-  --button-surface-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
+  --button-surface-shadow: none;
+  --button-surface-hover-bg: color-mix(in srgb, var(--accent) 14%, var(--bg-surface));
   --button-surface-hover-border: color-mix(in srgb, var(--accent) 34%, var(--border));
-  --button-surface-hover-shadow: var(--glass-highlight);
+  --button-surface-hover-shadow: none;
   --button-surface-active-bg: var(--glass-reflection), color-mix(in srgb, var(--accent) 20%, var(--bg-surface));
   --button-surface-active-border: color-mix(in srgb, var(--accent) 44%, var(--border));
 
-  --button-danger-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 12%, var(--bg-surface));
+  --button-danger-bg: color-mix(in srgb, var(--danger, #ef4444) 12%, var(--bg-surface));
   --button-danger-border: color-mix(in srgb, var(--danger, #ef4444) 30%, var(--border));
-  --button-danger-hover-bg: var(--glass-reflection), color-mix(in srgb, var(--danger, #ef4444) 18%, var(--bg-surface));
+  --button-danger-hover-bg: color-mix(in srgb, var(--danger, #ef4444) 18%, var(--bg-surface));
   --button-danger-hover-border: color-mix(in srgb, var(--danger, #ef4444) 42%, var(--border));
 
   --button-height-md: 34px;
@@ -355,14 +355,14 @@ textarea,
 /* Surface fallback when glass is disabled */
 :root[data-glass='off'] {
   --glass-blur: 0px;
-  --glass-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --glass-shadow: none;
+  --glass-highlight: none;
   --glass-reflection: none;
 }
 
 :root[data-theme='dark'][data-glass='off'] {
-  --glass-shadow: 0 12px 28px rgba(23, 18, 16, 0.28);
-  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --glass-shadow: none;
+  --glass-highlight: none;
 }
 
 /* Surfaces and glass system */
@@ -405,28 +405,23 @@ textarea,
 .sidebar-card,
 .history-detail,
 .detail-card,
-.history-item,
 .podcast-preview-item,
 .panel,
 .chip,
 .item {
   border-radius: var(--radius-lg) !important;
-  background: var(--glass-reflection), var(--bg-solid) !important;
+  background: var(--bg-solid) !important;
   border: 1px solid var(--border) !important;
-  box-shadow: var(--glass-shadow), var(--glass-highlight) !important;
+  box-shadow: none !important;
 }
 
 /* backdrop-filter 仅对半透明背景生效。chromium 中 backdrop-filter 会强制创建 GPU
   合成层，导致层内文字使用灰度抗锯齿替代子像素抗锯齿，PC 非 Retina 屏上明显变模糊。
   只有 sidebar 使用了半透明 var(--bg-soft)，其他卡片/面板均为实色背景，不需要
   backdrop-filter */
-.sidebar {
-  backdrop-filter: blur(var(--glass-blur)) saturate(145%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(145%);
-}
 
 .sidebar {
-  background: var(--glass-reflection), var(--bg-soft) !important;
+  background: var(--glass-reflection), var(--bg-solid) !important;
 }
 
 :root[data-glass='off'] .sidebar,
@@ -454,7 +449,6 @@ textarea,
 :root[data-glass='off'] .sidebar-card,
 :root[data-glass='off'] .history-detail,
 :root[data-glass='off'] .detail-card,
-:root[data-glass='off'] .history-item,
 :root[data-glass='off'] .podcast-preview-item,
 :root[data-glass='off'] .panel,
 :root[data-glass='off'] .chip,
@@ -1112,7 +1106,7 @@ svg.icon,
 :root[data-glass='off'] .grid-item,
 :root[data-glass='off'] .tag {
   background: var(--bg-solid) !important;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: none !important;
 }
 
 /* Overlay glass polish */
