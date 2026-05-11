@@ -328,6 +328,70 @@
           </a>
         </div>
       </AnimatedAppear>
+
+      <AnimatedAppear
+        tag="section"
+        variant="content"
+        rhythm="body"
+        index="3"
+        class-name="setting-group"
+      >
+        <AnimatedAppear tag="h3" variant="title" rhythm="title" class-name="group-title">捐赠支持</AnimatedAppear>
+        <div class="donate-card">
+          <p class="donate-desc">您的捐赠将用于支持开发和维护工作，包括但不限于服务器维护、域名续费等。</p>
+          <div class="donate-methods">
+            <div class="donate-method" @click="showQrCode = 'alipay'">
+              <div class="donate-method-icon donate-alipay">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28">
+                  <path d="M19.695 15.07c3.426 1.158 4.203 1.22 4.203 1.22V3.846c0-2.124-1.705-3.845-3.81-3.845H3.914C1.808.001.102 1.722.102 3.846v16.31c0 2.123 1.706 3.845 3.813 3.845h16.173c2.105 0 3.81-1.722 3.81-3.845v-.157s-6.19-2.602-9.315-4.119c-2.096 2.602-4.8 4.181-7.607 4.181-4.75 0-6.361-4.19-4.112-6.949.49-.602 1.324-1.175 2.617-1.497 2.025-.502 5.247.313 8.266 1.317a16.796 16.796 0 0 0 1.341-3.302H5.781v-.952h4.799V6.975H4.77v-.953h5.81V3.591s0-.409.411-.409h2.347v2.84h5.744v.951h-5.744v1.704h4.69a19.453 19.453 0 0 1-1.986 5.06c1.424.52 2.702 1.011 3.654 1.333m-13.81-2.032c-.596.06-1.71.325-2.321.869-1.83 1.608-.735 4.55 2.968 4.55 2.151 0 4.301-1.388 5.99-3.61-2.403-1.182-4.438-2.028-6.637-1.809" fill="#1677FF"/>
+                </svg>
+              </div>
+              <span class="donate-method-label">支付宝</span>
+            </div>
+            <div class="donate-method" @click="showQrCode = 'wechat'">
+              <div class="donate-method-icon donate-wechat">
+                <svg viewBox="0 0 24 24" fill="none" width="28" height="28"><path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.854-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.045c.134 0 .24-.11.24-.245 0-.06-.024-.12-.04-.178l-.325-1.233a.59.59 0 0 1-.04-.21.49.49 0 0 1 .201-.397C23.024 17.48 24 15.82 24 13.938c0-3.453-3.444-6.08-7.062-6.08zM15.35 12.18c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.844 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982z" fill="currentColor"/></svg>
+              </div>
+              <span class="donate-method-label">微信支付</span>
+            </div>
+          </div>
+          <div class="donate-list-header">
+            <span class="donate-list-title">捐赠列表</span>
+            <button class="donate-refresh" type="button" @click="refreshDonationList">刷新列表</button>
+          </div>
+          <p class="donate-list-desc">您的赞助将会出现在这里，您的赞助将支持开发者持续更新</p>
+          <div v-if="donations.length" class="donate-list">
+            <div v-for="(d, i) in donations" :key="i" class="donate-item">
+              <span class="donate-user">{{ d.name }}</span>
+              <span class="donate-amount">{{ d.amount }}</span>
+            </div>
+          </div>
+          <div v-else class="donate-empty">暂无捐赠记录</div>
+        </div>
+
+      <!-- 收款码弹窗 -->
+      <Teleport to="body">
+        <div v-if="showQrCode" class="qr-modal" @click.self="showQrCode = null">
+          <div class="qr-modal-content">
+            <button class="qr-modal-close" type="button" @click="showQrCode = null">&times;</button>
+            <img
+              v-if="showQrCode === 'alipay'"
+              src="/alipay-qr.jpg"
+              alt="支付宝收款码"
+              class="qr-modal-img"
+            />
+            <img
+              v-else-if="showQrCode === 'wechat'"
+              src="/wechat-qr.jpg"
+              alt="微信收款码"
+              class="qr-modal-img"
+            />
+            <p class="qr-modal-tip">{{ showQrCode === 'alipay' ? '打开支付宝扫码捐赠' : '打开微信扫码捐赠' }}</p>
+          </div>
+        </div>
+      </Teleport>
+      </AnimatedAppear>
+
     </template>
 
     <AnimatedAppear
@@ -509,6 +573,15 @@ const otherPkgs: AboutPkg[] = [
 
 const checkingUpdate = ref(false);
 const changelogExpanded = ref(false);
+const donations = ref<Array<{ name: string; amount: string }>>([]);
+const showQrCode = ref<string | null>(null);
+
+function refreshDonationList() {
+  donations.value = [
+    { name: '匿名用户', amount: '¥ 10.00' },
+    { name: '音乐爱好者', amount: '¥ 20.00' },
+  ];
+}
 
 function checkUpdate() {
   checkingUpdate.value = true;
@@ -1420,6 +1493,195 @@ async function handleAction(key: string) {
   color: var(--text-soft);
   grid-column: 1 / -1;
   margin-top: -4px;
+}
+
+/* ========== 捐赠支持 ========== */
+.donate-card {
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.donate-desc {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-sub);
+}
+
+.donate-methods {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.donate-method {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.donate-method:hover {
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg-surface));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  transform: translateY(-1px);
+}
+
+.donate-method-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donate-alipay { color: #1677ff; background: color-mix(in srgb, #1677ff 10%, var(--bg-solid)); }
+.donate-wechat { color: #07c160; background: color-mix(in srgb, #07c160 10%, var(--bg-solid)); }
+
+.donate-method-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.donate-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.donate-list-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.donate-refresh {
+  height: 30px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text-sub);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.donate-refresh:hover {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-surface));
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: var(--accent);
+}
+
+.donate-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.donate-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--bg-muted) 60%, transparent);
+  font-size: 13px;
+}
+
+.donate-user {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+.donate-amount {
+  color: var(--text-sub);
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.donate-empty {
+  text-align: center;
+  padding: var(--space-4);
+  color: var(--text-soft);
+  font-size: 13px;
+}
+
+/* ========== 收款码弹窗 ========== */
+.qr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.5);
+  display: grid;
+  place-items: center;
+  animation: qr-fade-in 0.2s ease;
+}
+
+.qr-modal-content {
+  background: var(--bg-solid);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.qr-modal-close {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-3);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  color: var(--text-sub);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.qr-modal-close:hover {
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+  color: var(--text-main);
+}
+
+.qr-modal-img {
+  width: 240px;
+  height: 240px;
+  border-radius: var(--radius-md);
+  object-fit: cover;
+}
+
+.qr-modal-tip {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+@keyframes qr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 </style>

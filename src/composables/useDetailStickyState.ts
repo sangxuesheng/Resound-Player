@@ -40,8 +40,9 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     if (!scrollHost || !headerEl) return;
     const st = scrollHost.scrollTop;
 
-    // 连续进度：scrollTop → 0~1，用于驱动背景/模糊渐变
-    const progress = Math.max(0, Math.min(1, st / PROGRESS_DISTANCE));
+    // 连续进度：从 initialOffset 开始算，与 isSticky 同步
+    const effectiveSt = Math.max(0, st - initialOffset);
+    const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
     headerEl.style.setProperty('--sticky-progress', String(progress));
 
     // 已吸顶时只判断 scrollTop，不因内容高度波动反复切换
