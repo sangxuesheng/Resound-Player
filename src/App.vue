@@ -12,7 +12,6 @@
       <TopBar
         :can-go-back="navHistory.canGoBack.value"
         :can-go-forward="navHistory.canGoForward.value"
-        @brand-click="onBrandClick"
         @search-submit="openSearchPage"
         @user-click="openUserLogin"
         @open-settings-page="() => openSettings('playback')"
@@ -852,15 +851,6 @@ async function openPodcastCategory(categoryId: number) {
   } finally {
     podcastLoading.value = false;
   }
-}
-
-function onBrandClick() {
-  if (isNarrow.value) {
-    sidebarOpen.value = !sidebarOpen.value;
-    return;
-  }
-
-  sidebarCollapsed.value = !sidebarCollapsed.value;
 }
 
 function openSearchPage(keyword: string) {

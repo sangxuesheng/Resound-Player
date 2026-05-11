@@ -77,7 +77,6 @@ function openDetail(item: any) { if (item) emit('open-detail', item); }
 .podcast-page,.podcast-main{display:grid;gap:var(--space-4)}
 .podcast-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4);align-items:start}
 .main-card{display:grid;gap:var(--space-4);padding:var(--space-4);border-radius:var(--radius-xl,24px)}
-.hero-card{background:linear-gradient(180deg,color-mix(in srgb, var(--bg-surface) 90%, white),color-mix(in srgb, var(--bg-surface) 82%, transparent)),linear-gradient(135deg,rgba(59,130,246,.14),rgba(168,85,247,.12)) !important}
 .hero-top,.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}
 .card-head--wrap{flex-wrap:wrap}.content-meta span{color:var(--text-sub)}
 .title{margin:0;font-size:24px;font-weight:800}
@@ -86,7 +85,7 @@ function openDetail(item: any) { if (item) emit('open-detail', item); }
 .grouped-sections{display:grid;gap:var(--space-6)}
 .pill-btn,.content-card{border:1px solid color-mix(in srgb, var(--border) 78%, transparent);transition:transform 180ms ease-out,border-color 180ms ease-out,box-shadow 180ms ease-out,background 180ms ease-out}
 .pill-btn{height:40px;padding:0 var(--space-3);border-radius:999px;background:var(--bg-muted)}
-.content-card:hover,.pill-btn:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--theme-primary) 24%, var(--border));box-shadow:0 12px 24px rgba(15,23,42,.08)}
+.content-card:hover,.pill-btn:hover{transform:translateY(-1px);border-color:color-mix(in srgb, var(--accent) 24%, var(--border));box-shadow:0 12px 24px rgba(15,23,42,.08)}
 .content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--space-4)}
 .content-card{display:grid;gap:var(--space-3);padding:var(--space-2);border-radius:var(--radius-xl,24px);text-align:left}
 :deep(.content-media-shell){width:100%;aspect-ratio:1/1;border-radius:20px}:deep(.content-cover-motion-shell){width:100%;height:100%;border-radius:20px;overflow:hidden}:deep(.content-cover){width:100%;height:100%;object-fit:cover}

@@ -311,6 +311,79 @@
           </HorizontalScrollRail>
         </template>
 
+        <template v-else-if="widget.id === 'exclusive-recommend'">
+          <AnimatedAppear tag="h3" variant="title" rhythm="head">你的专属推荐</AnimatedAppear>
+          <p v-if="exclusiveRecoLoading" class="custom-tip">专属推荐加载中…</p>
+          <p v-else-if="exclusiveRecoError" class="custom-tip">{{ exclusiveRecoError }}</p>
+          <p v-else-if="!exclusiveRecoPlaylists.length" class="custom-tip">登录后可查看专属推荐</p>
+          <HorizontalScrollRail
+            v-else
+            aria-label="你的专属推荐"
+            content-class="albums-row"
+            content-layout="flex"
+          >
+            <div
+              v-for="(group, gi) in exclusiveRecoGroups"
+              :key="gi"
+              class="albums-column"
+            >
+              <GradientCard
+                v-for="item in group"
+                :key="item.id"
+                tag="button"
+                :cover="item.picUrl || ''"
+                :name="item.name"
+                hover-play-size="sm"
+                @click="openRecoDetail(item.id)"
+              >
+                <template #subtitle>
+                  <button
+                    v-if="item.creator"
+                    type="button"
+                    class="artist-inline-btn"
+                    @click.stop="openUserDetailById(item.creator.userId)"
+                  >
+                    {{ item.creator.nickname || '创建者' }}
+                  </button>
+                </template>
+              </GradientCard>
+            </div>
+          </HorizontalScrollRail>
+        </template>
+
+        <template v-else-if="widget.id === 'radar-playlist'">
+          <AnimatedAppear tag="h3" variant="title" rhythm="head">雷达歌单</AnimatedAppear>
+          <p v-if="radarPlaylistsLoading" class="custom-tip">雷达歌单加载中…</p>
+          <p v-else-if="radarPlaylistsError" class="custom-tip">{{ radarPlaylistsError }}</p>
+          <p v-else-if="!radarPlaylists.length" class="custom-tip">暂无雷达歌单数据</p>
+          <HorizontalScrollRail
+            v-else
+            aria-label="雷达歌单"
+            content-class="albums-row"
+            content-layout="flex"
+          >
+            <div
+              v-for="(group, gi) in radarPlaylistGroups"
+              :key="gi"
+              class="albums-column"
+            >
+              <GradientCard
+                v-for="item in group"
+                :key="item.id"
+                tag="button"
+                :cover="item.coverImgUrl || item.picUrl || ''"
+                :name="radarPlaylistNames[item.id] || item.name"
+                hover-play-size="sm"
+                @click="openRecoDetail(item.id)"
+              >
+                <template #subtitle>
+                  <span class="radar-playlist-desc">{{ item.description ? item.description.slice(0, 30) : item.trackCount + '首' }}</span>
+                </template>
+              </GradientCard>
+            </div>
+          </HorizontalScrollRail>
+        </template>
+
         <template v-else-if="widget.id === 'latest-music'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">新歌速递</AnimatedAppear>
           <p v-if="latestMusicLoading" class="custom-tip">最新音乐加载中…</p>
@@ -481,6 +554,8 @@ const emit = defineEmits<{
 }>();
 const defaultLayout = [
   { id: 'albums', x: 0, y: 2, w: 12, h: 7, title: '专辑推荐模块', content: '首页专辑推荐区域' },
+  { id: 'exclusive-recommend', x: 0, y: 3, w: 12, h: 7, title: '专属推荐模块', content: '首页你的专属推荐区域' },
+  { id: 'radar-playlist', x: 0, y: 4, w: 12, h: 7, title: '雷达歌单模块', content: '首页雷达歌单区域' },
   { id: 'list', x: 0, y: 9, w: 12, h: 8, title: '热门音乐模块', content: '首页热门音乐列表区域' },
   { id: 'latest-music', x: 0, y: 17, w: 12, h: 4, title: '最新音乐组件', content: '首页最新音乐卡片流' },
   { id: 'podcast', x: 0, y: 21, w: 12, h: 7, title: '推荐播客', content: '首页播客推荐区域' },
@@ -721,6 +796,82 @@ const albumGroups = computed(() => {
   }
   return groups;
 });
+const exclusiveRecoPlaylists = computed(() => privateRadar.value);
+const exclusiveRecoGroups = computed(() => {
+  const groups: any[] = [];
+  for (let i = 0; i < exclusiveRecoPlaylists.value.length; i += 2) {
+    groups.push([exclusiveRecoPlaylists.value[i], exclusiveRecoPlaylists.value[i + 1]].filter(Boolean));
+  }
+  return groups;
+});
+const exclusiveRecoLoading = computed(() => privateRadarLoading.value);
+const exclusiveRecoError = computed(() => privateRadarError.value);
+
+// 雷达歌单 - 硬编码官方歌单ID
+const RADAR_PLAYLIST_IDS = [
+  3136952023,    // 私人雷达
+  2829896389,    // 日系私人雷达
+  2829816518,    // 欧美私人雷达
+  2829883282,    // 华语私人雷达
+  2829920189,    // 韩系私人雷达
+  5320167908,    // 时光雷达
+  8402996200,    // 会员雷达
+  5327906368,    // 乐迷雷达
+  5362359247,    // 宝藏雷达
+  5300458264,    // 新歌雷达
+  13145008655,   // 云村高分雷达
+  5341776086,    // 神秘雷达
+  13146632040,   // 热单雷达
+  10106461201,   // 从[蜘蛛糸モノポリー]开始重温经典
+];
+const radarPlaylistNames: Record<number, string> = {
+  3136952023: '私人雷达',
+  2829896389: '日系私人雷达',
+  2829816518: '欧美私人雷达',
+  2829883282: '华语私人雷达',
+  2829920189: '韩系私人雷达',
+  5320167908: '时光雷达',
+  8402996200: '会员雷达',
+  5327906368: '乐迷雷达',
+  5362359247: '宝藏雷达',
+  5300458264: '新歌雷达',
+  13145008655: '云村高分雷达',
+  5341776086: '神秘雷达',
+  13146632040: '热单雷达',
+  10106461201: '重温经典',
+};
+const radarPlaylists = ref<any[]>([]);
+const radarPlaylistsLoading = ref(false);
+const radarPlaylistsError = ref('');
+
+async function fetchRadarPlaylists() {
+  radarPlaylistsLoading.value = true;
+  radarPlaylistsError.value = '';
+  try {
+    const results = await Promise.allSettled(
+      RADAR_PLAYLIST_IDS.map((id) => getPlaylistDetail(id))
+    );
+    radarPlaylists.value = results
+      .map((r) => (r.status === 'fulfilled' ? r.value?.data?.playlist : null))
+      .filter(Boolean);
+    if (!radarPlaylists.value.length) {
+      radarPlaylistsError.value = '雷达歌单获取失败';
+    }
+  } catch (e: any) {
+    radarPlaylists.value = [];
+    radarPlaylistsError.value = e?.message || '雷达歌单获取失败';
+  } finally {
+    radarPlaylistsLoading.value = false;
+  }
+}
+const radarPlaylistGroups = computed(() => {
+  const groups: any[] = [];
+  for (let i = 0; i < radarPlaylists.value.length; i += 2) {
+    groups.push([radarPlaylists.value[i], radarPlaylists.value[i + 1]].filter(Boolean));
+  }
+  return groups;
+});
+
 const mvList = ref<any[]>([]);
 const mvLoading = ref(false);
 const mvError = ref('');
@@ -1312,7 +1463,7 @@ onMounted(async () => {
   window.addEventListener('click', onFmPopoverDocClick);
   window.addEventListener('keydown', onFmPopoverKeydown);
 
-  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList()]);
+  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList(), fetchRadarPlaylists()]);
 });
 
 onBeforeUnmount(() => {
@@ -1724,7 +1875,8 @@ async function playLatestSong(index: number) {
 .tag { color: var(--text-sub); border-radius: 999px; padding: var(--space-1) var(--space-3); cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
 .tag:hover { transform: translateY(-1px); }
 .tag:active { transform: translateY(0) scale(0.99); }
-.music-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.music-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; max-height: 580px; overflow-y: auto; scrollbar-width: none; }
+.music-list::-webkit-scrollbar { width: 0; height: 0; }
 .list-hint { margin: var(--space-2) 0 0; text-align: center; font-size: var(--text-label-sm); color: var(--text-soft); }
 .list-sentinel { width: 100%; height: 1px; }
 .song { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; }
@@ -1749,6 +1901,13 @@ async function playLatestSong(index: number) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+.radar-playlist-desc {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .latest-track {
   display: flex;

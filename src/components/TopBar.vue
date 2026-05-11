@@ -7,9 +7,6 @@
       <button class="nav-btn button-surface" type="button" :disabled="!canGoForward" aria-label="前进" @click="emit('nav-forward')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
       </button>
-      <AnimatedAppear tag="button" variant="title" rhythm="title" class-name="brand" @click="emit('brand-click')">
-        Resound-Player
-      </AnimatedAppear>
     </div>
 
     <div class="topbar-spacer" />
@@ -150,7 +147,6 @@ import { showGlobalToast } from '../stores/loginModal';
 
 const RECENT_KEY = 'tm_search_history';
 const emit = defineEmits<{
-  (e: 'brand-click'): void;
   (e: 'search-submit', keyword: string): void;
   (e: 'user-click'): void;
   (e: 'open-settings-page'): void;
@@ -532,27 +528,6 @@ onBeforeUnmount(() => {
   z-index: 120;
   overflow: visible;
   -webkit-app-region: drag;
-}
-.brand {
-  width: 100%;
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  padding: 0;
-  margin: 0;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text-main);
-  cursor: pointer;
-  justify-self: start;
-  text-align: left;
-  -webkit-app-region: no-drag;
-}
-.brand:hover {
-  color: #16a34a;
-}
-.brand:active {
-  transform: translateY(0) scale(0.99);
 }
 .topbar-left {
   display: flex;
