@@ -1,50 +1,98 @@
 <template>
-  <AnimatedAppear tag="aside" variant="sidebar" rhythm="shell" class-name="sidebar" :class="{ collapsed }">
-    <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="profile" :class="{ compact: collapsed }">
-      <AnimatedAppear tag="div" variant="control" rhythm="actions" class-name="avatar">TW</AnimatedAppear>
-      <div class="user" :class="{ collapsedText: collapsed }">
-        <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">听闻音乐用户</AnimatedAppear>
-        <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="sub">在线</AnimatedAppear>
-      </div>
+  <aside
+    ref="sidebarRef"
+    class="sidebar"
+    :class="{ collapsed: isCollapsed }"
+    :style="{ '--sidebar-w': isCollapsed ? '76px' : '220px' }"
+  >
+    <AnimatedAppear tag="div" variant="sidebar" rhythm="shell" class-name="sidebar-shell">
+      <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="profile" :class="{ compact: isCollapsed }">
+        <AnimatedAppear tag="div" variant="control" rhythm="actions" class-name="avatar">TW</AnimatedAppear>
+        <div class="user" :class="{ collapsedText: isCollapsed }">
+          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">Resound-Player 用户</AnimatedAppear>
+          <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="sub">在线</AnimatedAppear>
+        </div>
+      </AnimatedAppear>
+
+      <nav class="menu">
+        <AnimatedAppear
+          v-for="(item, idx) in items"
+          :key="item.key"
+          tag="button"
+          variant="nav"
+          rhythm="list"
+          :index="idx"
+          class-name="menu-item"
+          :class="{ active: item.key === activeKey, iconOnly: isCollapsed }"
+          :title="isCollapsed ? item.label : ''"
+          @click="emit('select', item.key)"
+        >
+          <component :is="item.icon" :size="18" class="icon" />
+          <span class="text" :class="{ collapsedText: isCollapsed }">{{ item.label }}</span>
+        </AnimatedAppear>
+      </nav>
     </AnimatedAppear>
 
-    <nav class="menu">
-      <AnimatedAppear
-        v-for="(item, idx) in items"
-        :key="item.key"
-        tag="button"
-        variant="nav"
-        rhythm="list"
-        :index="idx"
-        class-name="menu-item"
-        :class="{ active: item.key === activeKey, iconOnly: collapsed }"
-        :title="collapsed ? item.label : ''"
-        @click="emit('select', item.key)"
-      >
-        <component :is="item.icon" :size="18" class="icon" />
-        <span class="text" :class="{ collapsedText: collapsed }">{{ item.label }}</span>
-      </AnimatedAppear>
-    </nav>
-  </AnimatedAppear>
+    <!-- 右侧边缘折叠折痕 -->
+    <div
+      class="edge-crease"
+      :class="{ collapsed: isCollapsed }"
+      :title="isCollapsed ? '展开侧栏' : '收起侧栏'"
+      @click="toggleCollapsed"
+    >
+      <span class="crease-line"></span>
+    </div>
+  </aside>
 </template>
 
 <script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
 import { BookAudio, Clapperboard, Compass, History, Home, ListMusic, Search, Settings, Trophy, User } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
 
-withDefaults(
+const STORAGE_KEY = 'tm_sidebar_collapsed';
+
+const props = withDefaults(
   defineProps<{
     activeKey: string;
     collapsed?: boolean;
   }>(),
-  {
-    collapsed: false,
-  },
+  { collapsed: false },
 );
 
 const emit = defineEmits<{
+  (e: 'update:collapsed', v: boolean): void;
   (e: 'select', key: string): void;
 }>();
+
+const sidebarRef = ref<HTMLElement | null>(null);
+const isCollapsed = ref(props.collapsed);
+
+// 从父组件同步
+watch(() => props.collapsed, (v) => {
+  isCollapsed.value = v;
+});
+
+// 持久化本地存储
+watch(isCollapsed, (v) => {
+  localStorage.setItem(STORAGE_KEY, v ? '1' : '0');
+  emit('update:collapsed', v);
+});
+
+// 初始化时从 localStorage 恢复状态
+onMounted(() => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved !== null) {
+    const next = saved === '1';
+    if (next !== isCollapsed.value) {
+      isCollapsed.value = next;
+    }
+  }
+});
+
+function toggleCollapsed() {
+  isCollapsed.value = !isCollapsed.value;
+}
 
 const items = [
   { key: 'home', label: '首页', icon: Home },
@@ -65,7 +113,7 @@ const items = [
   position: fixed;
   top: var(--layout-top, 8px);
   left: var(--layout-left, 8px);
-  width: var(--sidebar-width, 220px);
+  width: var(--sidebar-w, 220px);
   height: var(--sidebar-height, 1026px);
   min-width: 0;
   max-width: 100%;
@@ -76,14 +124,24 @@ const items = [
   gap: var(--space-3);
   box-sizing: border-box;
   cursor: default;
+  overflow: visible;
+  transition: width 0.32s cubic-bezier(0.34, 1, 0.64, 1);
+  z-index: 10;
+}
+
+.sidebar-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   overflow: auto;
   overflow-x: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  transition: width 0.26s ease, min-width 0.26s ease, padding 0.26s ease;
+  height: 100%;
+  min-width: 0;
 }
 
-.sidebar::-webkit-scrollbar {
+.sidebar-shell::-webkit-scrollbar {
   display: none;
 }
 
@@ -94,6 +152,7 @@ const items = [
   padding: var(--space-3);
   border-radius: 14px;
   transition: padding 0.26s ease, gap 0.26s ease;
+  flex-shrink: 0;
 }
 
 .profile.compact {
@@ -135,6 +194,7 @@ const items = [
   display: grid;
   place-items: center;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .user .name {
@@ -185,5 +245,46 @@ const items = [
 
 .icon {
   flex-shrink: 0;
+}
+
+/* ── 右侧边缘折叠折痕 ── */
+.edge-crease {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  width: 18px;
+  height: 100%;
+  z-index: 20;
+  cursor: pointer;
+}
+
+/* 折痕线 */
+.crease-line {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%) translateX(-50%);
+  width: 10px;
+  height: 48px;
+  border-radius: 3px;
+  background: var(--border);
+  opacity: 1;
+  transition: opacity 0.22s ease, height 0.22s ease, width 0.22s ease, background 0.22s ease;
+}
+
+.edge-crease:hover .crease-line {
+  width: 14px;
+  height: 64px;
+  background: var(--accent);
+}
+
+.edge-crease:active .crease-line {
+  height: 40px;
+  background: var(--accent);
+}
+
+.edge-crease.collapsed .crease-line {
+  left: 12px;
+  transform: translateY(-50%) translateX(-50%);
 }
 </style>

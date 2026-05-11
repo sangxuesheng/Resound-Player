@@ -1,11 +1,11 @@
-# Gemini Music — Docker Build Stage
+# Resound-Player — Docker Build Stage
 #
 # This Dockerfile builds the frontend static assets.
 # Used with docker-compose for the full stack, or standalone for the frontend only.
 #
 # Usage:
-#   docker build -f deploy/Dockerfile -t gemini-music-frontend .
-#   docker run -p 8080:80 gemini-music-frontend
+#   docker build -f deploy/Dockerfile -t resound-player-frontend .
+#   docker run -p 8080:80 resound-player-frontend
 
 # ── Build stage ──
 FROM node:22-alpine AS builder

@@ -1,4 +1,4 @@
-# Gemini Music
+# Resound-Player
 
 > A Vue 3 music streaming player with glassmorphism aesthetic, green accent, light/dark theme support.
 
@@ -73,7 +73,7 @@ Derived accent tokens:
 | `--info` | `#3b82f6` (blue) | Info/announcement, helper badges |
 | `--info-soft` | `color-mix(in srgb, var(--info) 14%, var(--bg-surface))` | Info surface tint |
 
-> **Note vs Spotify:** Spotify defines three semantic accent colors — negative red (`#f3727f`), warning orange (`#ffa42b`), and announcement blue (`#539df5`). Gemini Music uses the accent switch feature (`data-accent`) instead; the blue accent variant can serve as an info color. Adding explicit warning/info tokens makes the semantic boundary clearer for agents.
+> **Note vs Spotify:** Spotify defines three semantic accent colors — negative red (`#f3727f`), warning orange (`#ffa42b`), and announcement blue (`#539df5`). Resound-Player uses the accent switch feature (`data-accent`) instead; the blue accent variant can serve as an info color. Adding explicit warning/info tokens makes the semantic boundary clearer for agents.
 
 ### Interactive states
 
@@ -287,7 +287,7 @@ All `gap`, `padding`, `margin` use these tokens. No hardcoded spacing values.
 | Circle | `--button-radius-md` | 10px | Icon buttons (circular via equal w/h + radius) |
 | Detail cover | (custom) | 16px | Album art in hero area |
 
-> **Comparison:** Spotify uses pill geometry heavily (500px-9999px for buttons, 50% for circular controls). Gemini Music takes a moderate approach — standard radius for general surfaces, pill only for specific button classes. This avoids the "everything is a pill" trap while keeping touch-friendly rounded corners on all interactive elements.
+> **Comparison:** Spotify uses pill geometry heavily (500px-9999px for buttons, 50% for circular controls). Resound-Player takes a moderate approach — standard radius for general surfaces, pill only for specific button classes. This avoids the "everything is a pill" trap while keeping touch-friendly rounded corners on all interactive elements.
 
 ### Page structure
 
@@ -398,9 +398,9 @@ button:focus-visible {
 - Keep typography compact for scanning — this is a music player, list-heavy, not an article layout
 - Let the glass highlight (`--glass-highlight`) define surface edges on dark mode instead of heavy borders
 
-> **Comparison vs Spotify:** Spotify uses green (`#1ed760`) strictly for functional highlights — play controls, active states, and CTAs. It never appears as a background fill or decorative element. Album art provides all environmental color. Gemini Music follows the same philosophy: the accent is a signal, not a theme.
+> **Comparison vs Spotify:** Spotify uses green (`#1ed760`) strictly for functional highlights — play controls, active states, and CTAs. It never appears as a background fill or decorative element. Album art provides all environmental color. Resound-Player follows the same philosophy: the accent is a signal, not a theme.
 >
-> **Comparison vs ElevenLabs:** ElevenLabs uses warm-tinted shadows to give surfaces tactile quality. Gemini Music achieves this via `--glass-reflection` + `--glass-highlight` — the inset highlight creates edge definition without shadow weight.
+> **Comparison vs ElevenLabs:** ElevenLabs uses warm-tinted shadows to give surfaces tactile quality. Resound-Player achieves this via `--glass-reflection` + `--glass-highlight` — the inset highlight creates edge definition without shadow weight.
 
 ### Don't
 - Don't hardcode hex colors in component scoped CSS — use tokens
@@ -419,9 +419,9 @@ button:focus-visible {
 - Don't flatten all corners to a single radius — use the radius scale purposefully by component type
 - Don't override player layout tokens in page-specific CSS (e.g. footer bar height, sidebar width) — they're centralized
 
-> **Comparison vs Apple:** Apple uses radius tiers purposefully (8px for controls, 16-18px for cards, 50% for circular). Gemini Music follows the same principle with `--radius-sm/md/lg/xl + --button-radius-pill/md`.
+> **Comparison vs Apple:** Apple uses radius tiers purposefully (8px for controls, 16-18px for cards, 50% for circular). Resound-Player follows the same principle with `--radius-sm/md/lg/xl + --button-radius-pill/md`.
 >
-> **Comparison vs ElevenLabs:** ElevenLabs avoids heavy shadows entirely. Gemini Music uses moderate shadow weight — enough to lift on hover, not enough to feel heavy. The `--glass-highlight` inset replaces the need for high-opacity shadows on dark surfaces.
+> **Comparison vs ElevenLabs:** ElevenLabs avoids heavy shadows entirely. Resound-Player uses moderate shadow weight — enough to lift on hover, not enough to feel heavy. The `--glass-highlight` inset replaces the need for high-opacity shadows on dark surfaces.
 
 ## Responsive Behavior
 
@@ -566,7 +566,7 @@ Active press: `translateY(0) scale(0.99)`.
 
 ### Ready-to-use prompt
 
-> "Build a [component/page] for Gemini Music using the design tokens from `DESIGN.md`. Use glass surfaces (`var(--bg-surface)`), green accent (`var(--accent)`), system font stack, and `--space-*` for spacing. Apply `.button-surface` to standard buttons, `.ui-safe-rail` for horizontal scroll containers. Entrance animation uses `AnimatedAppear` with appropriate rhythm offset. Cover images use `var(--image-hover-scale)` for hover effect."
+> "Build a [component/page] for Resound-Player using the design tokens from `DESIGN.md`. Use glass surfaces (`var(--bg-surface)`), green accent (`var(--accent)`), system font stack, and `--space-*` for spacing. Apply `.button-surface` to standard buttons, `.ui-safe-rail` for horizontal scroll containers. Entrance animation uses `AnimatedAppear` with appropriate rhythm offset. Cover images use `var(--image-hover-scale)` for hover effect."
 
 ### File structure
 

@@ -1,5 +1,5 @@
 {
-  "name": "gemini-music",
+  "name": "resound-player",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -70,8 +70,8 @@
     "wait-on": "^8.0.3"
   },
   "build": {
-    "appId": "com.gemini.music",
-    "productName": "GeminiMusic",
+    "appId": "com.resound.player",
+    "productName": "Resound-Player",
     "directories": {
       "output": "dist-build"
     },

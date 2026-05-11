@@ -1,6 +1,6 @@
 # 翻译与音译歌词显示规范
 
-本文档记录 Gemini 音乐项目中翻译（translation）和音译（romanized lyrics）的完整实现，
+本文档记录 Resound-Player 项目中翻译（translation）和音译（romanized lyrics）的完整实现，
 涵盖数据层、自定义渲染器、AMLL 渲染器以及 UI 控制入口。
 
 ---

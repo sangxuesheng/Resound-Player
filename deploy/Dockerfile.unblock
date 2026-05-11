@@ -1,11 +1,11 @@
-# Gemini Music — Unblock Services Docker Image
+# Resound-Player — Unblock Services Docker Image
 # Runs both unblock proxy (port 38762) and unblock match server (port 38763)
 #
 # Build:
-#   docker build -f deploy/Dockerfile.unblock -t gemini-music-unblock .
+#   docker build -f deploy/Dockerfile.unblock -t resound-player-unblock .
 #
 # Run:
-#   docker run -p 38762:38762 -p 38763:38763 gemini-music-unblock
+#   docker run -p 38762:38762 -p 38763:38763 resound-player-unblock
 
 FROM node:22-alpine
 
@@ -32,6 +32,6 @@ CMD sh -c "\
   node server/unblock-match-server.mjs & \
   wait \
 "
-LABEL org.opencontainers.image.title="Gemini Music Unblock"
-LABEL org.opencontainers.image.description="Gemini Music 音源替换服务 - Unblock Proxy + Match Server"
+LABEL org.opencontainers.image.title="Resound-Player Unblock"
+LABEL org.opencontainers.image.description="Resound-Player 音源替换服务 - Unblock Proxy + Match Server"
 LABEL org.opencontainers.image.version="0.1.0"

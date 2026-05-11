@@ -1,12 +1,12 @@
-# Gemini Music — Docker 镜像使用指南
+# Resound-Player — Docker 镜像使用指南
 
 ## 镜像列表
 
 | 镜像名 | 用途 |
 |--------|------|
-| `934029151/gemini-music-frontend` | Nginx + Vue 3 SPA 前端（端口 80） |
-| `934029151/gemini-music-api` | NeteaseCloudMusicApiEnhanced 后端 API（端口 38761） |
-| `934029151/gemini-music-unblock` | 音源替换服务（端口 38762/38763） |
+| `934029151/resound-player-frontend` | Nginx + Vue 3 SPA 前端（端口 80） |
+| `934029151/resound-player-api` | NeteaseCloudMusicApiEnhanced 后端 API（端口 38761） |
+| `934029151/resound-player-unblock` | 音源替换服务（端口 38762/38763） |
 
 ## 快速开始
 
@@ -21,7 +21,7 @@
 ```yaml
 services:
   nginx:
-    image: 934029151/gemini-music-frontend:latest
+    image: 934029151/resound-player-frontend:latest
     ports:
       - "80:80"
       - "443:443"
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   netease-api:
-    image: 934029151/gemini-music-api:latest
+    image: 934029151/resound-player-api:latest
     ports:
       - "38761:38761"
     environment:
@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
 
   unblock:
-    image: 934029151/gemini-music-unblock:latest
+    image: 934029151/resound-player-unblock:latest
     expose:
       - "38762"
       - "38763"
@@ -62,7 +62,7 @@ docker compose up -d
 ### 2. 单独运行前端
 
 ```bash
-docker run -d -p 80:80 934029151/gemini-music-frontend:latest
+docker run -d -p 80:80 934029151/resound-player-frontend:latest
 ```
 
 访问 `http://localhost`，但需要配合 API 和 unblock 服务才能使用全部功能。
@@ -113,7 +113,7 @@ docker run -d -p 80:80 934029151/gemini-music-frontend:latest
 2. 将证书挂载到 Nginx 容器
 3. 在 Nginx 配置中启用 SSL
 
-详细步骤见：[HTTPS 配置说明](https://github.com/your-repo/gemini-music-deploy)
+详细步骤见：[HTTPS 配置说明](https://github.com/your-repo/resound-player-deploy)
 
 ## 已知限制
 
@@ -124,7 +124,7 @@ docker run -d -p 80:80 934029151/gemini-music-frontend:latest
 ## 项目信息
 
 - 技术栈：Vue 3 + Vite + Nginx + Node.js
-- 源码：[GitHub 仓库](https://github.com/your-repo/gemini-music)
+- 源码：[GitHub 仓库](https://github.com/your-repo/resound-player)
 
 ## Tags
 

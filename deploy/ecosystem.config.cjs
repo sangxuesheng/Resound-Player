@@ -1,4 +1,4 @@
-// PM2 Ecosystem Configuration — Gemini Music
+// PM2 Ecosystem Configuration — Resound-Player
 //
 // Manages 3 backend processes:
 //   1. netease-api     — NeteaseCloudMusicApiEnhanced (port 38761)

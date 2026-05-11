@@ -57,7 +57,7 @@ win.webContents.on('page-title-updated', (event, title) => {
     }
     // 延迟恢复原标题，确保 macOS 窗口动画完成后再重置
     setTimeout(() => {
-      if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic');
+      if (!win.isDestroyed()) win.setTitle(_originalTitle || 'Resound-Player');
     }, 80);
   } else {
     _originalTitle = title;

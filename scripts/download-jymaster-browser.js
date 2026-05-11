@@ -10,7 +10,7 @@
 
   if (!cookie) {
     cookie = await new Promise(function (resolve, reject) {
-      var r = indexedDB.open('gemini_music', 1);
+      var r = indexedDB.open('resound_player', 1);
       r.onsuccess = function () {
         var tx = r.result.transaction('large_items', 'readonly');
         var req = tx.objectStore('large_items').get('ncm_login_cookie');

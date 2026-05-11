@@ -89,6 +89,20 @@
           <span class="fm-bg fade-in-bg" :class="{ 'bg-loaded': fmBgLoaded }" :style="{ backgroundImage: `url(${personalFmCoverUrl})` }"></span>
           <span class="fm-poster-top">
             <span class="fm-top-title">私人 FM</span>
+            <button
+              ref="fmModeBtnRef"
+              type="button"
+              class="fm-mode-btn"
+              :class="{ active: fmModePopoverOpen || playerStore.fmMode !== 'DEFAULT' }"
+              :title="`当前模式: ${fmModeLabel}`"
+              aria-label="私人 FM 模式选择"
+              @click.stop="toggleFmModePopover"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </button>
           </span>
           <span class="fm-bottom-zone">
             <span class="fm-poster-bottom">私人 FM｜从「{{ personalFmTracks[0]?.name || '今日漫游' }}」听起</span>
@@ -122,6 +136,60 @@
               </button>
             </span>
           </span>
+          <Teleport to="body">
+            <div
+              v-if="fmModePopoverOpen"
+              ref="fmPopoverRef"
+              class="fm-mode-popover"
+              :style="fmPopoverStyle"
+              @click.stop
+            >
+              <div class="fm-mode-popover-header">选择私人 FM 模式</div>
+              <div class="fm-mode-options">
+                <button
+                  v-for="opt in fmModeOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="fm-mode-option"
+                  :class="{ selected: selectedFmMode === opt.value }"
+                  @click="selectFmMode(opt.value)"
+                >
+                  <span class="fm-mode-option-radio">
+                    <span v-if="selectedFmMode === opt.value" class="fm-mode-option-dot"></span>
+                  </span>
+                  <span class="fm-mode-option-text">
+                    <span class="fm-mode-option-label">{{ opt.label }}</span>
+                    <span class="fm-mode-option-desc">{{ opt.desc }}</span>
+                  </span>
+                </button>
+              </div>
+              <div v-if="selectedFmMode === 'SCENE_RCMD'" class="fm-submode-section">
+                <div class="fm-submode-label">选择场景</div>
+                <div class="fm-submode-options">
+                  <button
+                    v-for="opt in fmSubmodeOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="fm-mode-option fm-submode-option"
+                    :class="{ selected: selectedFmSubmode === opt.value }"
+                    @click="selectFmSubmode(opt.value)"
+                  >
+                    <span class="fm-mode-option-radio">
+                      <span v-if="selectedFmSubmode === opt.value" class="fm-mode-option-dot"></span>
+                    </span>
+                    <span class="fm-mode-option-text">
+                      <span class="fm-mode-option-label">{{ opt.label }}</span>
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <div class="fm-mode-popover-footer">
+                <button type="button" class="fm-mode-apply-btn" @click="applyFmMode">
+                  确定
+                </button>
+              </div>
+            </div>
+          </Teleport>
         </button>
         <p v-else class="mini-desc">登录后可使用私人 FM</p>
       </AnimatedAppear>
@@ -387,7 +455,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBgLoaded } from '../composables/useBgLoaded';
-import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic, getAllMvs, getDjRecommend } from '../api/music';
+import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic, getAllMvs, getDjRecommend, setPersonalFmMode } from '../api/music';
 import { getUserCreatedPlaylist } from '../api/auth';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
@@ -514,6 +582,133 @@ const nextIconSvg = computed(() => {
 });
 const fmPlayTitle = computed(() => (isPersonalFmPlaying.value ? '暂停私人 FM' : '播放私人 FM'));
 const fmDislikeTitle = computed(() => '不喜欢并切换下一首');
+
+// ---- FM 模式选择 ----
+const fmModeOptions = [
+  { value: 'DEFAULT', label: '默认', desc: '基于你的听歌习惯推荐' },
+  { value: 'FAMILIAR', label: '熟悉', desc: '推荐你熟悉的曲风' },
+  { value: 'EXPLORE', label: '探索', desc: '探索更多新音乐' },
+  { value: 'SCENE_RCMD', label: '场景推荐', desc: '根据场景推荐音乐' },
+  { value: 'aidj', label: 'AI DJ', desc: 'AI 驱动个性化推荐' },
+];
+const fmSubmodeOptions = [
+  { value: 'EXERCISE', label: '运动' },
+  { value: 'FOCUS', label: '专注' },
+  { value: 'NIGHT_EMO', label: '深夜' },
+];
+const fmModePopoverOpen = ref(false);
+const selectedFmMode = ref(playerStore.fmMode);
+const selectedFmSubmode = ref(playerStore.fmSubmode);
+const fmModeBtnRef = ref<HTMLElement | null>(null);
+const fmPopoverRef = ref<HTMLElement | null>(null);
+const fmPopoverStyle = ref({ top: '0px', left: '0px' });
+
+const fmModeLabel = computed(() => {
+  if (playerStore.fmMode === 'DEFAULT' && !playerStore.fmSubmode) return '默认';
+  const opt = fmModeOptions.find(o => o.value === playerStore.fmMode);
+  if (playerStore.fmMode === 'SCENE_RCMD' && playerStore.fmSubmode) {
+    const sub = fmSubmodeOptions.find(o => o.value === playerStore.fmSubmode);
+    return `${opt?.label || '场景'}·${sub?.label || ''}`;
+  }
+  return opt?.label || playerStore.fmMode;
+});
+
+function toggleFmModePopover() {
+  if (fmModePopoverOpen.value) {
+    fmModePopoverOpen.value = false;
+    return;
+  }
+  selectedFmMode.value = playerStore.fmMode;
+  selectedFmSubmode.value = playerStore.fmSubmode;
+  fmModePopoverOpen.value = true;
+  nextTick(() => updateFmPopoverPosition());
+}
+
+function selectFmMode(mode: string) {
+  selectedFmMode.value = mode;
+  if (mode !== 'SCENE_RCMD') {
+    selectedFmSubmode.value = '';
+  } else if (!selectedFmSubmode.value) {
+    selectedFmSubmode.value = 'EXERCISE';
+  }
+  nextTick(() => updateFmPopoverPosition());
+}
+
+function selectFmSubmode(submode: string) {
+  selectedFmSubmode.value = submode;
+}
+
+function updateFmPopoverPosition() {
+  if (!fmModeBtnRef.value) return;
+  const rect = fmModeBtnRef.value.getBoundingClientRect();
+  const isNarrow = window.innerWidth <= 560;
+  if (isNarrow) {
+    fmPopoverStyle.value = {
+      top: `${rect.bottom + 8}px`,
+      left: '16px',
+    };
+  } else {
+    const popoverWidth = 240;
+    let left = rect.left - popoverWidth + rect.width;
+    if (left < 8) left = 8;
+    const maxLeft = window.innerWidth - popoverWidth - 8;
+    if (left > maxLeft) left = maxLeft;
+    fmPopoverStyle.value = {
+      top: `${rect.bottom + 8}px`,
+      left: `${left}px`,
+    };
+  }
+}
+
+async function applyFmMode() {
+  fmModePopoverOpen.value = false;
+  const mode = selectedFmMode.value;
+  const submode = selectedFmSubmode.value;
+
+  playerStore.setFmMode(mode, submode);
+
+  try {
+    const cookie = userStore.loginCookie || undefined;
+    const { data } = await setPersonalFmMode({ mode, submode: submode || undefined, cookie });
+    const tracks = (data?.data || []) as any[];
+    // 立即停止当前播放
+    playerStore.audio?.pause();
+    playerStore.isPlaying = false;
+
+    if (tracks.length) {
+      personalFmTracks.value = tracks;
+      playerStore.setPersonalFmFetcher(() =>
+        setPersonalFmMode({ mode, submode: submode || undefined, cookie }).then(r => r?.data?.data || [])
+      );
+      playerStore.personalFmHasMore = true;
+      playerStore.setPersonalFmPlaylist(tracks, 0);
+      await playerStore.playByIndex(0);
+      syncPersonalFmViewFromPlayer();
+    } else {
+      // 无曲目返回时清空 FM 上下文，停止播放
+      playerStore.clearPersonalFmContext();
+      playerStore.setPlaylist([], 0);
+      personalFmTracks.value = [];
+      personalFmError.value = '该模式下暂无可用曲目';
+    }
+  } catch (e: any) {
+    personalFmError.value = e?.message || '切换 FM 模式失败';
+  }
+}
+
+function onFmPopoverDocClick(e: MouseEvent) {
+  if (!fmModePopoverOpen.value) return;
+  const target = e.target as Node;
+  if (
+    fmModeBtnRef.value?.contains(target) ||
+    fmPopoverRef.value?.contains(target)
+  ) return;
+  fmModePopoverOpen.value = false;
+}
+
+function onFmPopoverKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') fmModePopoverOpen.value = false;
+}
 const fmNextTitle = computed(() => '下一首私人 FM');
 const albums = ref<Array<{ id: number; name: string; artist: string; pic: string }>>([]);
 const albumLoading = ref(false);
@@ -1113,11 +1308,15 @@ onMounted(async () => {
   await loadMoreHotSongs();
   await nextTick();
   setupHotSongsObserver();
+  window.addEventListener('click', onFmPopoverDocClick);
+  window.addEventListener('keydown', onFmPopoverKeydown);
 
   await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList()]);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('click', onFmPopoverDocClick);
+  window.removeEventListener('keydown', onFmPopoverKeydown);
   if (hotSongsObserver) {
     hotSongsObserver.disconnect();
     hotSongsObserver = null;
@@ -1651,5 +1850,177 @@ async function playLatestSong(index: number) {
   .artist-avatar { width: 87px; height: 87px; }
   .card { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .latest-column { width: 260px; flex-basis: 260px; }
+}
+
+/* ---- FM 模式选择浮窗 ---- */
+.fm-mode-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  padding: 0;
+}
+.fm-mode-btn svg {
+  width: 14px;
+  height: 14px;
+}
+.fm-mode-btn:hover,
+.fm-mode-btn.active {
+  background: rgba(255, 255, 255, 0.32);
+  transform: scale(1.08);
+}
+.fm-mode-btn:active {
+  transform: scale(0.94);
+}
+:global(.dark) .fm-mode-btn {
+  background: rgba(15, 23, 42, 0.5);
+}
+:global(.dark) .fm-mode-btn:hover,
+:global(.dark) .fm-mode-btn.active {
+  background: rgba(15, 23, 42, 0.7);
+}
+
+.fm-mode-popover {
+  position: fixed;
+  z-index: 10000;
+  width: 240px;
+  max-width: calc(100vw - 16px);
+  background: var(--bg-solid);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 48px color-mix(in srgb, rgba(15, 23, 42, 0.18), transparent), 0 4px 16px color-mix(in srgb, rgba(15, 23, 42, 0.1), transparent);
+  overflow: hidden;
+  display: grid;
+  gap: 0;
+}
+.fm-mode-popover-header {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
+}
+.fm-mode-options {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-2);
+}
+.fm-mode-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-2);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+.fm-mode-option:hover {
+  background: var(--bg-muted);
+}
+.fm-mode-option.selected {
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-muted));
+}
+.fm-mode-option-radio {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 180ms ease;
+}
+.fm-mode-option.selected .fm-mode-option-radio {
+  border-color: var(--accent);
+}
+.fm-mode-option-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.fm-mode-option-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.fm-mode-option-label {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.fm-mode-option-desc {
+  font-size: 11px;
+  color: var(--text-soft);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fm-submode-section {
+  border-top: 1px solid var(--border-soft);
+  padding: var(--space-2);
+}
+.fm-submode-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding: 0 var(--space-2) var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fm-submode-options {
+  display: grid;
+  gap: 2px;
+}
+.fm-submode-option {
+  padding-left: calc(var(--space-2) + 18px + var(--space-2));
+}
+.fm-mode-popover-footer {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border-soft);
+}
+.fm-mode-apply-btn {
+  width: 100%;
+  height: var(--button-height-md);
+  border: none;
+  border-radius: var(--button-radius-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 180ms ease, transform 180ms ease;
+}
+.fm-mode-apply-btn:hover {
+  filter: brightness(1.06);
+  transform: scale(1.02);
+}
+.fm-mode-apply-btn:active {
+  filter: brightness(0.94);
+  transform: scale(0.98);
+}
+
+@media (max-width: 520px) {
+  .fm-mode-popover {
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+  }
 }
 </style>

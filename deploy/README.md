@@ -1,6 +1,6 @@
-# Gemini Music — 生产部署指南
+# Resound-Player — 生产部署指南
 
-本目录包含 Gemini Music 上线生产所需的所有部署文件。
+本目录包含 Resound-Player 上线生产所需的所有部署文件。
 
 ## 架构图
 
@@ -48,12 +48,12 @@ npm ci
 VITE_BASE_URL=/ npm run build:web
 
 # 2. 复制构建产物到 Nginx 根目录
-sudo mkdir -p /var/www/gemini-music
-sudo cp -r dist/* /var/www/gemini-music/dist/
+sudo mkdir -p /var/www/resound-player
+sudo cp -r dist/* /var/www/resound-player/dist/
 
 # 3. 安装 Nginx 配置
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/gemini-music
-sudo ln -sf /etc/nginx/sites-available/gemini-music /etc/nginx/sites-enabled/
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/resound-player
+sudo ln -sf /etc/nginx/sites-available/resound-player /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 
 # 4. 启动后端服务
@@ -89,15 +89,15 @@ docker compose -f deploy/docker-compose.yml logs -f
 如需完全自包含的 Docker 构建，请使用 Dockerfile：
 
 ```bash
-docker build -f deploy/Dockerfile -t gemini-music .
-docker run -p 80:80 gemini-music
+docker build -f deploy/Dockerfile -t resound-player .
+docker run -p 80:80 resound-player
 ```
 
 ### 方案三：Docker 独立部署（仅前端）
 
 ```bash
-docker build -f deploy/Dockerfile -t gemini-music-frontend .
-docker run -p 8080:80 gemini-music-frontend
+docker build -f deploy/Dockerfile -t resound-player-frontend .
+docker run -p 8080:80 resound-player-frontend
 ```
 
 ## HTTPS 配置

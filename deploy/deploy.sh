@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Gemini Music — Production Deployment Script (pm2 + Nginx)
+# Resound-Player — Production Deployment Script (pm2 + Nginx)
 # ============================================================================
 #
 # Prerequisites:
@@ -29,9 +29,9 @@ set -euo pipefail
 # ── Configuration ──────────────────────────────────────────────────────────
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 DEPLOY_DIR="${PROJECT_DIR}/deploy"
-NGINX_ROOT="/var/www/gemini-music/dist"
-NGINX_CONF_DEST="/etc/nginx/sites-available/gemini-music"
-NGINX_CONF_LINK="/etc/nginx/sites-enabled/gemini-music"
+NGINX_ROOT="/var/www/resound-player/dist"
+NGINX_CONF_DEST="/etc/nginx/sites-available/resound-player"
+NGINX_CONF_LINK="/etc/nginx/sites-enabled/resound-player"
 BUILD_DIR="${PROJECT_DIR}/dist"
 LOG_DIR="${PROJECT_DIR}/logs"
 
@@ -93,7 +93,7 @@ if [ -d "/etc/nginx/sites-available" ]; then
     ln -sf "${NGINX_CONF_DEST}" "${NGINX_CONF_LINK}"
 else
     warn "/etc/nginx/sites-available not found — copying to /etc/nginx/conf.d/"
-    cp "${DEPLOY_DIR}/nginx.conf" "/etc/nginx/conf.d/gemini-music.conf"
+    cp "${DEPLOY_DIR}/nginx.conf" "/etc/nginx/conf.d/resound-player.conf"
 fi
 
 # ── Step 6: Test and reload Nginx ──────────────────────────────────────────

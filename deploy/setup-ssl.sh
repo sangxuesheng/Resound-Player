@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# Gemini Music — HTTPS Certificate Setup (Let's Encrypt / Certbot)
+# Resound-Player — HTTPS Certificate Setup (Let's Encrypt / Certbot)
 # ============================================================================
 #
 # This script helps set up SSL/TLS certificates for your production domain.

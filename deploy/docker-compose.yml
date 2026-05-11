@@ -1,4 +1,4 @@
-# Gemini Music — Docker Compose Production Stack
+# Resound-Player — Docker Compose Production Stack
 #
 # Three services:
 #   1. nginx       — Reverse proxy + static file serving + /dl-proxy (via Node.js)
@@ -23,7 +23,7 @@ services:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.frontend
-    image: 934029151/gemini-music-frontend:latest
+    image: 934029151/resound-player-frontend:latest
     ports:
       - "80:80"
       - "443:443"
@@ -32,14 +32,14 @@ services:
       - unblock
     restart: unless-stopped
     networks:
-      - gemini-net
+      - resound-net
 
   # ── NeteaseCloudMusicApiEnhanced ──
   netease-api:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.api
-    image: 934029151/gemini-music-api:latest
+    image: 934029151/resound-player-api:latest
     ports:
       - "38761:38761"
     environment:
@@ -47,14 +47,14 @@ services:
       NODE_ENV: "production"
     restart: unless-stopped
     networks:
-      - gemini-net
+      - resound-net
 
   # ── Unblock services ──
   unblock:
     build:
       context: ..
       dockerfile: deploy/Dockerfile.unblock
-    image: 934029151/gemini-music-unblock:latest
+    image: 934029151/resound-player-unblock:latest
     expose:
       - "38762"
       - "38763"
@@ -64,8 +64,8 @@ services:
       UNBLOCK_SOURCES: "bodian,kugou,migu,qq,bilibili"
     restart: unless-stopped
     networks:
-      - gemini-net
+      - resound-net
 
 networks:
-  gemini-net:
+  resound-net:
     driver: bridge

@@ -77,7 +77,7 @@ function resolveApiEntrypoint() {
   if (isFile(asarPkgJsonPath)) {
     try {
       // 创建临时目录用于解压API模块
-      const tempDir = path.join(require('os').tmpdir(), 'gemini-music-api');
+      const tempDir = path.join(require('os').tmpdir(), 'resound-player-api');
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }

@@ -46,7 +46,7 @@ for (const port of KILL_PORTS) killProcessOnPort(port);
 const ports = await resolveServicePorts();
 console.log('');
 console.log('╔══════════════════════════════════════════╗');
-console.log('║   Gemini Music — 开发模式启动              ║');
+console.log('║   Resound-Player — 开发模式启动              ║');
 console.log('╠══════════════════════════════════════════╣');
 console.log(`║  Vite           → :${ports.vite}                    ║`);
 console.log(`║  Netease API    → :${ports.api}                    ║`);

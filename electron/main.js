@@ -62,13 +62,13 @@ function buildAppMenu() {
       label: '帮助',
       submenu: [
         {
-          label: '关于 GeminiMusic',
+          label: '关于 Resound-Player',
           click: () => {
             const { dialog } = require('electron');
             dialog.showMessageBox({
               type: 'info',
-              title: '关于 GeminiMusic',
-              message: 'GeminiMusic v0.1.0',
+              title: '关于 Resound-Player',
+              message: 'Resound-Player v0.1.0',
               detail: '基于 NeteaseCloudMusicApi 的跨平台音乐播放器',
             });
           },
@@ -91,16 +91,16 @@ function setupChineseMenu() {
   const template = [
     // macOS 应用菜单（手动中文定义）
     ...(isMac ? [{
-      label: 'Gemini Music',
+      label: 'Resound-Player',
       submenu: [
         {
-          label: '关于 Gemini Music',
+          label: '关于 Resound-Player',
           click: async () => {
             const { dialog } = await import('electron');
             dialog.showMessageBox({
               type: 'info',
-              title: '关于 Gemini Music',
-              message: 'Gemini Music',
+              title: '关于 Resound-Player',
+              message: 'Resound-Player',
               detail: '基于 NeteaseCloudMusicApi 的跨平台音乐播放器\n版本 ' + app.getVersion(),
             });
           },
@@ -108,11 +108,11 @@ function setupChineseMenu() {
         { type: 'separator' },
         { role: 'services', label: '服务' },
         { type: 'separator' },
-        { role: 'hide', label: '隐藏 Gemini Music' },
+        { role: 'hide', label: '隐藏 Resound-Player' },
         { role: 'hideOthers', label: '隐藏其他' },
         { role: 'unhide', label: '显示全部' },
         { type: 'separator' },
-        { role: 'quit', label: '退出 Gemini Music' },
+        { role: 'quit', label: '退出 Resound-Player' },
       ],
     }] : []),
 
@@ -227,7 +227,7 @@ async function createMainWindow(ports) {
       }
       // 延迟恢复原标题，确保 macOS 窗口动画完成后再重置
       setTimeout(() => {
-        if (!win.isDestroyed()) win.setTitle(_originalTitle || 'GeminiMusic');
+        if (!win.isDestroyed()) win.setTitle(_originalTitle || 'Resound-Player');
       }, 80);
     } else {
       _originalTitle = title;

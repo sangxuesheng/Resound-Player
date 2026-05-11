@@ -1,8 +1,16 @@
 <template>
   <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="topbar">
-    <AnimatedAppear tag="button" variant="title" rhythm="title" class-name="brand" @click="emit('brand-click')">
-      听闻 Music
-    </AnimatedAppear>
+    <div class="topbar-left">
+      <button class="nav-btn button-surface" type="button" :disabled="!canGoBack" aria-label="后退" @click="emit('nav-back')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="nav-btn button-surface" type="button" :disabled="!canGoForward" aria-label="前进" @click="emit('nav-forward')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <AnimatedAppear tag="button" variant="title" rhythm="title" class-name="brand" @click="emit('brand-click')">
+        Resound-Player
+      </AnimatedAppear>
+    </div>
 
     <div class="topbar-spacer" />
 
@@ -146,7 +154,20 @@ const emit = defineEmits<{
   (e: 'search-submit', keyword: string): void;
   (e: 'user-click'): void;
   (e: 'open-settings-page'): void;
+  (e: 'nav-back'): void;
+  (e: 'nav-forward'): void;
 }>();
+
+const props = withDefaults(
+  defineProps<{
+    canGoBack?: boolean;
+    canGoForward?: boolean;
+  }>(),
+  {
+    canGoBack: false,
+    canGoForward: false,
+  },
+);
 const searchInputRef = ref<HTMLInputElement | null>(null);
 const showRecentPanel = ref(false);
 const showUserMenu = ref(false);
@@ -494,7 +515,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .topbar {
   height: 100%;
-  border-bottom: 1px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: 14px 14px 0 0 !important;
   background: var(--glass-reflection), var(--bg-surface) !important;
   backdrop-filter: blur(var(--glass-blur)) saturate(145%);
@@ -532,6 +553,27 @@ onBeforeUnmount(() => {
 }
 .brand:active {
   transform: translateY(0) scale(0.99);
+}
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.nav-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+.nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 .topbar-spacer {
   min-width: 0;

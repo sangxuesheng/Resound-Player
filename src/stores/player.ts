@@ -137,6 +137,8 @@ export const playerStore = reactive({
   personalFmLoadingMore: false,
   personalFmHasMore: true,
   personalFmPrefetchThreshold: 2,
+  fmMode: 'DEFAULT',
+  fmSubmode: '',
   autoplayNext: true,
   playMode: 'loop' as 'loop' | 'single' | 'shuffle',
   crossfadeSec: 0,
@@ -214,6 +216,8 @@ export const playerStore = reactive({
       isDarkMode: this.isDarkMode,
       personalFmTrackIds,
       personalFmHasMore: this.personalFmHasMore,
+      fmMode: this.fmMode,
+      fmSubmode: this.fmSubmode,
       defaultPlaylist,
       currentPlaylistId: this.currentPlaylistId,
     };
@@ -306,6 +310,8 @@ export const playerStore = reactive({
       this.isDarkMode = typeof parsed.isDarkMode === 'boolean' ? parsed.isDarkMode : false;
       this.personalFmTrackIds = Array.isArray(parsed.personalFmTrackIds) ? parsed.personalFmTrackIds.map((id: unknown) => Number(id || 0)).filter((id: number) => id > 0) : [];
       this.personalFmHasMore = typeof parsed.personalFmHasMore === 'boolean' ? parsed.personalFmHasMore : true;
+      this.fmMode = typeof parsed.fmMode === 'string' ? parsed.fmMode : 'DEFAULT';
+      this.fmSubmode = typeof parsed.fmSubmode === 'string' ? parsed.fmSubmode : '';
       this.defaultPlaylist = Array.isArray(parsed.defaultPlaylist) ? parsed.defaultPlaylist : [];
       this.currentPlaylistId = typeof parsed.currentPlaylistId === 'number' ? parsed.currentPlaylistId : 0;
       this.audio.playbackRate = this.playbackRate;
@@ -628,6 +634,12 @@ export const playerStore = reactive({
 
   setPersonalFmFetcher(fetcher: PersonalFmFetcher | null) {
     this.personalFmFetcher = fetcher;
+  },
+
+  setFmMode(mode: string, submode = '') {
+    this.fmMode = mode;
+    this.fmSubmode = submode;
+    this.persist();
   },
 
   clearPersonalFmContext() {

@@ -4,11 +4,21 @@
       v-show="!isNarrow || sidebarOpen"
       :active-key="sidebarActiveKey"
       :collapsed="!isNarrow && sidebarCollapsed"
+      @update:collapsed="sidebarCollapsed = $event"
       @select="onSelectMenu"
     />
 
     <div class="main-area">
-      <TopBar @brand-click="onBrandClick" @search-submit="openSearchPage" @user-click="openUserLogin" @open-settings-page="() => openSettings('playback')" />
+      <TopBar
+        :can-go-back="navHistory.canGoBack.value"
+        :can-go-forward="navHistory.canGoForward.value"
+        @brand-click="onBrandClick"
+        @search-submit="openSearchPage"
+        @user-click="openUserLogin"
+        @open-settings-page="() => openSettings('playback')"
+        @nav-back="onNavBack"
+        @nav-forward="onNavForward"
+      />
 
       <main class="content" :class="{ 'content--user-page': activePage === 'user', 'content--hero-sticky': isHeroStickyPage }" :style="contentStyle">
         <div class="content-shell">
@@ -202,8 +212,9 @@ import { playerStore } from './stores/player';
 import { uiStore } from './stores/ui';
 import { userStore } from './stores/user';
 import { recordLocalHistoryEntry } from './utils/localHistory';
+import { useNavigationHistory } from './composables/useNavigationHistory';
 
-const SIDEBAR_COLLAPSED_KEY = 'tm_sidebar_collapsed';
+const navHistory = useNavigationHistory();
 
 const activePage = ref('home');
 const activePlaylistId = ref(0);
@@ -294,12 +305,9 @@ function syncViewport() {
   }
 }
 
-function hydrateSidebarCollapsed() {
-  const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
-  sidebarCollapsed.value = saved === '1';
-}
-
 function onSelectMenu(key: string) {
+  if (activePage.value === key) return;
+  navHistory.push({ page: key });
   activePage.value = key;
   if (key === 'playlist') {
     playlistInitialCategory.value = '';
@@ -309,7 +317,48 @@ function onSelectMenu(key: string) {
   }
 }
 
+function onNavBack() {
+  const entry = navHistory.back();
+  if (entry) {
+    navigateToEntry(entry);
+  }
+}
+
+function onNavForward() {
+  const entry = navHistory.forward();
+  if (entry) {
+    navigateToEntry(entry);
+  }
+}
+
+function navigateToEntry(entry: { page: string; params?: Record<string, any> }) {
+  const { page, params } = entry;
+  activePage.value = page;
+  if (params?.playlistId) activePlaylistId.value = params.playlistId;
+  if (params?.albumId) activeAlbumId.value = params.albumId;
+  if (params?.artistId) activeArtistId.value = params.artistId;
+  if (params?.userId) activeUserId.value = params.userId;
+  if (params?.rankId) activeRankId.value = params.rankId;
+  if (params?.songId) activeSongId.value = params.songId;
+  if (params?.language) activeLanguage.value = params.language;
+  if (params?.settingsTab) settingsInitialTab.value = params.settingsTab;
+  if (params?.category) playlistInitialCategory.value = params.category;
+  if (params?.dailyInjectedPlaylist) dailyInjectedPlaylist.value = params.dailyInjectedPlaylist;
+  if (params?.keyword) uiStore.searchKeyword = params.keyword;
+  if (params?.mvReturnPage) activeMvReturnPage.value = params.mvReturnPage;
+  if (params?.returnPage) {
+    if (page === 'playlist-detail') activePlaylistReturnPage.value = params.returnPage;
+    else if (page === 'album-detail') activeAlbumReturnPage.value = params.returnPage;
+    else if (page === 'artist-detail') activeArtistReturnPage.value = params.returnPage;
+    else if (page === 'user-detail') activeUserReturnPage.value = params.returnPage;
+    else if (page === 'song-comment') activeSongCommentReturnPage.value = params.returnPage;
+    else if (page === 'language-detail') activeLanguageReturnPage.value = params.returnPage;
+  }
+  scrollContentToTop();
+}
+
 function openPlaylistDetail(playlistId: number, _coverUrl?: string, returnPage?: string) {
+  navHistory.push({ page: 'playlist-detail', params: { playlistId, returnPage: returnPage || 'home' } });
   dailyInjectedPlaylist.value = null;
   activePlaylistId.value = playlistId;
   activePlaylistReturnPage.value = returnPage || 'home';
@@ -318,9 +367,8 @@ function openPlaylistDetail(playlistId: number, _coverUrl?: string, returnPage?:
 
 function openDailyList(songs: any[]) {
   dailyListSongs.value = songs;
-  activePlaylistReturnPage.value = 'home';
   if (!songs.length) return;
-  dailyInjectedPlaylist.value = {
+  const injectedPlaylist = {
     name: '每日推荐',
     coverImgUrl: songs[0]?.al?.picUrl || songs[0]?.album?.picUrl || songs[0]?.album?.blurPicUrl || '',
     description: '根据你的音乐口味生成，每天更新',
@@ -328,6 +376,9 @@ function openDailyList(songs: any[]) {
     trackCount: songs.length,
     tracks: songs,
   };
+  navHistory.push({ page: 'playlist-detail', params: { playlistId: Number(songs[0]?.id || 0), returnPage: 'home', dailyInjectedPlaylist: injectedPlaylist } });
+  activePlaylistReturnPage.value = 'home';
+  dailyInjectedPlaylist.value = injectedPlaylist;
   activePlaylistId.value = Number(songs[0]?.id || 0);
   activePage.value = 'playlist-detail';
 }
@@ -380,6 +431,7 @@ const userBackLabel = computed(() => {
 });
 
 function openPlaylistByCategory(category: string) {
+  navHistory.push({ page: 'playlist', params: { category } });
   playlistInitialCategory.value = category;
   activePlaylistReturnPage.value = 'playlist';
   activePage.value = 'playlist';
@@ -387,33 +439,42 @@ function openPlaylistByCategory(category: string) {
 
 function backToPlaylist() {
   dailyInjectedPlaylist.value = null;
-  activePage.value = activePlaylistReturnPage.value || 'playlist';
+  const target = activePlaylistReturnPage.value || 'playlist';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function openAlbumDetail(albumId: number, returnPage = 'home') {
+  navHistory.push({ page: 'album-detail', params: { albumId, returnPage } });
   activeAlbumId.value = albumId;
   activeAlbumReturnPage.value = returnPage;
   activePage.value = 'album-detail';
 }
 
 function backToAlbum() {
-  activePage.value = activeAlbumReturnPage.value || 'home';
+  const target = activeAlbumReturnPage.value || 'home';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function openRankDetail(playlistId: number) {
+  navHistory.push({ page: 'rank-detail', params: { rankId: playlistId } });
   activeRankId.value = playlistId;
   activePage.value = 'rank-detail';
 }
 
 function backToRank() {
+  navHistory.replace({ page: 'rank' });
   activePage.value = 'rank';
 }
 
 function backToUser() {
+  navHistory.replace({ page: 'user' });
   activePage.value = 'user';
 }
 
 function openPodcastList(sourcePage: 'user' | 'history' | 'podcast-list' = 'podcast-list') {
+  navHistory.push({ page: 'podcast-list' });
   activePodcastSourcePage.value = sourcePage;
   podcastLoading.value = true;
   activePage.value = 'podcast-list';
@@ -421,32 +482,43 @@ function openPodcastList(sourcePage: 'user' | 'history' | 'podcast-list' = 'podc
 }
 
 function backToPodcastSource() {
-  activePage.value = activePodcastSourcePage.value || 'podcast-list';
+  const target = activePodcastSourcePage.value || 'podcast-list';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function backToPodcastDetailSource() {
-  activePage.value = activePodcastDetailSourcePage.value || 'podcast-list';
+  const target = activePodcastDetailSourcePage.value || 'podcast-list';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function backToPodcastCategorySource() {
-  activePage.value = activePodcastCategorySourcePage.value || 'podcast-list';
+  const target = activePodcastCategorySourcePage.value || 'podcast-list';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function openPodcastSubscribedPage() {
+  navHistory.push({ page: 'podcast-subscribed' });
   podcastSubscribedPageSource.value = activePodcastSourcePage.value;
   activePage.value = 'podcast-subscribed';
 }
 
 function backToPodcastSubscribedSource() {
-  activePage.value = podcastSubscribedPageSource.value || 'podcast-list';
+  const target = podcastSubscribedPageSource.value || 'podcast-list';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function backToPodcastList() {
+  navHistory.replace({ page: 'podcast-list' });
   activePage.value = 'podcast-list';
 }
 
 function openPodcastCategoryPage(category: { id: number; name: string }) {
   if (!category?.id) return;
+  navHistory.push({ page: 'podcast-category', params: { podcastCategoryId: category.id } });
   activePodcastCategorySourcePage.value = activePodcastSourcePage.value;
   activePodcastCategory.value = category.id;
   activePodcastCategoryInfo.value = { id: Number(category.id), name: category.name || '分类内容' };
@@ -572,6 +644,7 @@ function extractVoiceDetailItems(payload: any): any[] {
 }
 
 async function openPodcastDetail(item: any, sourcePage: 'user' | 'history' | 'podcast-list' = activePodcastSourcePage.value) {
+  navHistory.push({ page: 'podcast-detail' });
   activePodcastDetailSourcePage.value = sourcePage;
   const matchedCategory = podcastCategoryOptions.value.find((category: any) => Number(category?.id || 0) === Number(item?.categoryId || item?.radio?.categoryId || item?.program?.radio?.categoryId || 0));
   if (matchedCategory) {
@@ -791,12 +864,14 @@ function onBrandClick() {
 }
 
 function openSearchPage(keyword: string) {
+  navHistory.push({ page: 'search', params: { keyword } });
   uiStore.searchKeyword = keyword;
   uiStore.searchType = 1;
   activePage.value = 'search';
 }
 
 function openUserDetail(userId: number, returnPage = 'search') {
+  navHistory.push({ page: 'user-detail', params: { userId: Number(userId || 0), returnPage } });
   activeUserId.value = Number(userId || 0);
   activeUserReturnPage.value = returnPage;
   activePage.value = 'user-detail';
@@ -812,6 +887,7 @@ function resolveArtistId(artist: any) {
 }
 
 function openArtistDetail(artist: any, returnPage = 'search') {
+  navHistory.push({ page: 'artist-detail', params: { artistId: resolveArtistId(artist), returnPage } });
   // 从歌手页内部跳转到另一个歌手时，压栈保存当前歌手ID，保留原始 returnPage
   if (activePage.value === 'artist-detail' && activeArtistId.value > 0) {
     activeArtistIdStack.value.push(activeArtistId.value);
@@ -840,16 +916,20 @@ function openUserFromHome(userId: number) {
 }
 
 function openUserLogin() {
+  navHistory.push({ page: 'user' });
   activePage.value = 'user';
 }
 
 function openSongComment(songId: number, returnPage = activePage.value) {
+  navHistory.push({ page: 'song-comment', params: { songId, returnPage } });
   activeSongId.value = songId;
   activeSongCommentReturnPage.value = returnPage;
   activePage.value = 'song-comment';
 }
 function goBackFromComment() {
-  activePage.value = activeSongCommentReturnPage.value || 'playlist-detail';
+  const target = activeSongCommentReturnPage.value || 'playlist-detail';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 async function playSongFromComment(songId: number) {
@@ -869,6 +949,7 @@ function openUserFromComment(userId: number) {
 }
 
 function openSettings(tab: 'playback' | 'appearance' | 'account' = 'appearance') {
+  navHistory.push({ page: 'settings', params: { settingsTab: tab } });
   settingsInitialTab.value = tab;
   activePage.value = 'settings';
 }
@@ -894,9 +975,11 @@ function backToArtist() {
   if (activeArtistIdStack.value.length > 0) {
     const prevId = activeArtistIdStack.value.pop()!;
     activeArtistId.value = prevId;
+    navHistory.replace({ page: 'artist-detail', params: { artistId: prevId } });
     return;
   }
   if (activeArtistReturnPage.value === 'rank-detail') {
+    navHistory.replace({ page: 'rank-detail' });
     activePage.value = 'rank-detail';
     return;
   }
@@ -904,30 +987,35 @@ function backToArtist() {
     playerStore.openExpanded();
     return;
   }
-  activePage.value = activeArtistReturnPage.value || 'search';
+  const target = activeArtistReturnPage.value || 'search';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function backToUserDetail() {
-  activePage.value = activeUserReturnPage.value || 'search';
+  const target = activeUserReturnPage.value || 'search';
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function openLanguageDetail(language: string, returnPage = 'home') {
   if (!language) return;
+  navHistory.push({ page: 'language-detail', params: { language, returnPage } });
   activeLanguage.value = language;
   activeLanguageReturnPage.value = returnPage;
   activePage.value = 'language-detail';
 }
 
 function backToLanguage() {
-  if (activeLanguageReturnPage.value === 'song-comment') {
-    activePage.value = 'song-comment';
-    return;
-  }
-  activePage.value = activeLanguageReturnPage.value || 'home';
+  const target = activeLanguageReturnPage.value === 'song-comment' ? 'song-comment' : (activeLanguageReturnPage.value || 'home');
+  navHistory.replace({ page: target });
+  activePage.value = target;
 }
 
 function goBackFromMvPlay() {
-  activePage.value = activeMvReturnPage.value || 'playlist';
+  const target = activeMvReturnPage.value || 'playlist';
+  navHistory.replace({ page: target });
+  activePage.value = target;
   // 关闭 MV 页后根据设置恢复音乐播放
   if (uiStore.resumeAfterMv && wasPlayingBeforeMvPage && playerStore.currentTrack) {
     playerStore.togglePlay();
@@ -937,6 +1025,7 @@ function goBackFromMvPlay() {
 let wasPlayingBeforeMvPage = false;
 
 function openMvFromSearch(item: any) {
+  navHistory.push({ page: 'mv-play', params: { mvItem: item, mvReturnPage: activePage.value } });
   activeMvItem.value = item || null;
   activeMvReturnPage.value = activePage.value;
   activePage.value = 'mv-play';
@@ -970,7 +1059,6 @@ watch(
 );
 
 onMounted(async () => {
-  hydrateSidebarCollapsed();
   syncViewport();
   window.addEventListener('resize', syncViewport);
 
@@ -986,10 +1074,7 @@ onMounted(async () => {
       // ignore
     }
   }
-});
-
-watch(sidebarCollapsed, (next) => {
-  localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+  navHistory.replace({ page: 'home' });
 });
 
 onBeforeUnmount(() => {

@@ -920,3 +920,27 @@ export async function getIntelligenceList(params: {
     },
   });
 }
+
+/**
+ * 设置私人 FM 模式
+ * 必选参数：mode (aidj, DEFAULT, FAMILIAR, EXPLORE, SCENE_RCMD)
+ * 可选参数：submode (当 mode 为 SCENE_RCMD 时: EXERCISE, FOCUS, NIGHT_EMO)
+ * 返回新的私人 FM 歌曲列表
+ */
+export async function setPersonalFmMode(params: {
+  mode: string;
+  submode?: string;
+  cookie?: string;
+}) {
+  const queryParams: Record<string, any> = {
+    mode: params.mode,
+    timestamp: Date.now(),
+  };
+  if (params.submode) {
+    queryParams.submode = params.submode;
+  }
+  if (params.cookie) {
+    queryParams.cookie = params.cookie;
+  }
+  return apiClient.get('/personal/fm/mode', { params: queryParams });
+}

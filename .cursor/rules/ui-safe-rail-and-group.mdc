@@ -1,8 +1,8 @@
 ---
-description: Gemini 音乐项目 UI 防裁切规范，约束横向滚动容器、紧凑按钮组与 hover 上浮元素的安全写法
+description: Resound-Player 项目 UI 防裁切规范，约束横向滚动容器、紧凑按钮组与 hover 上浮元素的安全写法
 ---
 
-# Gemini 音乐项目 UI 防裁切规范
+# Resound-Player 项目 UI 防裁切规范
 
 本规范用于约束项目内所有按钮、横向分类、横向滚动列表、紧凑切换器等交互 UI，避免出现：
 

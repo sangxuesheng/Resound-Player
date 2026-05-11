@@ -1,7 +1,7 @@
 // localStorage 配额超出时自动回退到 IndexedDB
 // 专为大块数据（如 ncm_login_cookie）设计，避免撑爆 5MB 配额
 
-const DB_NAME = 'gemini_music';
+const DB_NAME = 'resound_player';
 const DB_VERSION = 1;
 const STORE_NAME = 'large_items';
 
