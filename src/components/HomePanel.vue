@@ -409,7 +409,7 @@ const emit = defineEmits<{
   (e: 'open-artist', artist: any): void;
   (e: 'open-user', userId: number): void;
   (e: 'open-mv-player', mv: any): void;
-  (e: 'open-podcast-detail', podcastId: number): void;
+  (e: 'open-podcast-detail', podcast: any): void;
 }>();
 const defaultLayout = [
   { id: 'albums', x: 0, y: 2, w: 12, h: 7, title: '专辑推荐模块', content: '首页专辑推荐区域' },
@@ -1246,7 +1246,7 @@ function openMv(mv: any) {
 
 function openPodcast(item: any) {
   if (!item?.id) return;
-  emit('open-podcast-detail', item.id);
+  emit('open-podcast-detail', item);
 }
 
 async function playDailyRecommendByIndex(index: number) {

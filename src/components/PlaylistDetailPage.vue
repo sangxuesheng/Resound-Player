@@ -172,7 +172,7 @@
 <script setup lang="ts">
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { playerStore } from '../stores/player';
@@ -282,6 +282,27 @@ const detailPageClassName = computed(() => {
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = playlist.value?.coverImgUrl?.trim();
   return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
+});
+
+// 同步封面图到 .content，供 content::before blur 使用
+watch(
+  () => playlist.value?.coverImgUrl,
+  (url) => {
+    const el = document.querySelector('.content') as HTMLElement | null;
+    if (!el) return;
+    if (url?.trim()) {
+      el.style.setProperty('--cover-bg-url', `url("${url.trim()}")`);
+    } else {
+      el.style.removeProperty('--cover-bg-url');
+    }
+  },
+  { immediate: true },
+);
+
+// 离开页面时清理 .content 上的封面图，避免残留到下一个详情页
+onBeforeUnmount(() => {
+  const el = document.querySelector('.content') as HTMLElement | null;
+  el?.style.removeProperty('--cover-bg-url');
 });
 
 function resolvePlaylistCover(playlistLike: any) {

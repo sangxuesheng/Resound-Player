@@ -1,8 +1,8 @@
 .panel,
 .daily-page {
   width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.03), 0 4px 12px rgba(0,0,0,0.04);
+  border-radius: var(--radius-xl);
   padding: var(--space-4);
   background: var(--glass-reflection), var(--bg-surface);
   box-sizing: border-box;
@@ -11,9 +11,14 @@
   overflow: hidden;
 }
 
+.playlist-detail-page {
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+}
+
 .panel::before,
 .daily-page::before,
-.playlist-detail-page::before,
 .artist-detail-page::before,
 .user-detail-page::before {
   content: '';

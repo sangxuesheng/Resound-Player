@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
@@ -181,6 +181,7 @@ const { isSticky, refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
 const detail = computed(() => props.detail?.voiceList || props.detail?.data?.voiceList || props.detail?.data || props.detail || props.items?.[0]?.voiceList || props.items?.[0]?.detail || props.items?.[0]?.program?.radio || props.items?.[0]?.program || props.items?.[0] || null);
+const fallbackCover = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="32" fill="#e2e8f0"/><circle cx="100" cy="84" r="40" fill="#cbd5e1"/><rect x="46" y="136" width="108" height="20" rx="10" fill="#cbd5e1"/></svg>`);
 const hero = computed(() => {
   const source = detail.value || {};
   return {
@@ -216,6 +217,28 @@ const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = hero.value.coverUrl?.trim();
   return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
 });
+
+// 同步封面图到 .content，供 content::before blur 使用
+watch(
+  () => hero.value.coverUrl,
+  (url) => {
+    const el = document.querySelector('.content') as HTMLElement | null;
+    if (!el) return;
+    if (url?.trim()) {
+      el.style.setProperty('--cover-bg-url', `url("${url.trim()}")`);
+    } else {
+      el.style.removeProperty('--cover-bg-url');
+    }
+  },
+  { immediate: true },
+);
+
+// 离开页面时清理 .content 上的封面图，避免残留到上一个详情页
+onBeforeUnmount(() => {
+  const el = document.querySelector('.content') as HTMLElement | null;
+  el?.style.removeProperty('--cover-bg-url');
+});
+
 const displayedRawItems = computed(() => [...props.items].reverse());
 const normalizedItems = computed(() => displayedRawItems.value.map((item, idx) => {
   const originalIndex = props.items.length - idx - 1;
@@ -235,7 +258,6 @@ const normalizedItems = computed(() => displayedRawItems.value.map((item, idx) =
     raw: item,
   };
 }));
-const fallbackCover = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="32" fill="#e2e8f0"/><circle cx="100" cy="84" r="40" fill="#cbd5e1"/><rect x="46" y="136" width="108" height="20" rx="10" fill="#cbd5e1"/></svg>`);
 
 function isCurrentTrack(item: any) {
   const currentId = Number(playerStore.currentTrack?.id || 0);
