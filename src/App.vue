@@ -22,6 +22,8 @@
             @open-search="openSearchPage"
             @open-artist="openArtistFromHome"
             @open-user="openUserFromHome"
+            @open-mv-player="openMvFromSearch"
+            @open-podcast-detail="(item) => openPodcastDetail(item, 'home')"
           />
           <SearchPage
             v-else-if="activePage === 'search'"

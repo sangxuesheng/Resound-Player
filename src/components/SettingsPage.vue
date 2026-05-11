@@ -185,8 +185,6 @@
         {{ logoutMessage }}
       </div>
     </transition>
-
-    <GridLayoutEditor storage-key="tm_home_widget_layout_v1" :initial-layout="homeWidgetLayout" @saved="onHomeLayoutSaved" />
   </AnimatedAppear>
 </template>
 
@@ -209,7 +207,6 @@ import AnimatedAppear from './AnimatedAppear.vue';
 const emit = defineEmits<{
   (e: 'go-login'): void;
 }>();
-import GridLayoutEditor from './GridLayoutEditor.vue';
 import DropdownSelect from './ui/DropdownSelect.vue';
 import FancySwitch from './ui/FancySwitch.vue';
 import { playerStore } from '../stores/player';
@@ -270,9 +267,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'theme', label: '主题模式', desc: '切换浅色或深色界面', type: 'select', options: ['浅色', '深色', '跟随系统'] },
         { key: 'accent', label: '主题色', desc: '切换系统强调色（带颜色预览）', type: 'select', options: ['绿色', '蓝色', '紫色', '橙色', '自定义'] },
         { key: 'accentCustomColor', label: '自定义主题色', desc: '在调色盘中选择任意颜色', type: 'action' },
-        { key: 'liquidGlass', label: '液态玻璃效果', desc: '开启后使用高透明磨砂玻璃视觉风格', type: 'switch' },
         { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
-        { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
         { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
       ],
     },
@@ -333,7 +328,6 @@ const currentGroups = computed(() => {
 const switchState = reactive<Record<string, boolean>>({
   unblock: uiStore.unblockEnabled,
   autoplay: playerStore.autoplayNext,
-  liquidGlass: uiStore.liquidGlassEnabled,
   barLyric: lyricsSettings.showBarLyric,
   resumeAfterMv: uiStore.resumeAfterMv,
   showIntelligenceIndicator: uiStore.showIntelligenceIndicator,
@@ -425,12 +419,6 @@ function moveSource(index: number, direction: number) {
   showSourceFeedback('音源顺序已更新，播放下首歌曲时生效');
 }
 
-const homeWidgetLayout = [
-  { id: 'tags', x: 0, y: 0, w: 8, h: 2, title: '分类模块', content: '首页分类标签区域' },
-  { id: 'list', x: 0, y: 2, w: 8, h: 8, title: '热门音乐模块', content: '首页热门音乐列表区域' },
-  { id: 'albums', x: 8, y: 0, w: 4, h: 10, title: '专辑推荐模块', content: '首页专辑推荐区域' },
-];
-
 watch(
   () => selectState.theme,
   (next) => {
@@ -455,14 +443,6 @@ watch(
     uiStore.setAccentCustomColor(next);
   },
 );
-
-watch(
-  () => switchState.liquidGlass,
-  (enabled) => {
-    uiStore.setLiquidGlass(Boolean(enabled));
-  },
-);
-
 watch(
   () => switchState.unblock,
   (enabled) => {
@@ -611,14 +591,6 @@ async function handleAction(key: string) {
     activeTab.value = 'account';
     showLogoutMessage('已退出登录');
   }
-}
-
-function onHomeLayoutSaved(payload: unknown) {
-  window.dispatchEvent(
-    new CustomEvent('tm-home-layout-updated', {
-      detail: payload,
-    }),
-  );
 }
 </script>
 

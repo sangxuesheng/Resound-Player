@@ -1,10 +1,5 @@
 <template>
   <AnimatedAppear tag="div" variant="content" rhythm="shell" class-name="home-page">
-    <div class="home-actions">
-      <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="edit-btn" :class="{ active: showEditor }" @click="showEditor = !showEditor">
-        {{ showEditor ? '收起首页布局编辑器' : '编辑首页组件布局' }}
-      </AnimatedAppear>
-    </div>
 
     <AnimatedAppear tag="section" variant="content" rhythm="head" class-name="home-top-reco">
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="0">
@@ -154,7 +149,7 @@
       <p v-if="topArtistsLoading && topArtists.length" class="custom-tip artists-loading">加载更多歌手中…</p>
     </section>
 
-    <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid" :style="gridStyle">
+    <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid">
       <AnimatedAppear
         v-for="widget in widgets"
         :key="widget.id"
@@ -163,28 +158,10 @@
         rhythm="body"
         class-name="card"
         :class="widget.id"
-        :style="cellStyle(widget)"
-        :ref="widget.id === 'list' ? setHotListCardRef : widget.id === 'albums' ? setAlbumCardRef : null"
+        :ref="widget.id === 'list' ? setHotListCardRef : null"
       >
-        <template v-if="widget.id === 'tags'">
-          <AnimatedAppear tag="h3" variant="title" rhythm="head">分类</AnimatedAppear>
-          <div class="tag-grid">
-            <AnimatedAppear
-              v-for="(tag, idx) in tags"
-              :key="tag"
-              tag="button"
-              variant="control"
-              rhythm="list"
-              :index="idx"
-              class-name="tag"
-              @click="openPlaylistCategory(tag)"
-            >
-              {{ tag }}
-            </AnimatedAppear>
-          </div>
-        </template>
 
-        <template v-else-if="widget.id === 'list'">
+        <template v-if="widget.id === 'list'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">本周最热音乐</AnimatedAppear>
           <ul class="music-list">
             <AnimatedAppear
@@ -229,15 +206,20 @@
           <AnimatedAppear tag="h3" variant="title" rhythm="head">最新专辑推荐</AnimatedAppear>
           <p v-if="albumLoading" class="custom-tip">专辑加载中…</p>
           <p v-else-if="!albums.length" class="custom-tip">{{ albumLoadNote || '未获取到专辑数据' }}</p>
-          <div class="album-grid" v-if="albums.length">
-            <AnimatedAppear
-              v-for="(item, idx) in visibleAlbums"
-              :key="item.id"
-              variant="media"
-              rhythm="list"
-              :index="idx"
+          <HorizontalScrollRail
+            v-else
+            aria-label="最新专辑推荐"
+            content-class="albums-row"
+            content-layout="flex"
+          >
+            <div
+              v-for="(group, gi) in albumGroups"
+              :key="gi"
+              class="albums-column"
             >
               <GradientCard
+                v-for="item in group"
+                :key="item.id"
                 tag="button"
                 :cover="item.pic"
                 :name="item.name"
@@ -257,10 +239,8 @@
                   <span v-if="!getAlbumArtists(item).length">{{ item.artist }}</span>
                 </template>
               </GradientCard>
-            </AnimatedAppear>
-          </div>
-          <p v-if="albums.length && visibleAlbumCount >= albums.length" class="list-hint">已经到底啦</p>
-          <div :ref="setAlbumSentinelRef" class="list-sentinel" aria-hidden="true"></div>
+            </div>
+          </HorizontalScrollRail>
         </template>
 
         <template v-else-if="widget.id === 'latest-music'">
@@ -313,6 +293,59 @@
           </HorizontalScrollRail>
         </template>
 
+        <template v-else-if="widget.id === 'podcast'">
+          <AnimatedAppear tag="h3" variant="title" rhythm="head">推荐播客</AnimatedAppear>
+          <p v-if="podcastLoading" class="custom-tip">播客加载中…</p>
+          <p v-else-if="podcastError" class="custom-tip">{{ podcastError }}</p>
+          <div v-else class="podcast-grid an-stagger-media">
+            <div
+              v-for="(item, idx) in podcastList"
+              :key="item.id"
+              class="mv-card"
+              :style="{ '--i': idx }"
+              @click="openPodcast(item)"
+            >
+              <GradientCard
+                tag="button"
+                :cover="item.picUrl"
+                :name="item.name"
+                hover-play-size="sm"
+                @click="openPodcast(item)"
+              >
+                <template #subtitle>
+                  <span v-if="item.creatorName">{{ item.creatorName }}</span>
+                </template>
+              </GradientCard>
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="widget.id === 'mv'">
+          <AnimatedAppear tag="h3" variant="title" rhythm="head">推荐 MV</AnimatedAppear>
+          <p v-if="mvLoading" class="custom-tip">MV 加载中…</p>
+          <p v-else-if="mvError" class="custom-tip">{{ mvError }}</p>
+          <div v-else class="mv-grid an-stagger-media">
+            <div
+              v-for="(item, idx) in mvList"
+              :key="item.id"
+              class="mv-card"
+              :style="{ '--i': idx }"
+              @click="openMv(item)"
+            >
+              <MvHoverPoster
+                :src="item.cover"
+                :alt="item.name"
+                :count="item.playCount"
+                :index="idx"
+              />
+              <div class="mv-card__info">
+                <div class="mv-card__name" :title="item.name">{{ item.name }}</div>
+                <span v-if="item.artistName" class="mv-card__artist">{{ item.artistName }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <template v-else-if="widget.id === 'search-hot'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">热搜榜</AnimatedAppear>
           <ol class="hot-list">
@@ -348,41 +381,24 @@
         </template>
       </AnimatedAppear>
     </AnimatedAppear>
-
-    <div v-if="showEditor" class="editor-overlay" @click.self="showEditor = false">
-      <AnimatedAppear tag="div" variant="modal" rhythm="overlay" class-name="editor-modal">
-        <div class="editor-modal-head">
-          <h3>首页布局编辑</h3>
-          <button class="close-btn button-surface" @click="showEditor = false">关闭</button>
-        </div>
-
-        <GridLayoutEditor
-          storage-key="tm_home_widget_layout_v1"
-          :initial-layout="defaultLayout"
-          :catalog="catalog"
-          @saved="onHomeLayoutSaved"
-        />
-      </AnimatedAppear>
-    </div>
   </AnimatedAppear>
 </template>
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBgLoaded } from '../composables/useBgLoaded';
-import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic } from '../api/music';
+import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic, getAllMvs, getDjRecommend } from '../api/music';
 import { getUserCreatedPlaylist } from '../api/auth';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
-import GridLayoutEditor from './GridLayoutEditor.vue';
 import GradientCard from './ui/GradientCard.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
 import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
-import type { GridItem } from './GridLayoutEditor.vue';
+import MvHoverPoster from './MvHoverPoster.vue';
 
 const emit = defineEmits<{
   (e: 'open-detail', playlistId: number, coverUrl?: string, returnPage?: string): void;
@@ -392,30 +408,18 @@ const emit = defineEmits<{
   (e: 'open-search', keyword: string): void;
   (e: 'open-artist', artist: any): void;
   (e: 'open-user', userId: number): void;
+  (e: 'open-mv-player', mv: any): void;
+  (e: 'open-podcast-detail', podcastId: number): void;
 }>();
-
-const GRID_COLS = 12;
-const GRID_ROW_HEIGHT = 72;
-const GRID_GAP = 12;
-const HOME_LAYOUT_KEY = 'tm_home_widget_layout_v1';
-
-const showEditor = ref(false);
-
-const defaultLayout: GridItem[] = [
-  { id: 'tags', x: 0, y: 0, w: 8, h: 2, title: '分类模块', content: '首页分类标签区域' },
-  { id: 'list', x: 0, y: 2, w: 8, h: 8, title: '热门音乐模块', content: '首页热门音乐列表区域' },
-  { id: 'albums', x: 8, y: 0, w: 4, h: 10, title: '专辑推荐模块', content: '首页专辑推荐区域' },
-  { id: 'latest-music', x: 0, y: 10, w: 12, h: 4, title: '最新音乐组件', content: '首页最新音乐卡片流' },
+const defaultLayout = [
+  { id: 'albums', x: 0, y: 2, w: 12, h: 7, title: '专辑推荐模块', content: '首页专辑推荐区域' },
+  { id: 'list', x: 0, y: 9, w: 12, h: 8, title: '热门音乐模块', content: '首页热门音乐列表区域' },
+  { id: 'latest-music', x: 0, y: 17, w: 12, h: 4, title: '最新音乐组件', content: '首页最新音乐卡片流' },
+  { id: 'podcast', x: 0, y: 21, w: 12, h: 7, title: '推荐播客', content: '首页播客推荐区域' },
+  { id: 'mv', x: 0, y: 29, w: 12, h: 9, title: '推荐 MV', content: '首页 MV 推荐区域' },
 ];
 
-const catalog = [
-  ...defaultLayout,
-  { id: 'search-hot', x: 0, y: 14, w: 4, h: 3, title: '热搜榜组件', content: '来自搜索页：热搜关键词榜单', defaultW: 4, defaultH: 3 },
-  { id: 'search-history', x: 4, y: 14, w: 4, h: 3, title: '搜索历史组件', content: '来自搜索页：历史记录与快捷复用', defaultW: 4, defaultH: 3 },
-  { id: 'settings-theme', x: 8, y: 14, w: 4, h: 3, title: '主题设置组件', content: '来自设置页：主题模式快速切换', defaultW: 4, defaultH: 3 },
-];
-
-const widgets = ref<GridItem[]>(JSON.parse(JSON.stringify(defaultLayout)));
+const widgets = ref<any[]>(JSON.parse(JSON.stringify(defaultLayout)));
 
 const tags = ['综艺', '流行', '影视原声', '华语', 'ACG', '摇滚', '民谣', '电子', '说唱', '轻音乐'];
 const hotList = ['周杰伦', '林俊杰', '邓紫棋', '告五人', '影视原声', '华语热歌', '王菲', '陈奕迅'];
@@ -443,16 +447,6 @@ function setHotListCardRef(el: any) {
 function setHotSongsSentinelRef(el: any) {
   const element = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
   hotSongsSentinel.value = element;
-}
-
-function setAlbumCardRef(el: any) {
-  const element = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
-  albumCardRef.value = element;
-}
-
-function setAlbumSentinelRef(el: any) {
-  const element = el instanceof HTMLElement ? el : el?.$el instanceof HTMLElement ? el.$el : null;
-  albumSentinel.value = element;
 }
 
 const dailyRecommendSongs = ref<any[]>([]);
@@ -524,6 +518,19 @@ const fmNextTitle = computed(() => '下一首私人 FM');
 const albums = ref<Array<{ id: number; name: string; artist: string; pic: string }>>([]);
 const albumLoading = ref(false);
 const albumLoadNote = ref('');
+const albumGroups = computed(() => {
+  const groups: any[] = [];
+  for (let i = 0; i < albums.value.length; i += 2) {
+    groups.push([albums.value[i], albums.value[i + 1]].filter(Boolean));
+  }
+  return groups;
+});
+const mvList = ref<any[]>([]);
+const mvLoading = ref(false);
+const mvError = ref('');
+const podcastList = ref<any[]>([]);
+const podcastLoading = ref(false);
+const podcastError = ref('');
 const latestSongs = ref<any[]>([]);
 const latestMusicLoading = ref(false);
 const latestMusicError = ref('');
@@ -552,56 +559,6 @@ let latestScrollRaf = 0;
 let latestWheelRaf = 0;
 let latestWheelDelta = 0;
 
-const visibleAlbumCount = ref(0);
-const albumPageSize = 4;
-const albumSentinel = ref<HTMLElement | null>(null);
-const albumCardRef = ref<HTMLElement | null>(null);
-let albumObserver: IntersectionObserver | null = null;
-
-const visibleAlbums = computed(() => albums.value.slice(0, visibleAlbumCount.value));
-
-const gridStyle = computed(() => {
-  const maxRow = Math.max(...widgets.value.map((w) => w.y + w.h), 8);
-  return {
-    '--cols': String(GRID_COLS),
-    '--row-h': `${GRID_ROW_HEIGHT}px`,
-    '--gap': `${GRID_GAP}px`,
-    minHeight: `${maxRow * GRID_ROW_HEIGHT + (maxRow - 1) * GRID_GAP}px`,
-  };
-});
-
-function cellStyle(item: GridItem) {
-  return {
-    gridColumn: `${item.x + 1} / span ${item.w}`,
-    gridRow: `${item.y + 1} / span ${item.h}`,
-  };
-}
-
-function hydrateHomeLayout() {
-  const raw = localStorage.getItem(HOME_LAYOUT_KEY);
-  if (!raw) {
-    widgets.value = JSON.parse(JSON.stringify(defaultLayout));
-    return;
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    widgets.value = Array.isArray(parsed) && parsed.length ? parsed : JSON.parse(JSON.stringify(defaultLayout));
-  } catch {
-    widgets.value = JSON.parse(JSON.stringify(defaultLayout));
-  }
-}
-
-function onHomeLayoutSaved(payload: unknown) {
-  if (Array.isArray(payload)) {
-    widgets.value = payload as GridItem[];
-  }
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && showEditor.value) {
-    showEditor.value = false;
-  }
-}
 
 async function loadMoreHotSongs() {
   if (hotSongsLoading.value || !hotSongsHasMore.value) return;
@@ -646,50 +603,6 @@ function setupHotSongsObserver() {
   );
 
   hotSongsObserver.observe(target);
-}
-
-function loadMoreAlbums() {
-  if (!albums.value.length) {
-    visibleAlbumCount.value = 0;
-    return;
-  }
-  visibleAlbumCount.value = Math.min(visibleAlbumCount.value + albumPageSize, albums.value.length);
-}
-
-function ensureAlbumScrollable() {
-  const root = albumCardRef.value;
-  if (!root) return;
-
-  let guard = 0;
-  while (root.scrollHeight <= root.clientHeight && visibleAlbumCount.value < albums.value.length && guard < 12) {
-    loadMoreAlbums();
-    guard += 1;
-  }
-}
-
-function setupAlbumObserver() {
-  const target = albumSentinel.value;
-  if (!(target instanceof Element)) return;
-  if (albumObserver) albumObserver.disconnect();
-
-  const rootCandidate = albumCardRef.value;
-  const validRoot = rootCandidate instanceof Element || rootCandidate instanceof Document ? rootCandidate : null;
-
-  albumObserver = new IntersectionObserver(
-    (entries) => {
-      const entry = entries[0];
-      if (entry?.isIntersecting) {
-        loadMoreAlbums();
-      }
-    },
-    {
-      root: validRoot,
-      threshold: 0,
-      rootMargin: '100px 0px 120px 0px',
-    },
-  );
-
-  albumObserver.observe(target);
 }
 
 async function fetchRadarPlaylistDetail() {
@@ -1144,35 +1057,70 @@ async function fetchTopAlbums() {
     albumLoadNote.value = '请求失败：请确认后端已开启并支持 /top/album';
   } finally {
     albumLoading.value = false;
-    visibleAlbumCount.value = 0;
-    loadMoreAlbums();
-    nextTick(() => {
-      ensureAlbumScrollable();
-      setupAlbumObserver();
-    });
+  }
+}
+
+async function fetchMvList() {
+  mvLoading.value = true;
+  mvError.value = '';
+  try {
+    const { data } = await getAllMvs({ limit: 12, offset: 0 });
+    const rawList = data?.data || data?.mvs || [];
+    mvList.value = rawList.map((item: any) => ({
+      id: item.id || item.mvid || item.mvId || item.vid,
+      name: item.name || item.title,
+      cover: item.cover || item.imgurl16v9 || item.coverImgUrl || item.picUrl || item.picUrl16v9 || item.imgurl || '',
+      playCount: item.playCount || item.playTime || 0,
+      artistName: item.artistName || item.artist?.name || item.creator?.nickname || '',
+    })).filter((item: any) => item.id);
+    if (!mvList.value.length) {
+      mvError.value = '暂未获取到 MV 数据';
+    }
+  } catch (e: any) {
+    mvList.value = [];
+    mvError.value = e?.message || 'MV 获取失败';
+  } finally {
+    mvLoading.value = false;
+  }
+}
+
+async function fetchPodcastList() {
+  podcastLoading.value = true;
+  podcastError.value = '';
+  try {
+    const { data } = await getDjRecommend();
+    const rawList = data?.djRadios || data?.data?.djRadios || [];
+    podcastList.value = rawList.slice(0, 9).map((item: any) => ({
+      id: item.id || item.radio?.id,
+      name: item.name,
+      picUrl: item.picUrl || item.coverUrl || item.imgUrl || item.blurCoverUrl || '',
+      subCount: item.subCount || item.programCount || 0,
+      creatorName: item.creator?.nickname || item.radio?.creator?.nickname || '',
+    })).filter((item: any) => item.id);
+    if (!podcastList.value.length) {
+      podcastError.value = '暂未获取到播客数据';
+    }
+  } catch (e: any) {
+    podcastList.value = [];
+    podcastError.value = e?.message || '播客获取失败';
+  } finally {
+    podcastLoading.value = false;
   }
 }
 
 onMounted(async () => {
-  hydrateHomeLayout();
-  window.addEventListener('keydown', onKeydown);
 
   await loadMoreHotSongs();
   await nextTick();
   setupHotSongsObserver();
 
-  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic()]);
+  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList()]);
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown);
   if (hotSongsObserver) {
     hotSongsObserver.disconnect();
     hotSongsObserver = null;
-  }
-  if (albumObserver) {
-    albumObserver.disconnect();
-    albumObserver = null;
   }
   if (latestScrollRaf) {
     cancelAnimationFrame(latestScrollRaf);
@@ -1291,6 +1239,16 @@ function openAlbumDetail(albumId: number) {
   emit('open-album-detail', albumId);
 }
 
+function openMv(mv: any) {
+  if (!mv?.id) return;
+  emit('open-mv-player', mv);
+}
+
+function openPodcast(item: any) {
+  if (!item?.id) return;
+  emit('open-podcast-detail', item.id);
+}
+
 async function playDailyRecommendByIndex(index: number) {
   if (!dailyRecommendSongs.value.length) return;
   playerStore.setPlaylist(dailyRecommendSongs.value, index);
@@ -1383,15 +1341,15 @@ async function playLatestSong(index: number) {
 <style scoped>
 @import '../styles/hover-play-button.css';
 .home-page { display: grid; gap: var(--space-3); min-width: 0; overflow-x: clip; }
-.home-actions { display: flex; justify-content: flex-end; }
 .top-artists-section { display: grid; gap: var(--space-2); padding: 0; }
-:deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-5); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); scroll-snap-type: none !important; }
+:deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-8); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); scroll-snap-type: none !important; }
 :deep(.top-artists-row) > * { flex: 0 0 auto; }
 .artist-chip {
   flex: 0 0 auto;
+  min-width: 120px;
   display: grid;
   justify-items: center;
-  gap: var(--space-2);
+  gap: var(--space-4);
   border: none !important;
   background: transparent !important;
   padding: 0;
@@ -1421,8 +1379,11 @@ async function playLatestSong(index: number) {
   box-shadow: none !important;
   border: none !important;
 }
-.artist-avatar { width: 92px; height: 92px; border-radius: 999px; background: center/cover no-repeat; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
-.artist-name { color: var(--text-main); font-size: 14px; font-weight: 600; max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist-avatar { width: 110px; height: 110px; border-radius: 999px; background: center/cover no-repeat; background-clip: padding-box; border: 2px solid transparent; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); transition: border-color var(--an-duration-fast, 320ms) ease; }
+.artist-name { color: var(--text-main); font-size: 14px; font-weight: 600; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist-chip:hover .artist-avatar {
+  border-color: var(--accent);
+}
 .artist-inline-btn + .artist-inline-btn.latest-splitter::before { color: var(--text-soft); }
 .creator-inline-btn {
   margin-top: 10px;
@@ -1431,11 +1392,6 @@ async function playLatestSong(index: number) {
   font-weight: 600;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
-.home-actions { display: flex; justify-content: flex-end; }
-.edit-btn { height: 34px; padding: 0 var(--space-3); border-radius: 10px; border: 1px solid var(--border); background: var(--bg-muted); color: var(--text-main); cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease; }
-.edit-btn:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 34%, var(--border)); box-shadow: 0 10px 18px color-mix(in srgb, var(--accent) 10%, transparent); }
-.edit-btn:active { transform: translateY(0) scale(0.99); }
-.edit-btn.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
 .home-top-reco { display: flex; gap: var(--space-3); }
 .top-mini-card { flex: 1; min-width: 0; padding: var(--space-3); display: grid; gap: var(--space-2); }
 .mini-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
@@ -1558,14 +1514,11 @@ async function playLatestSong(index: number) {
 .fm-hero.poster:focus-visible .fm-control-panel,
 .fm-bottom-zone:hover .fm-control-panel,
 .fm-bottom-zone:focus-within .fm-control-panel { opacity: 1; max-height: 140px; transform: translateY(0); pointer-events: auto; }
-.home-grid { width: 100%; min-width: 0; display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-auto-rows: var(--row-h); gap: var(--gap); }
-.card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); padding-top: calc(var(--layout-card-padding) + 10px); overflow: hidden; }
-.card.list,
-.card.albums { overflow-y: auto; overflow-x: hidden; }
-.card.list::-webkit-scrollbar,
-.card.albums::-webkit-scrollbar { width: 0; height: 0; }
-.card.list,
-.card.albums { scrollbar-width: none; }
+.home-grid { width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); padding-top: calc(var(--layout-card-padding) + 10px); }
+.card.list { overflow-y: auto; overflow-x: hidden; }
+.card.list::-webkit-scrollbar { width: 0; height: 0; }
+.card.list { scrollbar-width: none; }
 .card h3 { margin: 0 0 var(--space-3); color: var(--text-main); }
 .tag-grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .tag { color: var(--text-sub); border-radius: 999px; padding: var(--space-1) var(--space-3); cursor: pointer; transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, background 0.16s ease; }
@@ -1581,10 +1534,21 @@ async function playLatestSong(index: number) {
 .artist { color: var(--text-soft); font-size: 12px; }
 .ops { display: flex; gap: 8px; }
 .icon-btn-wrap { display: inline-flex; align-items: center; }
-.album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 :deep(.latest-scroll) {
   --horizontal-scroll-gap: 0;
   --horizontal-scroll-padding-bottom: 0;
+}
+:deep(.albums-row) {
+  align-items: flex-start;
+}
+:deep(.albums-row) > * {
+  flex: 0 0 auto;
+  width: 220px;
+}
+.albums-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 .latest-track {
   display: flex;
@@ -1665,26 +1629,27 @@ async function playLatestSong(index: number) {
 .rank { font-weight: 700; color: var(--accent); text-align: center; }
 .kw { color: var(--text-main); }
 .history-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.podcast-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-4); }
+.podcast-grid > * { min-width: 0; }
+.mv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+.card.podcast, .card.mv { overflow: visible; }
+.mv-card { cursor: pointer; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.mv-card__info { display: flex; flex-direction: column; gap: var(--space-1); }
+.mv-card__name { color: var(--text-main); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mv-card__artist { color: var(--text-soft); font-size: 12px; }
 .theme-select { margin-top: 8px; height: 34px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-muted); color: var(--text-main); padding: 0 10px; }
-.editor-overlay { position: fixed; inset: 0; background: color-mix(in srgb, #000 28%, transparent); display: grid; place-items: center; z-index: 120; padding: 24px; box-sizing: border-box; }
-.editor-modal { width: min(1080px, calc(100vw - 72px)); max-height: calc(100vh - 96px); background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; padding: var(--space-3); box-sizing: border-box; overflow: auto; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.35); }
-.editor-modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.editor-modal-head h3 { margin: 0; font-size: 16px; color: var(--text-main); }
-.close-btn { height: 32px; padding: 0 var(--space-3); border-radius: 10px; color: var(--text-main); cursor: pointer; }
 @media (max-width: 980px) {
   .home-top-reco { flex-direction: column; }
-  :deep(.top-artists-row) { --horizontal-scroll-gap: 16px; }
-  .artist-avatar { width: 78px; height: 78px; }
+  :deep(.top-artists-row) { --horizontal-scroll-gap: 24px; }
+  .artist-avatar { width: 94px; height: 94px; }
   .latest-column { width: 280px; flex-basis: 280px; }
 }
 
 @media (max-width: 767px) {
   .home-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); }
-  :deep(.top-artists-row) { --horizontal-scroll-gap: 14px; }
-  .artist-avatar { width: 72px; height: 72px; }
+  :deep(.top-artists-row) { --horizontal-scroll-gap: 20px; }
+  .artist-avatar { width: 87px; height: 87px; }
   .card { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .latest-column { width: 260px; flex-basis: 260px; }
-  .editor-overlay { padding: 12px; }
-  .editor-modal { width: calc(100vw - 24px); max-height: calc(100vh - 24px); padding: 10px; }
 }
 </style>

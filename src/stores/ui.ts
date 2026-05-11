@@ -75,7 +75,6 @@ export const uiStore = reactive({
   resolvedTheme: 'light' as ResolvedTheme,
   accentMode: '绿色' as AccentMode,
   accentCustomColor: '#22c55e',
-  liquidGlassEnabled: false,
   unblockEnabled: true,
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   resumeAfterMv: true,
@@ -95,7 +94,6 @@ export const uiStore = reactive({
     this.themeMode = saved;
     this.accentMode = savedAccent;
     this.accentCustomColor = normalizeHexColor(savedAccentColor);
-    this.liquidGlassEnabled = savedGlass === null ? false : savedGlass === '1';
     const savedUnblock = localStorage.getItem(UNBLOCK_KEY);
     const savedUnblockSources = localStorage.getItem(UNBLOCK_SRC_KEY);
     this.unblockEnabled = savedUnblock === null ? true : savedUnblock === '1';
@@ -109,7 +107,6 @@ export const uiStore = reactive({
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
     applyAccentToDom(this.accentMode, this.accentCustomColor);
-    applyGlassToDom(this.liquidGlassEnabled);
 
     if (!mediaQuery) {
       mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -152,11 +149,6 @@ export const uiStore = reactive({
   setUnblockSources(sources: string[]) {
     this.unblockSources = sources;
     localStorage.setItem(UNBLOCK_SRC_KEY, JSON.stringify(sources));
-  },
-  setLiquidGlass(enabled: boolean) {
-    this.liquidGlassEnabled = enabled;
-    localStorage.setItem(GLASS_KEY, enabled ? '1' : '0');
-    applyGlassToDom(enabled);
   },
   setResumeAfterMv(enabled: boolean) {
     this.resumeAfterMv = enabled;

@@ -118,10 +118,6 @@
   --text-label-sm-weight: 600;
   --text-label-sm-line: 16px;
   --text-label-sm-letter: 0.05em;
-
-  /* Layout margins — 流体网格边距规范 */
-  --layout-margin-mobile: 20px;
-  --layout-margin-desktop: 48px;
 }
 
 .page-stack {
