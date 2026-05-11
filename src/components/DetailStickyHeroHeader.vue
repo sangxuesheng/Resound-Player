@@ -271,7 +271,7 @@ onMounted(remeasureHeight);
 .playlist-detail-header-wrap.is-sticky-header :deep(.artist-tab) {
   height: 28px;
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 .playlist-detail-header-wrap.is-sticky-header :deep(.artist-tabs) {
   gap: 8px;
@@ -279,7 +279,7 @@ onMounted(remeasureHeight);
 .playlist-detail-header-wrap.is-sticky-header :deep(.playlist-tab) {
   height: 28px;
   padding: 0 10px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 .playlist-detail-header-wrap.is-sticky-header :deep(.playlist-tabs) {
   gap: 8px;

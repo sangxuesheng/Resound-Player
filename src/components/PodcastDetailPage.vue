@@ -529,7 +529,7 @@ watch(
   min-height: 24px;
   padding: 0 var(--space-2);
   border-radius: 999px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   white-space: nowrap;
   flex: 0 0 auto;
 }

@@ -58,7 +58,7 @@ function resolveCover(item: { coverImgUrl?: string; picUrl?: string }) {
 </script>
 
 <style scoped>
-.hq-section h3 { margin: 0 0 8px; font-size: 16px; }
+.hq-section h3 { margin: 0 0 8px; font-size: var(--text-body-md); }
 .hq-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .hq-item { border: 1px solid #edf2f7; border-radius: 12px; overflow: hidden; background: #f8fafc; cursor: pointer; }
 .hq-media-shell { }
@@ -70,7 +70,7 @@ function resolveCover(item: { coverImgUrl?: string; picUrl?: string }) {
 }
 .hq-item .meta { padding: 8px; }
 .hq-item .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hq-item .sub { margin: 4px 0 0; font-size: 12px; color: #6b7280; }
+.hq-item .sub { margin: 4px 0 0; font-size: var(--text-label-sm); color: #6b7280; }
 
 @media (max-width: 980px) {
   .hq-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

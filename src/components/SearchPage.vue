@@ -1054,7 +1054,7 @@ h3,
 }
 
 .panel-title {
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 700;
 }
 
@@ -1109,7 +1109,7 @@ h3,
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-sub);
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
   padding: var(--space-1) var(--space-3);
   border-radius: 999px;
@@ -1232,7 +1232,7 @@ h3,
   border-radius: 999px;
   text-align: center;
   font-weight: 800;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   background: var(--bg-muted);
   color: var(--text-sub);
 }
@@ -1264,7 +1264,7 @@ h3,
 
 .heat {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   white-space: nowrap;
 }
 
@@ -1400,7 +1400,7 @@ h3,
 
 .artist {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -1425,7 +1425,7 @@ h3,
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 12%, var(--bg-muted));
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 700;
 }
 
@@ -1643,7 +1643,7 @@ h3,
   border-radius: 14px;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 800;
   color: #fff;
   flex: 0 0 auto;
@@ -1727,7 +1727,7 @@ h3,
 .mixed-head h4 {
   margin: 0;
   color: var(--text-main);
-  font-size: 16px;
+  font-size: var(--text-body-md);
 }
 
 .mixed-more {
@@ -1839,7 +1839,7 @@ h3,
   }
 
   .type-tab {
-    font-size: 14px;
+    font-size: var(--text-label-md);
   }
 
   .entity-grid,

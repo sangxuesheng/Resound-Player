@@ -118,6 +118,26 @@
   --text-label-sm-weight: 600;
   --text-label-sm-line: 16px;
   --text-label-sm-letter: 0.05em;
+
+  /* Detail page headline (38px hero title, 26px mobile) */
+  --text-headline-xl: 38px;
+  --text-headline-xl-weight: 700;
+  --text-headline-xl-line: 44px;
+  --text-headline-xl-letter: -0.015em;
+
+  /* Small body text for section descriptions */
+  --text-body-sm: 14px;
+  --text-body-sm-weight: 400;
+  --text-body-sm-line: 22px;
+
+  /* Extra small label for tooltips, badges, mini buttons */
+  --text-label-xs: 11px;
+  --text-label-xs-weight: 600;
+  --text-label-xs-line: 14px;
+  --text-label-xs-letter: 0.05em;
+
+  /* Monospace font stack for code inputs */
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
 }
 
 .page-stack {
@@ -153,16 +173,19 @@
   --bg-soft: rgba(26, 23, 21, 0.55);
   --bg-solid: #1a1715;
   --text-main: #e7e5e4;
-  --text-sub: #a8a29e;
-  --text-soft: #78716c;
-  --border: rgba(255, 255, 255, 0.22);
-  --border-soft: rgba(148, 146, 144, 0.20);
+  --text-sub: #b8c6d8;
+  --text-soft: #93a5bb;
+  --border: rgba(203, 213, 225, 0.28);
+  --border-soft: rgba(148, 163, 184, 0.26);
   --accent: #22c55e;
   --accent-soft: rgba(34, 197, 94, 0.22);
   --accent-green: #22c55e;
   --accent-blue: #3b82f6;
   --accent-purple: #a855f7;
   --accent-orange: #f97316;
+
+  --danger: #f87171;
+  --danger-soft: color-mix(in srgb, var(--danger) 18%, var(--bg-surface));
 
   /* Dark mode: deepen primary ~10% for better contrast */
   --theme-primary: var(--accent);
@@ -1125,15 +1148,6 @@ svg.icon,
   --control-disabled-text: color-mix(in srgb, var(--text-soft) 70%, transparent);
 }
 
-:root[data-theme='dark'] {
-  --text-sub: #b8c6d8;
-  --text-soft: #93a5bb;
-  --border: rgba(203, 213, 225, 0.28);
-  --border-soft: rgba(148, 163, 184, 0.26);
-  --danger: #f87171;
-  --danger-soft: color-mix(in srgb, var(--danger) 18%, var(--bg-surface));
-}
-
 button,
 [role='button'],
 input[type='button'],
@@ -1239,9 +1253,9 @@ textarea:disabled {
   left: 50%;
   transform: translateX(-50%) translateY(4px);
   padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--text-label-xs);
+  font-weight: var(--text-label-xs-weight);
+  line-height: var(--text-label-xs-line);
   white-space: nowrap;
   color: var(--text-main);
   background: var(--bg-solid);
@@ -1310,9 +1324,9 @@ textarea:disabled {
 .tooltip-teleported {
   position: fixed;
   padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--text-label-xs);
+  font-weight: var(--text-label-xs-weight);
+  line-height: var(--text-label-xs-line);
   white-space: nowrap;
   color: var(--text-main);
   background: var(--bg-solid);

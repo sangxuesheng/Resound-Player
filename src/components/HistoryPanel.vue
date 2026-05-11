@@ -1113,7 +1113,7 @@ watch(
   border-radius: 999px;
   border: 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 700;
 }
 
@@ -1206,13 +1206,13 @@ watch(
 }
 
 .collection-row__main strong {
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 800;
 }
 
 .collection-row__main span {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .history-row {
@@ -1235,7 +1235,7 @@ watch(
 
 .history-count {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   text-align: center;
 }
 

@@ -480,6 +480,13 @@ const panelBodyStyle = computed(() => {
   return { display: 'grid', gridTemplateColumns: '40% 60%', gap: '24px' };
 });
 
+function getLuminance(rgb: string): number {
+  const m = rgb.match(/\d+/g);
+  if (!m) return 0.5;
+  const [r, g, b] = m.map(Number);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
 const bgStyle = computed(() => {
   const { bgMode } = lyricsSettings;
   // 自定义模式 → 虹彩效果由 canvas 渲染
@@ -493,6 +500,9 @@ const bgStyle = computed(() => {
         '--card-bg-2': 'rgba(24,26,36,0.94)',
         '--line-muted': 'rgba(255,255,255,0.12)',
         '--accent': palette.value.c3,
+        '--overlay-text-main': '#e7e5e4',
+        '--overlay-text-sub': '#b8c6d8',
+        '--overlay-text-soft': '#93a5bb',
       };
     }
     return {
@@ -503,14 +513,22 @@ const bgStyle = computed(() => {
       '--card-bg-2': 'rgba(24,26,36,0.94)',
       '--line-muted': 'rgba(255,255,255,0.12)',
       '--accent': palette.value.c3,
+      '--overlay-text-main': '#e7e5e4',
+      '--overlay-text-sub': '#b8c6d8',
+      '--overlay-text-soft': '#93a5bb',
     };
   }
   // 基础模式（仅默认主题）
+  const lum = getLuminance(palette.value.c1);
+  const isLight = lum > 0.55;
   return {
     background: `linear-gradient(160deg, ${palette.value.c1} 0%, ${palette.value.c2} 42%, ${palette.value.c4} 100%)`,
     '--panel-bg': palette.value.c1, '--panel-bg-soft': palette.value.c2,
     '--card-bg': 'rgba(18,20,28,0.96)', '--card-bg-2': 'rgba(24,26,36,0.98)',
     '--line-muted': 'rgba(255,255,255,0.16)', '--accent': palette.value.c3,
+    '--overlay-text-main': isLight ? '#1c1917' : '#e7e5e4',
+    '--overlay-text-sub': isLight ? '#57534e' : '#b8c6d8',
+    '--overlay-text-soft': isLight ? '#78716c' : '#93a5bb',
   };
 });
 
@@ -610,7 +628,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
 .cover-hidden-head { text-align: center; padding: var(--space-4) var(--space-4) 0; }
 .song-name-center { margin: 0; color: #fff !important; font-size: var(--text-headline-lg); font-weight: 700; line-height: 1.2; }
-.song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: 18px; }
+.song-artist-center { margin: var(--space-1) 0 0; color: rgba(255,255,255,0.82) !important; font-size: var(--text-body-lg); }
 .song-artist-center .rate-badge { margin-left: 8px; }
 .ghost { height: 32px; border-radius: 10px; border: 1px solid var(--line-muted); background: var(--card-bg-2); color: #fff; padding: 0 var(--space-3); }
 .artist-inline-btn { background: none; border: none; color: inherit; padding: 0; font: inherit; cursor: pointer; outline: none; }
@@ -625,13 +643,13 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .song-artist { width: 480px; margin: 0; color: rgba(255,255,255,0.82); text-align: center;  }
 .progress-wrap { width: 300px; display: grid; gap: var(--space-1); position: relative; }
 .progress { width: 100%; }
-.seek-preview { justify-self: center; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: #fff; background: rgba(0,0,0,0.38); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(6px); animation: seek-fade-in 120ms ease; }
+.seek-preview { justify-self: center; padding: 2px 8px; border-radius: 999px; font-size: var(--text-label-sm); color: #fff; background: rgba(0,0,0,0.38); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(6px); animation: seek-fade-in 120ms ease; }
 .times { display: flex; justify-content: space-between; }
-.time { color: rgba(255,255,255,0.78); font-size: 12px; }
+.time { color: rgba(255,255,255,0.78); font-size: var(--text-label-sm); }
 .controls { width: 300px; height: 52px; display: flex; justify-content: center; align-items: center; gap: var(--space-3); margin-top: var(--space-1);  }
 .ctrl { width: 42px; height: 42px; border-radius: 50%; color: #fff; display: inline-grid; place-items: center; line-height: 1; transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease; }
 .ctrl:not(.main) { border: none; background: transparent; box-shadow: none; color: #ffffff; }
-.ctrl-fm-indicator { width: auto; height: 42px; padding: 0 4px; font-size: 14px; font-weight: 800; letter-spacing: 0.08em; border: none !important; border-radius: 0; background: transparent !important; box-shadow: none !important; color: #fff7d6 !important; text-shadow: 0 0 10px rgba(255,244,194,0.35); cursor: default; pointer-events: none; }
+.ctrl-fm-indicator { width: auto; height: 42px; padding: 0 4px; font-size: var(--text-label-md); font-weight: 800; letter-spacing: 0.08em; border: none !important; border-radius: 0; background: transparent !important; box-shadow: none !important; color: #fff7d6 !important; text-shadow: 0 0 10px rgba(255,244,194,0.35); cursor: default; pointer-events: none; }
 .ctrl-dislike { color: #fff !important; }
 .ctrl-dislike:hover { color: rgba(255,255,255,0.7) !important; }
 .con-dislike { color: #fff !important; }
@@ -674,14 +692,14 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   width: 44px; height: 44px; border-radius: 50%; border: none;
   background: transparent; color: rgba(255,255,255,0.5);
   cursor: pointer; display: grid; place-items: center;
-  font-size: 12px; font-weight: 700;
+  font-size: var(--text-label-sm); font-weight: 700;
   transition: color 120ms ease, background 120ms ease;
   flex-shrink: 0;
 }
 .ra-btn svg { width: 22px; height: 22px; stroke-width: 2.5; }
 .ra-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
-.ra-btn--rect { border-radius: 10px; font-size: 14px; width: 44px; }
-.ra-btn-trans { font-size: 16px; font-weight: 800; letter-spacing: 0.02em; }
+.ra-btn--rect { border-radius: 10px; font-size: var(--text-label-md); width: 44px; }
+.ra-btn-trans { font-size: var(--text-body-md); font-weight: 800; letter-spacing: 0.02em; }
 .ra-btn-trans.active { color: var(--accent, #c39c76); }
 .ra-icon { position: relative; display: grid; place-items: center; }
 .ra-badge {
@@ -703,7 +721,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   transform-origin: right center;
   animation: an-offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
 }
-.offset-head { color: var(--text-main,#fff); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-align: center; }
+.offset-head { color: var(--text-main,#fff); font-size: var(--text-label-sm); font-weight: 600; letter-spacing: 0.04em; text-align: center; }
 .offset-body { display: flex; align-items: center; justify-content: center; gap: var(--space-2); }
 .of-step {
   width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border-soft, rgba(255,255,255,0.12));
@@ -727,11 +745,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 .of-input::-webkit-inner-spin-button,
 .of-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.of-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: 11px; text-align: center; }
+.of-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: var(--text-label-xs); text-align: center; }
 .of-reset-wrap { text-align: center; }
 .of-reset {
   padding: 5px 14px; border-radius: 999px; border: 1px solid var(--border-soft, rgba(255,255,255,0.1));
-  background: transparent; color: var(--text-soft, rgba(255,255,255,0.6)); font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--text-soft, rgba(255,255,255,0.6)); font-size: var(--text-label-sm); cursor: pointer;
   transition: all 120ms ease;
 }
 .of-reset:hover { color: var(--accent,#c39c76); border-color: var(--accent, rgba(195,156,118,0.4)); }
@@ -749,7 +767,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   transform-origin: right center;
   animation: offset-in 0.2s cubic-bezier(0.22,1,0.36,1);
 }
-.trans-head { color: var(--text-main,#fff); font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-align: center; padding-bottom: var(--space-1); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
+.trans-head { color: var(--text-main,#fff); font-size: var(--text-label-sm); font-weight: 600; letter-spacing: 0.04em; text-align: center; padding-bottom: var(--space-1); border-bottom: 1px solid var(--border, rgba(255,255,255,0.08)); }
 .trans-body { display: flex; flex-direction: column; gap: var(--space-2); }
 .trans-row { display: flex; align-items: center; justify-content: space-between; }
 .trans-label { color: var(--text-main,#fff); font-size: 13px; font-weight: 500; }
@@ -765,7 +783,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   z-index: 70;
 }
 .console-progress { grid-column: 2; grid-row: 2; display: flex; align-items: center; gap: var(--space-2); justify-self: center; width: 175%; }
-.console-time { color: rgba(255,255,255,0.5); font-size: 11px; min-width: 32px; font-variant-numeric: tabular-nums; }
+.console-time { color: rgba(255,255,255,0.5); font-size: var(--text-label-xs); min-width: 32px; font-variant-numeric: tabular-nums; }
 .console-time:last-child { text-align: right; }
 .console-bar { flex: 1; height: 10px; accent-color: var(--accent, #c39c76); cursor: pointer; border-radius: 5px; }
 .cc-left { grid-column: 1; grid-row: 1 / 3; display: flex; align-items: flex-end; gap: var(--space-2); padding-bottom: 6px; }
@@ -779,21 +797,21 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .cc-center { display: flex; align-items: center; gap: var(--space-2); }
 .cc-center .con-btn { width: 44px; height: 44px; }
 .cc-center .con-btn svg { width: 22px; height: 22px; }
-.cc-center .con-play { width: 50px; height: 50px; font-size: 18px; }
+.cc-center .con-play { width: 50px; height: 50px; font-size: var(--text-body-lg); }
 .con-btn {
   width: 32px; height: 32px; border-radius: 50%; border: none;
   background: transparent; color: rgba(255,255,255,0.8);
   cursor: pointer; display: grid; place-items: center;
-  font-size: 12px; transition: transform 0.12s ease, background 0.12s ease;
+  font-size: var(--text-label-sm); transition: transform 0.12s ease, background 0.12s ease;
   flex-shrink: 0;
 }
 .con-btn:hover { transform: scale(1.12); background: rgba(255,255,255,0.1); }
 .con-btn:disabled { opacity: 0.35; cursor: default; background: transparent !important; transform: none !important; }
 .con-btn svg { stroke-width: 2.5; }
 .con-btn:active { transform: scale(0.95); }
-.con-play { width: 42px; height: 42px; background: rgba(255,255,255,0.15); font-size: 16px; }
+.con-play { width: 42px; height: 42px; background: rgba(255,255,255,0.15); font-size: var(--text-body-md); }
 .con-play:hover { background: rgba(255,255,255,0.22); }
-.con-fm-label { font-size: 14px; font-weight: 700; letter-spacing: 0.04em; background: transparent !important; border-radius: 0 !important; opacity: 1 !important; cursor: default !important; }
+.con-fm-label { font-size: var(--text-label-md); font-weight: 700; letter-spacing: 0.04em; background: transparent !important; border-radius: 0 !important; opacity: 1 !important; cursor: default !important; }
 .con-fm-label:hover { transform: none !important; background: transparent !important; }
 .con-volume { display: flex; align-items: center; gap: 4px; }
 .con-vol-icon { width: 28px; height: 28px; }
@@ -810,11 +828,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .playlist-popup li { padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3); border-radius: 10px; cursor: pointer; display: grid; grid-template-columns: auto 36px 1fr auto; align-items: center; gap: var(--space-2); border: 1px solid transparent; transition: background 120ms ease; }
 .playlist-popup li.active { background: color-mix(in srgb, var(--panel-bg-soft) 42%, #ffffff12); border-color: var(--line-muted); }
 .playlist-popup li:hover { background: color-mix(in srgb, var(--panel-bg-soft) 28%, #ffffff08); }
-.track-num { color: rgba(255,255,255,0.35); font-size: 12px; width: 20px; text-align: center; flex-shrink: 0; }
+.track-num { color: rgba(255,255,255,0.35); font-size: var(--text-label-sm); width: 20px; text-align: center; flex-shrink: 0; }
 .track-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
 .track-info { min-width: 0; display: grid; gap: 2px; }
 .t { color: #fff; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.a { color: rgba(255,255,255,0.75); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a { color: rgba(255,255,255,0.75); font-size: var(--text-label-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .track-remove-btn { width: 28px; height: 28px; border: none; background: transparent; color: rgba(255,255,255,0.35); cursor: pointer; display: grid; place-items: center; border-radius: 6px; opacity: 0; transition: opacity 120ms ease, color 120ms ease, background 120ms ease; flex-shrink: 0; }
 .playlist-popup li:hover .track-remove-btn { opacity: 1; }
 .track-remove-btn:hover { color: rgba(255,100,100,0.9); background: rgba(255,100,100,0.12); }
@@ -999,6 +1017,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
   flex-direction: column;
   padding: var(--space-4);
   padding-bottom: 87px;
+
+  /* Cascade palette-adaptive text colors to CommentPanel */
+  --text-main: var(--overlay-text-main);
+  --text-sub: var(--overlay-text-sub);
+  --text-soft: var(--overlay-text-soft);
 }
 
 .comments-head {
@@ -1032,8 +1055,8 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 
 .comments-head-title {
   margin: 0;
-  color: #fff;
-  font-size: 18px;
+  color: var(--text-main);
+  font-size: var(--text-body-lg);
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1042,7 +1065,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 
 .comments-head-artist {
   margin: 0;
-  color: rgba(255,255,255,0.6);
+  color: var(--text-sub);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1051,7 +1074,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 
 .comments-head-album {
   margin: 0;
-  color: rgba(255,255,255,0.6);
+  color: var(--text-sub);
   font-size: 13px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1077,7 +1100,7 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 .comments-head-time {
   margin: 0;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-soft);
   font-size: 13px;
   line-height: 1.6;
 }

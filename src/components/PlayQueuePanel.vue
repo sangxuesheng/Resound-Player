@@ -179,7 +179,7 @@ function formatArtists(ar?: { name: string }[]): string {
 }
 
 .play-queue-count {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--expanded-text-soft, var(--text-soft));
   margin-right: auto;
 }
@@ -191,7 +191,7 @@ function formatArtists(ar?: { name: string }[]): string {
   border-radius: 8px;
   background: transparent;
   color: var(--expanded-text-sub, var(--text-sub));
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -309,7 +309,7 @@ function formatArtists(ar?: { name: string }[]): string {
 
 .play-queue-artist {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--expanded-text-soft, var(--text-soft));
   overflow: hidden;
   text-overflow: ellipsis;
@@ -372,13 +372,13 @@ function formatArtists(ar?: { name: string }[]): string {
 
 .play-queue-empty-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
 }
 
 .play-queue-empty-sub {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   opacity: 0.7;
   line-height: 1.4;
 }
@@ -396,14 +396,14 @@ function formatArtists(ar?: { name: string }[]): string {
 }
 
 .play-queue-footer-label {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--expanded-text-soft, var(--text-soft));
   flex-shrink: 0;
   font-weight: 500;
 }
 
 .play-queue-footer-track {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--expanded-text-sub, var(--text-sub));
   overflow: hidden;
   text-overflow: ellipsis;

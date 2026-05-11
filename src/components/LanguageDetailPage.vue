@@ -293,7 +293,7 @@ watch(() => props.languageName, (name) => {
 
 .playlist-card .info .sub {
   margin: var(--space-1) 0 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-soft);
 }
 
@@ -301,7 +301,7 @@ watch(() => props.languageName, (name) => {
   padding: var(--space-8) 0;
   text-align: center;
   color: var(--text-sub);
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 
 .load-more-wrap {
@@ -331,7 +331,7 @@ watch(() => props.languageName, (name) => {
   text-align: center;
   padding: 16px 0 32px;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 @media (max-width: 1280px) {

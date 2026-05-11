@@ -273,7 +273,7 @@ watch(
   place-items: center;
   color: var(--text-sub);
   background: var(--bg-muted);
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 
 .video-placeholder.error {
@@ -299,7 +299,7 @@ watch(
 
 .side-eyebrow {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--accent);
@@ -307,7 +307,7 @@ watch(
 
 .side-title {
   margin: 2px 0 0;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   line-height: 1.25;
   font-weight: 700;
   color: var(--text-main);
@@ -316,7 +316,7 @@ watch(
 .side-sub {
   margin: 4px 0 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .side-poster {
@@ -329,7 +329,7 @@ watch(
 .side-meta {
   margin: 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   padding-top: 6px;
   border-top: 1px dashed var(--border-soft);
 }
@@ -343,7 +343,7 @@ watch(
 
 .data-title {
   margin: 0 0 6px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--accent);
   letter-spacing: 0.03em;
 }
@@ -357,21 +357,21 @@ watch(
 .data-line {
   margin: 0;
   color: var(--text-main);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   line-height: 1.4;
 }
 
 .data-desc {
   margin: 8px 0 0;
   color: var(--text-sub);
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   line-height: 1.45;
 }
 
 .data-loading {
   margin: 6px 0 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 /* Comments */

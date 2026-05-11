@@ -111,6 +111,17 @@ const coverStyle = computed(() => {
   );
 }
 
+[data-theme='dark'] .gradient-card::after {
+  background: linear-gradient(
+    180deg,
+    rgba(26, 23, 21, 0.06) 0%,
+    rgba(26, 23, 21, 0.18) 28%,
+    rgba(26, 23, 21, 0.42) 62%,
+    rgba(26, 23, 21, 0.82) 82%,
+    rgb(26, 23, 21) 92%
+  );
+}
+
 .gradient-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
@@ -181,7 +192,7 @@ const coverStyle = computed(() => {
 .gradient-card__subtitle {
   margin: var(--space-1) 0 0;
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   line-height: 1.35;
 }
 

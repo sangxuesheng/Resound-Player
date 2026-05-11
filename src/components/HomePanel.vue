@@ -85,7 +85,7 @@
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card fm-card" :index="2">
         <p v-if="personalFmLoading" class="mini-desc">正在获取私人 FM…</p>
         <p v-else-if="personalFmError" class="mini-desc error">{{ personalFmError }}</p>
-        <button v-else-if="personalFmTracks.length" class="fm-hero poster" :title="personalFmTracks[0]?.name" @click="playPersonalFmByIndex(0)">
+        <button v-else-if="personalFmTracks.length" class="fm-hero poster" :title="personalFmTracks[0]?.name" @click="playPersonalFmByIndex(0)" @mouseenter="fmHovered = true" @mouseleave="fmHovered = false">
           <span class="fm-bg fade-in-bg" :class="{ 'bg-loaded': fmBgLoaded }" :style="{ backgroundImage: `url(${personalFmCoverUrl})` }"></span>
           <span class="fm-poster-top">
             <span class="fm-top-title">私人 FM</span>
@@ -93,7 +93,7 @@
               ref="fmModeBtnRef"
               type="button"
               class="fm-mode-btn"
-              :class="{ active: fmModePopoverOpen || playerStore.fmMode !== 'DEFAULT' }"
+              :class="{ 'hover-visible': fmHovered, active: fmModePopoverOpen || playerStore.fmMode !== 'DEFAULT' }"
               :title="`当前模式: ${fmModeLabel}`"
               aria-label="私人 FM 模式选择"
               @click.stop="toggleFmModePopover"
@@ -597,6 +597,7 @@ const fmSubmodeOptions = [
   { value: 'NIGHT_EMO', label: '深夜' },
 ];
 const fmModePopoverOpen = ref(false);
+const fmHovered = ref(false);
 const selectedFmMode = ref(playerStore.fmMode);
 const selectedFmSubmode = ref(playerStore.fmSubmode);
 const fmModeBtnRef = ref<HTMLElement | null>(null);
@@ -1579,7 +1580,7 @@ async function playLatestSong(index: number) {
   border: none !important;
 }
 .artist-avatar { width: 110px; height: 110px; border-radius: 999px; background: center/cover no-repeat; background-clip: padding-box; border: 2px solid transparent; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); transition: border-color var(--an-duration-fast, 320ms) ease; }
-.artist-name { color: var(--text-main); font-size: 14px; font-weight: 600; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.artist-name { color: var(--text-main); font-size: var(--text-label-md); font-weight: 600; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .artist-chip:hover .artist-avatar {
   border-color: var(--accent);
 }
@@ -1594,8 +1595,8 @@ async function playLatestSong(index: number) {
 .home-top-reco { display: flex; gap: var(--space-3); }
 .top-mini-card { flex: 1; min-width: 0; padding: var(--space-3); display: grid; gap: var(--space-2); }
 .mini-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
-.mini-head h3 { margin: 0; color: var(--text-main); font-size: 16px; }
-.mini-tip { font-size: 12px; color: var(--text-soft); }
+.mini-head h3 { margin: 0; color: var(--text-main); font-size: var(--text-body-md); }
+.mini-tip { font-size: var(--text-label-sm); color: var(--text-soft); }
 .mini-desc { margin: 0; color: var(--text-sub); font-size: 13px; line-height: 1.5; }
 .mini-desc.error { color: color-mix(in srgb, #ef4444 76%, var(--text-main)); }
 .daily-card { padding: 0; border-radius: 12px; overflow: hidden; }
@@ -1603,16 +1604,16 @@ async function playLatestSong(index: number) {
 .daily-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .daily-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .daily-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: var(--space-2); z-index: 2; }
-.daily-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.daily-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: var(--text-label-sm); font-weight: 700; display: grid; place-items: center; }
 .daily-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .daily-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 0; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
-.daily-poster-bottom { display: block; padding: var(--space-4) var(--space-4) var(--space-5); color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
+.daily-poster-bottom { display: block; padding: var(--space-4) var(--space-4) var(--space-5); color: #fff; font-size: var(--text-body-lg); font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .daily-hover-list { display: grid; gap: 6px; padding: 0 var(--space-3) var(--space-3); opacity: 0; max-height: 0; overflow: hidden; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; }
 .daily-hover-item { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; color: #fff; border: none; background: transparent; padding: 0; text-align: left; cursor: pointer; }
 .daily-hover-item:hover .daily-hover-name { text-decoration: underline; }
-.daily-hover-rank { font-size: 12px; font-weight: 700; text-align: center; color: rgba(255, 255, 255, 0.95); }
+.daily-hover-rank { font-size: var(--text-label-sm); font-weight: 700; text-align: center; color: rgba(255, 255, 255, 0.95); }
 .daily-hover-name { display: block; justify-self: start; width: 100%; text-align: left; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.daily-hover-artist { justify-self: end; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.82); max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.daily-hover-artist { justify-self: end; text-align: right; font-size: var(--text-label-sm); color: rgba(255, 255, 255, 0.82); max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .daily-hero.poster:hover .daily-poster-bottom,
 .daily-hero.poster:focus-visible .daily-poster-bottom,
 .daily-bottom-zone:hover .daily-poster-bottom,
@@ -1627,15 +1628,15 @@ async function playLatestSong(index: number) {
 .radar-bg { position: absolute; inset: 0; background: center/cover no-repeat; filter: saturate(0.88) contrast(0.9); }
 .radar-hero.poster::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(17, 24, 39, 0.08) 0%, rgba(75, 85, 99, 0.22) 38%, rgba(107, 114, 128, 0.58) 72%, rgba(107, 114, 128, 0.86) 100%); }
 .radar-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: var(--space-2); z-index: 2; }
-.radar-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.radar-calendar { width: 26px; height: 26px; border-radius: 8px; background: rgba(255,255,255,0.86); color: var(--text-soft); font-size: var(--text-label-sm); font-weight: 700; display: grid; place-items: center; }
 .radar-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .radar-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 0; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
-.radar-poster-bottom { display: block; padding: 16px 18px 20px; color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
+.radar-poster-bottom { display: block; padding: 16px 18px 20px; color: #fff; font-size: var(--text-body-lg); font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .radar-hover-list { display: grid; gap: 6px; padding: 0 14px 14px; opacity: 0; max-height: 0; overflow: hidden; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; }
 .radar-hover-item { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; color: #fff; }
-.radar-hover-rank { font-size: 12px; font-weight: 700; text-align: center; color: rgba(255, 255, 255, 0.95); }
+.radar-hover-rank { font-size: var(--text-label-sm); font-weight: 700; text-align: center; color: rgba(255, 255, 255, 0.95); }
 .radar-hover-name { display: block; justify-self: start; width: 100%; text-align: left; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.radar-hover-artist { justify-self: end; text-align: right; font-size: 12px; color: rgba(255, 255, 255, 0.82); max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.radar-hover-artist { justify-self: end; text-align: right; font-size: var(--text-label-sm); color: rgba(255, 255, 255, 0.82); max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .radar-hero.poster:hover .radar-poster-bottom,
 .radar-hero.poster:focus-visible .radar-poster-bottom,
 .radar-bottom-zone:hover .radar-poster-bottom,
@@ -1652,7 +1653,7 @@ async function playLatestSong(index: number) {
 .fm-poster-top { position: absolute; left: 16px; top: 14px; display: flex; align-items: center; gap: 10px; z-index: 2; }
 .fm-top-title { color: #fff; font-size: var(--text-display); font-weight: 800; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 .fm-bottom-zone { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; display: grid; gap: 12px; background: linear-gradient(180deg, rgba(107, 114, 128, 0.04) 0%, rgba(107, 114, 128, 0.22) 26%, rgba(107, 114, 128, 0.56) 58%, rgba(107, 114, 128, 0.84) 100%); }
-.fm-poster-bottom { display: block; padding: 16px 18px 0; color: #fff; font-size: 18px; font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
+.fm-poster-bottom { display: block; padding: 16px 18px 0; color: #fff; font-size: var(--text-body-lg); font-weight: 700; line-height: 1.35; text-align: left; transform: translateY(0); transition: transform 320ms ease, opacity 320ms ease; }
 .fm-control-panel { display: flex; align-items: center; justify-content: center; gap: 20px; padding: 4px 18px 18px; opacity: 0; max-height: 0; overflow: visible; transform: translateY(12px); transition: max-height 320ms ease, transform 320ms ease, opacity 320ms ease; pointer-events: none; will-change: transform, opacity; }
 .fm-control-btn {
   border: none;
@@ -1724,13 +1725,13 @@ async function playLatestSong(index: number) {
 .tag:hover { transform: translateY(-1px); }
 .tag:active { transform: translateY(0) scale(0.99); }
 .music-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
-.list-hint { margin: var(--space-2) 0 0; text-align: center; font-size: 12px; color: var(--text-soft); }
+.list-hint { margin: var(--space-2) 0 0; text-align: center; font-size: var(--text-label-sm); color: var(--text-soft); }
 .list-sentinel { width: 100%; height: 1px; }
 .song { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; }
 .song.playing { border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--border)); background: color-mix(in srgb, var(--accent) 15%, var(--bg-surface)); }
 .cover { width: 56px; height: 56px; border-radius: 12px; background: var(--bg-soft) center/cover no-repeat; }
 .name { color: var(--text-main); font-weight: 600; }
-.artist { color: var(--text-soft); font-size: 12px; }
+.artist { color: var(--text-soft); font-size: var(--text-label-sm); }
 .ops { display: flex; gap: 8px; }
 .icon-btn-wrap { display: inline-flex; align-items: center; }
 :deep(.latest-scroll) {
@@ -1800,7 +1801,7 @@ async function playLatestSong(index: number) {
 .latest-meta { min-width: 0; }
 .latest-name {
   color: var(--text-main);
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -1808,7 +1809,7 @@ async function playLatestSong(index: number) {
 }
 .latest-artist {
   color: var(--text-soft);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -1821,7 +1822,7 @@ async function playLatestSong(index: number) {
   color: var(--text-soft);
 }
 .custom-desc { color: var(--text-sub); margin: 0; }
-.custom-tip { color: var(--text-soft); font-size: 12px; margin: var(--space-2) 0 0; }
+.custom-tip { color: var(--text-soft); font-size: var(--text-label-sm); margin: var(--space-2) 0 0; }
 .hot-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .hot-item { display: grid; grid-template-columns: 24px 1fr; gap: 8px; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
 .hot-item:hover { background: var(--bg-muted); }
@@ -1834,8 +1835,8 @@ async function playLatestSong(index: number) {
 .card.podcast, .card.mv { overflow: visible; }
 .mv-card { cursor: pointer; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
 .mv-card__info { display: flex; flex-direction: column; gap: var(--space-1); }
-.mv-card__name { color: var(--text-main); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mv-card__artist { color: var(--text-soft); font-size: 12px; }
+.mv-card__name { color: var(--text-main); font-size: var(--text-label-md); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mv-card__artist { color: var(--text-soft); font-size: var(--text-label-sm); }
 .theme-select { margin-top: 8px; height: 34px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-muted); color: var(--text-main); padding: 0 10px; }
 @media (max-width: 980px) {
   .home-top-reco { flex-direction: column; }
@@ -1867,8 +1868,14 @@ async function playLatestSong(index: number) {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  transition: opacity 220ms ease, transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
   padding: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.fm-mode-btn.hover-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 .fm-mode-btn svg {
   width: 14px;
@@ -1966,7 +1973,7 @@ async function playLatestSong(index: number) {
   line-height: 1.3;
 }
 .fm-mode-option-desc {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-soft);
   line-height: 1.3;
   white-space: nowrap;
@@ -1978,7 +1985,7 @@ async function playLatestSong(index: number) {
   padding: var(--space-2);
 }
 .fm-submode-label {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 600;
   color: var(--text-soft);
   padding: 0 var(--space-2) var(--space-1);

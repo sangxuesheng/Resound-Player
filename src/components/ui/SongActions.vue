@@ -778,7 +778,7 @@ onBeforeUnmount(() => {
 }
 
 .download-popup__song-artist {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
   margin-top: 2px;
   overflow: hidden;
@@ -787,7 +787,7 @@ onBeforeUnmount(() => {
 }
 
 .download-popup__sub {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
   padding: 0 var(--space-1);
   overflow: hidden;
@@ -846,7 +846,7 @@ onBeforeUnmount(() => {
 }
 
 .download-popup__item-size {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-sub);
   min-width: 50px;
   text-align: right;
@@ -869,7 +869,7 @@ onBeforeUnmount(() => {
   padding: var(--space-2) var(--space-3);
   background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid));
   border-radius: 10px;
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   line-height: 1.5;
   color: var(--text-sub);
 }
@@ -888,7 +888,7 @@ onBeforeUnmount(() => {
 }
 
 .download-popup__section-title {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 600;
   color: var(--text-sub);
   padding: 0 var(--space-1);

@@ -650,7 +650,7 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   padding: 0 44px 0 var(--space-2);
   box-sizing: border-box;
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 .search-input::placeholder {
   color: var(--text-sub);
@@ -671,7 +671,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   transition: background 0.16s ease, color 0.16s ease, transform 0.16s ease;
 }
 .clear-btn:hover {
@@ -700,7 +700,7 @@ onBeforeUnmount(() => {
   gap: var(--space-3);
   margin-bottom: 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 .recent-clear {
   border: 0;
@@ -708,7 +708,7 @@ onBeforeUnmount(() => {
   color: var(--accent);
   cursor: pointer;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 .recent-clear:hover {
   text-decoration: underline;
@@ -801,7 +801,7 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   cursor: pointer;
   display: block;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 700;
   overflow: hidden;
   box-sizing: border-box;
@@ -883,7 +883,7 @@ onBeforeUnmount(() => {
 .user-card-meta span,
 .user-card-meta em {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-style: normal;
 }
 .vip-icon {
@@ -895,7 +895,7 @@ onBeforeUnmount(() => {
 }
 .level-tag {
   display: inline-block;
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 600;
   color: #f5a623;
   background: color-mix(in srgb, #f5a623 14%, var(--bg-solid));
@@ -930,7 +930,7 @@ onBeforeUnmount(() => {
 .menu-item span {
   margin-left: auto;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 .menu-item:hover {
   background: color-mix(in srgb, var(--accent) 10%, var(--bg-solid));
@@ -942,7 +942,7 @@ onBeforeUnmount(() => {
 .menu-feedback {
   margin: 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   text-align: center;
 }
 .user-menu-fade-enter-active,

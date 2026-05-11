@@ -804,7 +804,7 @@ onBeforeUnmount(() => {
 
 .welcome-eyebrow {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--accent);
@@ -812,7 +812,7 @@ onBeforeUnmount(() => {
 
 .welcome-title {
   margin: 2px 0 0;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   line-height: 1.25;
   font-weight: 700;
 }
@@ -820,7 +820,7 @@ onBeforeUnmount(() => {
 .welcome-sub {
   margin: 4px 0 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .side-title-wrap {
@@ -839,7 +839,7 @@ onBeforeUnmount(() => {
 
 .meta-title {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--accent);
   letter-spacing: 0.03em;
 }
@@ -847,14 +847,14 @@ onBeforeUnmount(() => {
 .meta-line {
   margin: 0;
   color: var(--text-main);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   line-height: 1.35;
 }
 
 .meta-desc {
   margin: 8px 0 0;
   color: var(--text-sub);
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   line-height: 1.45;
 }
 
@@ -862,7 +862,7 @@ onBeforeUnmount(() => {
 .meta-loading {
   margin: 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .welcome-side .meta {
@@ -886,12 +886,12 @@ onBeforeUnmount(() => {
 
 .comment-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-body-md);
   color: var(--text-main);
 }
 
 .comment-count {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 
@@ -912,7 +912,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-soft);
   background: var(--bg-muted);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .comment-editor {
@@ -949,7 +949,7 @@ onBeforeUnmount(() => {
 }
 
 .comment-limit {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 
@@ -1017,7 +1017,7 @@ onBeforeUnmount(() => {
   place-items: center;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 700;
 }
 
@@ -1043,7 +1043,7 @@ onBeforeUnmount(() => {
 }
 
 .comment-time {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 
@@ -1053,7 +1053,7 @@ onBeforeUnmount(() => {
   color: var(--accent);
   cursor: pointer;
   padding: 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .text-btn.danger {

@@ -269,7 +269,7 @@ onMounted(() => {
 <style scoped>
 .editor-wrap { border: 1px solid var(--border); border-radius: 14px; background: var(--bg-surface); padding: 14px; display: grid; gap: 12px; }
 .editor-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-width: 0; }
-.title { margin: 0; font-size: 16px; color: var(--text-main); }
+.title { margin: 0; font-size: var(--text-body-md); color: var(--text-main); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn { height: 34px; padding: 0 12px; border-radius: 10px; color: var(--text-main); cursor: pointer; }
 .btn.active { color: var(--accent); }
@@ -282,10 +282,10 @@ onMounted(() => {
 .grid-item.editing:hover,.grid-item.dragging { box-shadow: 0 10px 26px rgba(15, 23, 42, 0.16); }
 .item-header { height: 32px; border-bottom: 1px solid var(--border-soft); background: var(--bg-muted); display: flex; align-items: center; justify-content: space-between; padding: 0 10px; cursor: default; }
 .grid-item.editing .item-header { cursor: move; }
-.item-title { font-size: 14px; font-weight: 600; color: var(--text-main); }
-.item-meta { font-size: 12px; color: var(--text-sub); }
+.item-title { font-size: var(--text-label-md); font-weight: 600; color: var(--text-main); }
+.item-meta { font-size: var(--text-label-sm); color: var(--text-sub); }
 .item-content { padding: 12px; font-size: 13px; color: var(--text-main); }
-.xy { margin-top: 8px; color: var(--text-sub); font-size: 12px; }
-.remove-btn { position: absolute; right: 24px; bottom: 6px; height: 22px; border-radius: 6px; border: 1px solid color-mix(in srgb, #ef4444 50%, var(--border)); background: var(--bg-surface); color: #ef4444; font-size: 11px; padding: 0 6px; }
+.xy { margin-top: 8px; color: var(--text-sub); font-size: var(--text-label-sm); }
+.remove-btn { position: absolute; right: 24px; bottom: 6px; height: 22px; border-radius: 6px; border: 1px solid color-mix(in srgb, #ef4444 50%, var(--border)); background: var(--bg-surface); color: #ef4444; font-size: var(--text-label-xs); padding: 0 6px; }
 .resize-handle { position: absolute; right: 6px; bottom: 6px; width: 14px; height: 14px; border-radius: 3px; background: var(--accent); cursor: nwse-resize; }
 </style>

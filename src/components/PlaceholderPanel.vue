@@ -68,7 +68,7 @@ const hints = computed(() => hintsMap[props.pageKey] || ['功能规划中', '敬
 .desc {
   margin: 0;
   color: #6b7280;
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 
 .chips {
@@ -86,6 +86,6 @@ const hints = computed(() => hintsMap[props.pageKey] || ['功能规划中', '敬
   padding: 0 10px;
   display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 </style>

@@ -89,7 +89,7 @@ function formatTime(time: number) {
 .history-title {
   margin: 0;
   color: var(--text-main);
-  font-size: 16px;
+  font-size: var(--text-body-md);
   font-weight: 700;
 }
 
@@ -157,7 +157,7 @@ function formatTime(time: number) {
 
 .history-time {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 

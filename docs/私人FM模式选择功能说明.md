@@ -31,12 +31,14 @@
 **模板**
 
 - `.fm-poster-top` 中标题「私人 FM」右侧新增 `.fm-mode-btn`（齿轮 SVG 图标按钮）
+- `.fm-hero.poster` 按钮添加 `@mouseenter="fmHovered = true"` / `@mouseleave="fmHovered = false"` 事件，用于控制模式按钮 hover 显示
 - `.fm-hero.poster` 按钮内部新增 `<Teleport to="body">` 浮窗面板，避免打断 `v-else-if` / `v-else` 链
 
 **脚本**
 
 新增响应式状态：
 - `fmModePopoverOpen` — 浮窗开关
+- `fmHovered` — 光标是否悬停在 FM 卡片上，控制模式按钮可见性
 - `selectedFmMode` / `selectedFmSubmode` — 当前选中值
 - `fmModeBtnRef` / `fmPopoverRef` — 定位引用
 - `fmPopoverStyle` — 浮窗位置
@@ -59,6 +61,9 @@
 **样式**
 
 - `.fm-mode-btn` — 28px 圆形半透明白色按钮，hover 放大，深色模式适配
+  - 默认隐藏（`opacity: 0; pointer-events: none`）
+  - `hover-visible` class 时显示（由 `fmHovered` ref 控制）
+  - `.active` class 仅控制视觉样式（背景色、缩放），不影响显示/隐藏
 - `.fm-mode-popover` — 固定定位面板，`--bg-solid` + `--border` 不透明背景（Level 3）
   - 默认宽度 `240px`，`max-width: calc(100vw - 16px)`
   - `≤520px` 视口时全宽 `calc(100vw - 32px)`，左右各留 16px 间距

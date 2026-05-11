@@ -94,7 +94,7 @@ onMounted(async () => {
 .head-cover { width: 80px; height: 80px; border-radius: 12px; object-fit: cover; display: block; }
 .head-play-btn { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; border: 0; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer; opacity: 0; transition: opacity 0.18s ease; backdrop-filter: blur(2px); border-radius: 12px; }
 .head-info { min-width: 0; display: grid; gap: 2px; }
-.head-title { margin: 0; color: var(--text-main); font-size: 18px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.head-title { margin: 0; color: var(--text-main); font-size: var(--text-body-lg); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head-artist { margin: 0; color: var(--text-sub); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head-album { margin: 0; color: var(--text-sub); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .head-link { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 0; font-size: inherit; font-family: inherit; white-space: nowrap; }

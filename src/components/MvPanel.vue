@@ -317,7 +317,7 @@ onBeforeUnmount(() => {
 .card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12); }
 .info { padding: 8px; }
 .info .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.info .sub { margin: 4px 0 0; font-size: 12px; color: #6b7280; }
+.info .sub { margin: 4px 0 0; font-size: var(--text-label-sm); color: #6b7280; }
 
 .muted { margin: 0; color: #6b7280; }
 .load-more-wrap { display: flex; align-items: center; justify-content: center; min-height: 36px; }

@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
 
 .enc-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-body-md);
   font-weight: 700;
   color: var(--text-main);
 }
@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
   padding: 32px 0;
   text-align: center;
   color: var(--text-sub);
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 
 .enc-error {
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
 }
 
 .enc-wiki-value {
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.5;
   color: var(--text-main);
   word-break: break-word;
@@ -416,7 +416,7 @@ onBeforeUnmount(() => {
   border: none;
   background: none;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.5;
   color: var(--accent);
   cursor: pointer;
@@ -437,7 +437,7 @@ onBeforeUnmount(() => {
   border: none;
   background: none;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.5;
   color: var(--text-sub);
   cursor: default;

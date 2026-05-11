@@ -154,7 +154,7 @@ async function onCopy() {
 }
 .sel-head-info { min-width: 0; display: grid; gap: 2px; }
 .sel-title { margin: 0; color: #fff; font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sel-artist { margin: 0; color: rgba(255,255,255,0.55); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sel-artist { margin: 0; color: rgba(255,255,255,0.55); font-size: var(--text-label-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sel-close {
   width: 28px; height: 28px; border: none; background: transparent;
   color: rgba(255,255,255,0.5); cursor: pointer;
@@ -162,7 +162,7 @@ async function onCopy() {
   transition: color 120ms ease, background 120ms ease;
 }
 .sel-close:hover { color: #fff; background: rgba(255,255,255,0.08); }
-.sel-status { padding: var(--space-6); text-align: center; color: rgba(255,255,255,0.4); font-size: 14px; }
+.sel-status { padding: var(--space-6); text-align: center; color: rgba(255,255,255,0.4); font-size: var(--text-label-md); }
 .sel-body {
   overflow-y: auto; padding: var(--space-2) var(--space-3);
   display: grid; gap: 2px;
@@ -185,8 +185,8 @@ async function onCopy() {
 }
 .sel-check svg { color: #fff; }
 .sel-text { min-width: 0; display: grid; gap: 2px; }
-.sel-line { color: rgba(255,255,255,0.82); font-size: 14px; line-height: 1.5; word-break: break-word; }
-.sel-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); font-size: 11px; line-height: 1.6; vertical-align: middle; }
+.sel-line { color: rgba(255,255,255,0.82); font-size: var(--text-label-md); line-height: 1.5; word-break: break-word; }
+.sel-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 4px; background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); font-size: var(--text-label-xs); line-height: 1.6; vertical-align: middle; }
 .sel-trans { color: rgba(255,255,255,0.5); font-size: 13px; line-height: 1.4; word-break: break-word; }
 .sel-foot {
   display: flex; align-items: center; justify-content: space-between;
@@ -196,14 +196,14 @@ async function onCopy() {
 .sel-foot-left, .sel-foot-right { display: flex; align-items: center; gap: var(--space-2); }
 .sel-btn {
   padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.15);
-  background: transparent; color: rgba(255,255,255,0.7); font-size: 12px; font-weight: 600;
+  background: transparent; color: rgba(255,255,255,0.7); font-size: var(--text-label-sm); font-weight: 600;
   cursor: pointer; transition: all 120ms ease;
 }
 .sel-btn:hover:not(:disabled) { color: #fff; border-color: rgba(255,255,255,0.3); }
 .sel-btn.active { background: var(--accent, #c39c76); border-color: transparent; color: #fff; }
 .sel-copy { background: var(--accent, #c39c76); border-color: transparent; color: #fff; }
 .sel-copy:disabled { opacity: 0.4; cursor: not-allowed; }
-.sel-count { color: rgba(255,255,255,0.4); font-size: 12px; }
+.sel-count { color: rgba(255,255,255,0.4); font-size: var(--text-label-sm); }
 .modal-fade-enter-active, .modal-fade-leave-active { transition: opacity 0.2s ease; }
 .modal-fade-enter-from, .modal-fade-leave-to { opacity: 0; }
 .sel-toast {

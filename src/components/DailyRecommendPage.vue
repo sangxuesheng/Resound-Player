@@ -431,7 +431,7 @@ watch(
 .cover-label {
   position: relative;
   z-index: 1;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   opacity: 0.82;
@@ -449,7 +449,7 @@ watch(
 .desc {
   margin: 0;
   color: #4b5563;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.6;
   max-width: 52ch;
 }
@@ -611,7 +611,7 @@ watch(
 
 .song-artist {
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .play-btn {

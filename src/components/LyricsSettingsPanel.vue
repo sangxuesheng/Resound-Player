@@ -178,7 +178,7 @@ function updateIriColor(idx: number, val: string) {
 .popover-close { width: 28px; height: 28px; border: none; background: transparent; color: var(--text-soft, rgba(255,255,255,0.5)); cursor: pointer; display: grid; place-items: center; border-radius: var(--radius-sm,6px); transition: color 120ms ease, background 120ms ease; }
 .popover-close:hover { color: var(--text-main,#fff); background: var(--control-hover, rgba(255,255,255,0.08)); }
 .tabs-nav { display: flex; gap: 0; padding: var(--space-2) var(--space-4) 0; border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06)); }
-.tab-btn { flex: 1; padding: 6px 0 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-soft, rgba(255,255,255,0.45)); font-size: 12px; font-weight: 600; cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
+.tab-btn { flex: 1; padding: 6px 0 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-soft, rgba(255,255,255,0.45)); font-size: var(--text-label-sm); font-weight: 600; cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
 .tab-btn.active { color: var(--accent) !important; }
 .tab-btn:hover:not(.active) { color: var(--text-sub, rgba(255,255,255,0.7)); }
 .popover-body { overflow-y: auto; padding: var(--space-3) var(--space-4) var(--space-4); }
@@ -189,12 +189,12 @@ function updateIriColor(idx: number, val: string) {
 .slider-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 13px; }
 .slider-control { display: flex; align-items: center; gap: var(--space-2); }
 .slider-control input[type='range'] { flex: 1; accent-color: var(--accent, #c39c76); }
-.slider-value { color: var(--text-soft, rgba(255,255,255,0.5)); font-size: 11px; min-width: 32px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.slider-value { color: var(--text-soft, rgba(255,255,255,0.5)); font-size: var(--text-label-xs); min-width: 32px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .color-row { display: grid; gap: var(--space-1); }
 .color-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 13px; }
 .color-control { display: flex; align-items: center; gap: var(--space-2); }
 .color-picker { width: 32px; height: 32px; border: 1px solid var(--border-soft, rgba(255,255,255,0.1)); border-radius: var(--radius-sm,6px); cursor: pointer; padding: 0; background: none; }
-.color-text { flex: 1; background: var(--bg-muted, rgba(255,255,255,0.06)); border: 1px solid var(--border-soft, rgba(255,255,255,0.1)); border-radius: var(--radius-sm,6px); padding: 5px 8px; color: var(--text-main, rgba(255,255,255,0.8)); font-size: 12px; font-family: var(--font-mono,'SF Mono','Fira Code',monospace); outline: none; transition: border-color 120ms ease; }
+.color-text { flex: 1; background: var(--bg-muted, rgba(255,255,255,0.06)); border: 1px solid var(--border-soft, rgba(255,255,255,0.1)); border-radius: var(--radius-sm,6px); padding: 5px 8px; color: var(--text-main, rgba(255,255,255,0.8)); font-size: var(--text-label-sm); font-family: var(--font-mono,'SF Mono','Fira Code',monospace); outline: none; transition: border-color 120ms ease; }
 .color-text:focus { border-color: var(--accent, #c39c76); }
 .popover-fade-enter-active, .popover-fade-leave-active { transition: opacity 0.15s ease; }
 .popover-fade-enter-from, .popover-fade-leave-to { opacity: 0; }
@@ -205,7 +205,7 @@ function updateIriColor(idx: number, val: string) {
   padding: 5px 14px; border-radius: var(--button-radius-pill, 999px);
   border: 1px solid var(--border-soft, rgba(255,255,255,0.12));
   background: transparent; color: var(--text-soft, rgba(255,255,255,0.7));
-  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-size: var(--text-label-sm); font-weight: 600; cursor: pointer;
   transition: all 120ms ease;
 }
 .radio-chip.active {
@@ -216,5 +216,5 @@ function updateIriColor(idx: number, val: string) {
   border-color: var(--border, rgba(255,255,255,0.3));
   color: var(--text-main, #fff);
 }
-.custom-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: 11px; line-height: 1.4; margin: 0; padding: 2px 0; }
+.custom-hint { color: var(--text-soft, rgba(255,255,255,0.4)); font-size: var(--text-label-xs); line-height: 1.4; margin: 0; padding: 2px 0; }
 </style>

@@ -198,13 +198,13 @@ const items = [
 }
 
 .user .name {
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
   color: var(--text-main);
 }
 
 .user .sub {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 

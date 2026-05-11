@@ -267,7 +267,7 @@ function resetGains() {
   border: 1px solid var(--button-surface-border);
   background: var(--button-surface-bg);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -389,7 +389,7 @@ function resetGains() {
   border-radius: var(--button-radius-pill, 999px);
   background: var(--bg-solid);
   color: var(--text-main);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   outline: none;
 }
 .eq-save-input:focus {
@@ -400,7 +400,7 @@ function resetGains() {
   grid-column: 1 / -1;
   margin: -2px 0 0;
   color: var(--danger, #ef4444);
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 600;
 }
 .eq-footer {
@@ -414,7 +414,7 @@ function resetGains() {
 .eq-reset {
   min-height: 28px;
   padding: 5px 16px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   font-weight: 600;
   border-radius: var(--button-radius-pill, 999px);
 }

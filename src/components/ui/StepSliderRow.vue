@@ -29,10 +29,10 @@ const activeStepIdx = computed(() => {
 
 <style scoped>
 .slider-row { display: grid; gap: var(--space-1, 4px); border: 1px solid var(--border-soft, rgba(255,255,255,0.08)); border-radius: var(--radius-sm, 8px); padding: var(--space-2) var(--space-3); }
-.slider-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 14px; }
+.slider-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: var(--text-label-md); }
 .slider-control { display: flex; align-items: center; gap: var(--space-2, 8px); }
 .slider-control input[type='range'] { flex: 1; accent-color: var(--accent, #c39c76); }
 .step-labels { display: flex; justify-content: space-between; padding: 0 2px; }
-.step-labels span { font-size: 11px; color: var(--text-soft, rgba(255,255,255,0.35)); transition: color 120ms ease; }
+.step-labels span { font-size: var(--text-label-xs); color: var(--text-soft, rgba(255,255,255,0.35)); transition: color 120ms ease; }
 .step-labels span.active { color: var(--accent, #c39c76); font-weight: 600; }
 </style>

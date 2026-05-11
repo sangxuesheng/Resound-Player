@@ -159,22 +159,22 @@
 
 .title {
   margin: var(--space-1) 0 var(--space-2);
-  font-size: 38px;
-  line-height: 1.15;
+  font-size: var(--text-headline-xl);
+  line-height: var(--text-headline-xl-line);
   color: var(--text-main);
 }
 
 .sub {
   margin: 0;
   color: var(--text-sub);
-  font-size: 13px;
+  font-size: var(--text-label-md);
 }
 
 .desc {
   margin: var(--space-2) 0 0;
   color: var(--text-sub);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--text-label-md);
+  line-height: var(--text-label-md-line);
   white-space: pre-wrap;
   word-break: break-word;
 }
@@ -194,8 +194,8 @@
   border: 0;
   background: transparent;
   color: var(--accent);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--text-label-md);
+  line-height: var(--text-label-md-line);
   cursor: pointer;
 }
 
@@ -289,7 +289,7 @@
 .song-artist {
   margin: 4px 0 0;
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .play-btn {
@@ -297,8 +297,8 @@
   padding: 0 var(--space-3);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--text-label-sm);
+  font-weight: var(--text-label-sm-weight);
 }
 
 .play-btn:hover {

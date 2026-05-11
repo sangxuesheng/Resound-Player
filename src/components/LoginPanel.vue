@@ -398,7 +398,7 @@ onBeforeUnmount(() => {
 
 .eyebrow {
   margin: 0 0 6px;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--accent);
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
 .subtitle {
   margin: 10px 0 0;
   max-width: 620px;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.7;
   color: var(--text-sub);
 }
@@ -431,7 +431,7 @@ onBeforeUnmount(() => {
   border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border));
   border-radius: 999px;
   background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface));
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-main);
 }
 
@@ -555,14 +555,14 @@ onBeforeUnmount(() => {
 
 .status-label {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-soft);
 }
 
 .status-card strong {
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   color: var(--text-main);
 }
 
@@ -686,7 +686,7 @@ onBeforeUnmount(() => {
 }
 
 .hint {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 

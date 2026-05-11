@@ -22,13 +22,13 @@ defineEmits<{ 'update:value': [value: string] }>();
 
 <style scoped>
 .radio-row { display: grid; gap: var(--space-1, 4px); }
-.radio-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: 14px; }
+.radio-label { color: var(--text-main, rgba(255,255,255,0.82)); font-size: var(--text-label-md); }
 .radio-group { display: flex; flex-wrap: wrap; gap: var(--space-1, 4px); }
 .radio-chip {
   padding: 5px 14px; border-radius: var(--button-radius-pill, 999px);
   border: 1px solid var(--border-soft, rgba(255,255,255,0.12));
   background: transparent; color: var(--text-soft, rgba(255,255,255,0.7));
-  font-size: 12px; font-weight: 600; cursor: pointer;
+  font-size: var(--text-label-sm); font-weight: 600; cursor: pointer;
   transition: all 120ms ease;
 }
 .radio-chip.active {

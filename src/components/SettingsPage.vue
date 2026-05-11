@@ -952,7 +952,7 @@ async function handleAction(key: string) {
 
 .group-title {
   margin: 0 0 var(--space-3);
-  font-size: 16px;
+  font-size: var(--text-body-md);
   font-weight: 700;
   color: var(--text-main);
 }
@@ -975,7 +975,7 @@ async function handleAction(key: string) {
 
 .empty-title {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-body-md);
   font-weight: 700;
   color: var(--text-main);
 }
@@ -1026,14 +1026,14 @@ async function handleAction(key: string) {
 
 .label {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
   color: var(--text-main);
 }
 
 .desc {
   margin: var(--space-1) 0 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 
@@ -1127,7 +1127,7 @@ async function handleAction(key: string) {
 }
 
 .color-hex {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-soft);
   min-width: 74px;
   text-transform: lowercase;
@@ -1135,7 +1135,7 @@ async function handleAction(key: string) {
 
 .source-order-feedback {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--accent);
   text-align: center;
   transition: opacity 0.3s ease;
@@ -1179,7 +1179,7 @@ async function handleAction(key: string) {
 }
 
 .source-order-hint {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-soft);
   font-weight: 400;
 }
@@ -1222,7 +1222,7 @@ async function handleAction(key: string) {
   border-radius: 50%;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -1382,14 +1382,14 @@ async function handleAction(key: string) {
 }
 
 .changelog-version {
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 700;
   color: var(--accent);
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
 }
 
 .changelog-date {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-soft);
 }
 
@@ -1461,7 +1461,7 @@ async function handleAction(key: string) {
 }
 
 .about-pkg-name {
-  font-size: 14px;
+  font-size: var(--text-label-md);
   font-weight: 600;
   color: var(--text-main);
 }
@@ -1473,7 +1473,7 @@ async function handleAction(key: string) {
 }
 
 .about-pkg-version {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-soft);
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
 }
@@ -1489,7 +1489,7 @@ async function handleAction(key: string) {
 }
 
 .about-pkg-author {
-  font-size: 11px;
+  font-size: var(--text-label-xs);
   color: var(--text-soft);
   grid-column: 1 / -1;
   margin-top: -4px;
@@ -1575,7 +1575,7 @@ async function handleAction(key: string) {
   border-radius: 999px;
   background: var(--bg-muted);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
@@ -1610,7 +1610,7 @@ async function handleAction(key: string) {
 .donate-amount {
   color: var(--text-sub);
   font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .donate-empty {
@@ -1653,7 +1653,7 @@ async function handleAction(key: string) {
   border-radius: 50%;
   background: color-mix(in srgb, var(--border) 40%, transparent);
   color: var(--text-sub);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   cursor: pointer;
   display: flex;
   align-items: center;

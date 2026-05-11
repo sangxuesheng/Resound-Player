@@ -250,7 +250,7 @@ onMounted(() => {
   background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .user-tabs {

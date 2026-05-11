@@ -26,7 +26,7 @@ defineEmits<{ 'update:modelValue': [value: boolean] }>();
 }
 .toggle-label {
   color: var(--text-main, rgba(255,255,255,0.82));
-  font-size: 14px;
+  font-size: var(--text-label-md);
 }
 .toggle-btn {
   width: 40px;

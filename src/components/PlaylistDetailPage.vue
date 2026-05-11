@@ -855,7 +855,7 @@ function openAlbum(albumId: number) {
 }
 
 .track-loading-tip {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: #6b7280;
 }
 
@@ -901,7 +901,7 @@ function openAlbum(albumId: number) {
   }
 
   .detail-hero .desc {
-    font-size: 14px;
+    font-size: var(--text-label-md);
   }
 }
 

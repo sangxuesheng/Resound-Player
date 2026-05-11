@@ -246,7 +246,7 @@ async function playSong(index: number) {
   font-weight: 600;
 }
 .artist {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   color: var(--text-sub);
 }
 .left { min-width: 0; }

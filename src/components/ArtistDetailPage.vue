@@ -527,7 +527,7 @@ watch(
   background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   color: var(--text-sub);
-  font-size: 12px;
+  font-size: var(--text-label-sm);
 }
 
 .artist-tabs {
@@ -664,7 +664,7 @@ watch(
 }
 
 .entity-date {
-  font-size: 12px;
+  font-size: var(--text-label-sm);
   opacity: 0.88;
 }
 
@@ -690,7 +690,7 @@ watch(
 
 .bio-title {
   margin: 0 0 10px;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   color: var(--text-main);
 }
 

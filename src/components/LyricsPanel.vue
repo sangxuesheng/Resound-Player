@@ -335,7 +335,7 @@ startTick();
   overflow-y: auto;
   padding: var(--space-6) var(--space-5);
   color: rgba(255,255,255,0.75);
-  font-size: 14px;
+  font-size: var(--text-label-md);
   line-height: 1.7;
   white-space: pre-wrap;
   word-break: break-word;
