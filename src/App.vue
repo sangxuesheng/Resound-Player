@@ -209,6 +209,7 @@ import { waitForApiReady } from './api/client';
 import { getDjCategoryRecommend, getDjDetail, getDjProgram, getDjRecommend, getDjRecommendType, getDjSublist, getRecentDj, getSongDetail, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
 import { playerStore } from './stores/player';
 import { uiStore } from './stores/ui';
+import { apiCache } from './stores/apiCache';
 import { userStore } from './stores/user';
 import { recordLocalHistoryEntry } from './utils/localHistory';
 import { useNavigationHistory } from './composables/useNavigationHistory';
@@ -1055,6 +1056,7 @@ onMounted(async () => {
   await userStore.hydrate();
   playerStore.init();
   uiStore.init();
+  apiCache.init();
 
   apiReady.value = await waitForApiReady({ maxAttempts: 30, intervalMs: 500 });
   if (apiReady.value) {

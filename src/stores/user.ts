@@ -3,6 +3,7 @@ import { getLoginStatus, getUserAccount, getUserDetail, getUserLikeList, getUser
 import { getDjSublist, getAlbumSublist, getArtistSublist, getUserFollows } from '../api/music';
 import { playerStore } from './player';
 import { clearCache } from './unblock-cache';
+import { apiCache } from './apiCache';
 import { storageSetItem, storageGetItem, storageRemoveItem } from '../utils/storage';
 import { LOCAL_HISTORY_KEY } from '../utils/localHistory';
 
@@ -145,6 +146,7 @@ export const userStore = reactive({
     } finally {
       playerStore.clearPersistedState();
       clearCache();
+      apiCache.clearUserScoped();
       try { localStorage.removeItem(LOCAL_HISTORY_KEY); } catch {}
       try { localStorage.removeItem('music_search_history'); } catch {}
       try { localStorage.removeItem('tm_search_history'); } catch {}
@@ -185,6 +187,7 @@ export const userStore = reactive({
         if (profile?.userId && requestId === this.authRequestSeq) {
           this.profile = profile;
           this.isLogin = true;
+          apiCache.clearUserScoped();
           this.loginMode = 'cookie';
           await Promise.allSettled([this.fetchPlaylists(profile.userId), this.fetchLikedSongs(profile.userId), this.fetchSubscribedDjs()]);
           this.fetchVipInfo();
@@ -253,6 +256,7 @@ export const userStore = reactive({
 
     this.profile = profile;
     this.isLogin = true;
+    apiCache.clearUserScoped();
     this.playlists = [];
     this.likedSongIds = [];
     this.subscribedDjIds = [];
@@ -294,6 +298,7 @@ export const userStore = reactive({
 
       this.profile = profile;
       this.isLogin = true;
+      apiCache.clearUserScoped();
       this.loginMode = 'uid';
       this.playlists = [];
       this.likedSongIds = [];

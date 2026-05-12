@@ -80,6 +80,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { getHighQualityPlaylists, getPlaylistCatList, getTopPlaylists } from '../api/music';
+import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import { resolvePlaylistCoverUrl } from '../utils/image';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
@@ -167,6 +168,12 @@ async function setCat(cat: string) {
 }
 
 async function loadCategories() {
+  // 分类数据很少变化，优先使用缓存
+  const cached = apiCache.get(`playlist:cats`);
+  if (cached?.data) {
+    allCats.value = cached.data;
+    return;
+  }
   const { data } = await getPlaylistCatList();
   const sub = data?.sub || [];
   const categoriesMap: Record<number, string> = data?.categories || {};
@@ -179,6 +186,7 @@ async function loadCategories() {
   }
 
   allCats.value = groupMap;
+  apiCache.set(`playlist:cats`, groupMap, CACHE_TTL.LIST);
 }
 
 async function loadTopPlaylists(reset = false) {
@@ -189,6 +197,19 @@ async function loadTopPlaylists(reset = false) {
   try {
     const cat = activeCat.value === '每日推荐' ? '全部' : activeCat.value;
     const offset = reset ? 0 : playlists.value.length;
+
+    // 首次加载检查缓存
+    if (reset && offset === 0) {
+      const cacheKey = `playlist:list:${cat}:${order.value}:0`;
+      const cached = apiCache.get(cacheKey);
+      if (cached?.data) {
+        playlists.value = cached.data.list as PlaylistItem[];
+        hasMore.value = cached.data.hasMore;
+        loading.value = false;
+        return;
+      }
+    }
+
     const { data } = await getTopPlaylists({
       cat,
       order: order.value,
@@ -199,6 +220,12 @@ async function loadTopPlaylists(reset = false) {
     const nextList = (data?.playlists || []) as PlaylistItem[];
     playlists.value = reset ? nextList : [...playlists.value, ...nextList];
     hasMore.value = Boolean(data?.more);
+
+    // 首次加载结果写入缓存
+    if (reset && offset === 0) {
+      const cacheKey = `playlist:list:${cat}:${order.value}:0`;
+      apiCache.set(cacheKey, { list: nextList, hasMore: hasMore.value }, CACHE_TTL.LIST_VOLATILE);
+    }
   } catch (e: any) {
     error.value = e?.message || '加载歌单失败';
     if (reset) playlists.value = [];
@@ -208,12 +235,19 @@ async function loadTopPlaylists(reset = false) {
 }
 
 async function loadHighQuality() {
+  const cacheKey = `playlist:highquality:${activeCat.value}`;
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    highQuality.value = cached.data as PlaylistItem[];
+    return;
+  }
   try {
     const { data } = await getHighQualityPlaylists({
       cat: activeCat.value,
       limit: 6,
     });
     highQuality.value = data?.playlists || [];
+    apiCache.set(cacheKey, highQuality.value, CACHE_TTL.LIST_VOLATILE);
   } catch {
     highQuality.value = [];
   }

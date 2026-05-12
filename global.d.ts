@@ -11,6 +11,11 @@ declare global {
       platform: string;
       electronVersion: string;
       nodeVersion: string;
+      cacheApi?: {
+        getItem: () => Promise<string | null>;
+        setItem: (data: string) => Promise<boolean>;
+        clear: () => Promise<boolean>;
+      };
     };
   }
 }

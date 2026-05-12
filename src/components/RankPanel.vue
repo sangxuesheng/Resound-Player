@@ -352,6 +352,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { getPlaylistTrackAll, getToplistDetail } from '../api/music';
+import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import InteractiveCoverMedia from './InteractiveCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
 import HoverPlayButton from './HoverPlayButton.vue';
@@ -599,9 +600,20 @@ async function hydrateCardTracks() {
 async function fetchToplist() {
   loading.value = true;
   error.value = '';
+
+  // 检查缓存
+  const cached = apiCache.get('toplist:detail');
+  if (cached?.data) {
+    list.value = cached.data as ToplistItem[];
+    loading.value = false;
+    void hydrateCardTracks();
+    return;
+  }
+
   try {
     const { data } = await getToplistDetail();
     list.value = (data?.list || []) as ToplistItem[];
+    apiCache.set('toplist:detail', list.value, CACHE_TTL.LIST_VOLATILE);
     loading.value = false;
     void hydrateCardTracks();
   } catch (e: any) {

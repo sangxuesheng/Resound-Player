@@ -191,9 +191,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { useDominantColor } from '../composables/useDominantColor';
+import { useApiData } from '../composables/useApiData';
+import { CACHE_TTL } from '../stores/apiCache';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -234,14 +236,44 @@ const emit = defineEmits<{
   (e: 'open-language', language: string): void;
 }>();
 
-const loading = ref(false);
-const error = ref('');
-const artist = ref<any>(null);
-const topSongs = ref<any[]>([]);
-const albums = ref<any[]>([]);
-const mvs = ref<any[]>([]);
-const bio = ref<any>(null);
 const isDescriptionExpanded = ref(false);
+
+// 歌手详情：useApiData 统一管理 5 个并行 API 的缓存
+const { data: artistFull, loading, error } = useApiData(
+  () => props.artistId ? `artist:full:${props.artistId}` : '',
+  async () => {
+    const [detailRes, topSongsRes, albumsRes, mvsRes, descRes] = await Promise.all([
+      getArtistDetail(props.artistId),
+      getArtistTopSongs(props.artistId),
+      getArtistAlbums(props.artistId),
+      getArtistMvs(props.artistId),
+      getArtistDescription(props.artistId),
+    ]);
+    return { detailRes, topSongsRes, albumsRes, mvsRes, descRes };
+  },
+  { ttl: CACHE_TTL.LIST }
+);
+
+const artist = computed<any>(() => {
+  const data = artistFull.value?.detailRes?.data || artistFull.value?.detailRes;
+  return data?.data?.artist || data?.artist || data?.data || null;
+});
+const topSongs = computed<any[]>(() => {
+  const data = artistFull.value?.topSongsRes?.data || artistFull.value?.topSongsRes;
+  return Array.isArray(data?.songs) ? data.songs : Array.isArray(data?.hotSongs) ? data.hotSongs : [];
+});
+const albums = computed<any[]>(() => {
+  const data = artistFull.value?.albumsRes?.data || artistFull.value?.albumsRes;
+  return Array.isArray(data?.hotAlbums) ? data.hotAlbums : Array.isArray(data?.artist?.album) ? data.artist.album : Array.isArray(data?.albums) ? data.albums : [];
+});
+const mvs = computed<any[]>(() => {
+  const data = artistFull.value?.mvsRes?.data || artistFull.value?.mvsRes;
+  return Array.isArray(data?.mvs) ? data.mvs : [];
+});
+const bio = computed<any>(() => {
+  const data = artistFull.value?.descRes?.data || artistFull.value?.descRes;
+  return data || null;
+});
 
 const artistIdRef = computed(() => artist.value?.id || undefined);
 const subscribeState = useEntitySubscribe({
@@ -371,53 +403,6 @@ function openLanguageDetail(language: string) {
   emit('open-language', language);
 }
 
-let fetchToken = 0;
-
-async function fetchArtistDetail(id: number) {
-  if (!id) return;
-  const currentToken = ++fetchToken;
-  loading.value = true;
-  error.value = '';
-
-  try {
-    const [detailRes, topSongsRes, albumsRes, mvsRes, descRes] = await Promise.all([
-      getArtistDetail(id),
-      getArtistTopSongs(id),
-      getArtistAlbums(id),
-      getArtistMvs(id),
-      getArtistDescription(id),
-    ]);
-
-    if (currentToken !== fetchToken) return;
-
-    const detailData = detailRes?.data || detailRes;
-    artist.value = detailData?.data?.artist || detailData?.artist || detailData?.data || null;
-
-    const topSongsData = topSongsRes?.data || topSongsRes;
-    topSongs.value = Array.isArray(topSongsData?.songs) ? topSongsData.songs : Array.isArray(topSongsData?.hotSongs) ? topSongsData.hotSongs : [];
-
-    const albumsData = albumsRes?.data || albumsRes;
-    albums.value = Array.isArray(albumsData?.hotAlbums) ? albumsData.hotAlbums : Array.isArray(albumsData?.artist?.album) ? albumsData.artist.album : Array.isArray(albumsData?.albums) ? albumsData.albums : [];
-
-    const mvsData = mvsRes?.data || mvsRes;
-    mvs.value = Array.isArray(mvsData?.mvs) ? mvsData.mvs : [];
-
-    const descData = descRes?.data || descRes;
-    bio.value = descData;
-  } catch (e: any) {
-    if (currentToken !== fetchToken) return;
-    error.value = e?.message || '歌手详情加载失败';
-    artist.value = null;
-    topSongs.value = [];
-    albums.value = [];
-    mvs.value = [];
-    bio.value = null;
-  } finally {
-    if (currentToken === fetchToken) {
-      loading.value = false;
-    }
-  }
-}
 
 async function playTopSongs() {
   if (!topSongs.value.length) return;
@@ -481,20 +466,6 @@ function openComment(songId: number) {
 const { isSticky, refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
-
-onMounted(() => {
-  fetchArtistDetail(props.artistId);
-});
-
-watch(
-  () => props.artistId,
-  (id) => {
-    activeTab.value = 'songs';
-    isDescriptionExpanded.value = false;
-    fetchArtistDetail(Number(id));
-    requestAnimationFrame(() => refresh());
-  },
-);
 </script>
 
 <style scoped>

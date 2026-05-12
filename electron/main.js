@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, ipcMain } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolveServicePorts } from './port-manager.js';
 import { startAllServices, waitApiReady, killAllServices } from './serviceManager.js';
@@ -375,4 +376,36 @@ ipcMain.handle('window-is-maximized', (event) => {
 ipcMain.on('window-close', (event) => {
   const bw = BrowserWindow.fromWebContents(event.sender);
   bw?.close();
+});
+
+// ── 缓存持久化 IPC ──
+const CACHE_FILE = path.join(app.getPath('userData'), 'api-cache.json');
+
+ipcMain.handle('cache:get', () => {
+  try {
+    const raw = fs.readFileSync(CACHE_FILE, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle('cache:set', (_event, data: string) => {
+  try {
+    const dir = path.dirname(CACHE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(CACHE_FILE, data, 'utf-8');
+    return true;
+  } catch {
+    return false;
+  }
+});
+
+ipcMain.handle('cache:clear', () => {
+  try {
+    if (fs.existsSync(CACHE_FILE)) fs.unlinkSync(CACHE_FILE);
+    return true;
+  } catch {
+    return false;
+  }
 });

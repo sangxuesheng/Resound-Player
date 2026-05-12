@@ -21,4 +21,9 @@ contextBridge.exposeInMainWorld('appEnv', {
   platform: process.platform,
   electronVersion: process.versions.electron,
   nodeVersion: process.versions.node,
+  cacheApi: {
+    getItem: () => ipcRenderer.invoke('cache:get'),
+    setItem: (data: string) => ipcRenderer.invoke('cache:set', data),
+    clear: () => ipcRenderer.invoke('cache:clear'),
+  },
 });

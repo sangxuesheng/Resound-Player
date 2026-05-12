@@ -3,219 +3,226 @@
 
     <AnimatedAppear tag="section" variant="content" rhythm="head" class-name="home-top-reco">
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="0">
-        <button v-if="dailyRecommendSongs.length" class="radar-hero poster" :title="dailyRecommendHeroTitle" @click="openDailyRecommendDetail">
+        <button class="radar-hero poster" :class="{ 'is-skeleton': !dailyRecommendSongs.length }" :title="dailyRecommendHeroTitle" @click="openDailyRecommendDetail">
           <span class="radar-bg fade-in-bg" :class="{ 'bg-loaded': dailyBgLoaded }" :style="{ backgroundImage: `url(${dailyRecommendCoverUrl || ''})` }"></span>
-          <span class="radar-poster-top">
-            <span class="radar-top-title">每日推荐</span>
-          </span>
-          <span class="radar-bottom-zone">
-            <span class="radar-poster-bottom">每日推荐｜从「{{ dailyRecommendHeroSubtitle || '今日为你更新' }}」听起</span>
-            <span class="radar-hover-list">
-              <span
-                v-for="(track, idx) in dailyRecommendTracks"
-                :key="track.id || `${track.name}-${idx}`"
-                class="radar-hover-item"
-                @click.stop="playDailyRecommendByIndex(idx)"
-              >
-                <span class="radar-hover-rank">{{ idx + 1 }}</span>
-                <span class="radar-hover-name">{{ track.name }}</span>
-                <span class="radar-hover-artist">
-                  <button
-                    v-for="artist in getTrackArtists(track)"
-                    :key="`${track.id || idx}-${artist.id || artist.name}`"
-                    type="button"
-                    class="artist-inline-btn"
-                    @click.stop="openArtistDetail(artist)"
-                  >
-                    {{ artist.name || '未知歌手' }}
-                  </button>
-                  <span v-if="!getTrackArtists(track).length">未知歌手</span>
+          <template v-if="dailyRecommendSongs.length">
+            <span class="radar-poster-top">
+              <span class="radar-top-title">每日推荐</span>
+            </span>
+            <span class="radar-bottom-zone">
+              <span class="radar-poster-bottom">每日推荐｜从「{{ dailyRecommendHeroSubtitle || '今日为你更新' }}」听起</span>
+              <span class="radar-hover-list">
+                <span
+                  v-for="(track, idx) in dailyRecommendTracks"
+                  :key="track.id || `${track.name}-${idx}`"
+                  class="radar-hover-item"
+                  @click.stop="playDailyRecommendByIndex(idx)"
+                >
+                  <span class="radar-hover-rank">{{ idx + 1 }}</span>
+                  <span class="radar-hover-name">{{ track.name }}</span>
+                  <span class="radar-hover-artist">
+                    <button
+                      v-for="artist in getTrackArtists(track)"
+                      :key="`${track.id || idx}-${artist.id || artist.name}`"
+                      type="button"
+                      class="artist-inline-btn"
+                      @click.stop="openArtistDetail(artist)"
+                    >
+                      {{ artist.name || '未知歌手' }}
+                    </button>
+                    <span v-if="!getTrackArtists(track).length">未知歌手</span>
+                  </span>
                 </span>
               </span>
             </span>
-          </span>
+          </template>
+          <span v-else class="skeleton-text">{{ dailyRecommendLoading ? '每日推荐加载中…' : dailyRecommendError || '登录后可查看每日推荐' }}</span>
         </button>
-        <p v-else class="mini-desc">{{ dailyRecommendLoading ? '每日推荐加载中…' : dailyRecommendError || '登录后可查看每日推荐' }}</p>
       </AnimatedAppear>
 
       <AnimatedAppear v-if="userStore.isLogin" tag="article" variant="content" rhythm="body" class-name="top-mini-card radar-card" :index="1">
-        <button v-if="topRecoCard" class="radar-hero poster" :title="topRecoCard.name" @click="openRecoDetail(topRecoCard.id)">
+        <button class="radar-hero poster" :class="{ 'is-skeleton': !topRecoCard }" :title="topRecoCard?.name" @click="topRecoCard && openRecoDetail(topRecoCard.id)">
           <span class="radar-bg fade-in-bg" :class="{ 'bg-loaded': topRecoBgLoaded }" :style="{ backgroundImage: `url(${topRecoCardCoverUrl})` }"></span>
-          <span class="radar-poster-top">
-            <span class="radar-top-title">{{ topRecoCardTitle }}</span>
-            <button
-              v-if="resolvePlaylistCreatorId(topRecoCard)"
-              type="button"
-              class="creator-inline-btn"
-              @click.stop="openUserDetailById(resolvePlaylistCreatorId(topRecoCard))"
-            >
-              {{ resolvePlaylistCreatorName(topRecoCard) }}
-            </button>
-          </span>
-          <span class="radar-bottom-zone">
-            <span class="radar-poster-bottom">{{ topRecoCardSubtitle }}</span>
-            <span class="radar-hover-list">
-              <span
-                v-for="(track, idx) in topRecoTracks.slice(0, 3)"
-                :key="track.id || `${track.name}-${idx}`"
-                class="radar-hover-item"
-                @click.stop="playRecoByIndex(idx)"
+          <template v-if="topRecoCard">
+            <span class="radar-poster-top">
+              <span class="radar-top-title">{{ topRecoCardTitle }}</span>
+              <button
+                v-if="resolvePlaylistCreatorId(topRecoCard)"
+                type="button"
+                class="creator-inline-btn"
+                @click.stop="openUserDetailById(resolvePlaylistCreatorId(topRecoCard))"
               >
-                <span class="radar-hover-rank">{{ idx + 1 }}</span>
-                <span class="radar-hover-name">{{ track.name }}</span>
-                <span class="radar-hover-artist">
-                  <button
-                    v-for="artist in getTrackArtists(track)"
-                    :key="`${track.id || idx}-${artist.id || artist.name}`"
-                    type="button"
-                    class="artist-inline-btn"
-                    @click.stop="openArtistDetail(artist)"
-                  >
-                    {{ artist.name || '未知歌手' }}
-                  </button>
-                  <span v-if="!getTrackArtists(track).length">未知歌手</span>
+                {{ resolvePlaylistCreatorName(topRecoCard) }}
+              </button>
+            </span>
+            <span class="radar-bottom-zone">
+              <span class="radar-poster-bottom">{{ topRecoCardSubtitle }}</span>
+              <span class="radar-hover-list">
+                <span
+                  v-for="(track, idx) in topRecoTracks.slice(0, 3)"
+                  :key="track.id || `${track.name}-${idx}`"
+                  class="radar-hover-item"
+                  @click.stop="playRecoByIndex(idx)"
+                >
+                  <span class="radar-hover-rank">{{ idx + 1 }}</span>
+                  <span class="radar-hover-name">{{ track.name }}</span>
+                  <span class="radar-hover-artist">
+                    <button
+                      v-for="artist in getTrackArtists(track)"
+                      :key="`${track.id || idx}-${artist.id || artist.name}`"
+                      type="button"
+                      class="artist-inline-btn"
+                      @click.stop="openArtistDetail(artist)"
+                    >
+                      {{ artist.name || '未知歌手' }}
+                    </button>
+                    <span v-if="!getTrackArtists(track).length">未知歌手</span>
+                  </span>
                 </span>
               </span>
             </span>
-          </span>
+          </template>
+          <span v-else class="skeleton-text">{{ topRecoLoading ? `${topRecoCardTitle}加载中…` : topRecoError || topRecoEmptyText }}</span>
         </button>
-        <p v-else class="mini-desc">{{ topRecoLoading ? `${topRecoCardTitle}加载中…` : topRecoError || topRecoEmptyText }}</p>
       </AnimatedAppear>
 
       <AnimatedAppear tag="article" variant="content" rhythm="body" class-name="top-mini-card fm-card" :index="2">
-        <p v-if="personalFmLoading" class="mini-desc">正在获取私人 FM…</p>
-        <p v-else-if="personalFmError" class="mini-desc error">{{ personalFmError }}</p>
-        <button v-else-if="personalFmTracks.length" class="fm-hero poster" :title="personalFmTracks[0]?.name" @click="playPersonalFmByIndex(0)" @mouseenter="fmHovered = true" @mouseleave="fmHovered = false">
+        <button class="fm-hero poster" :class="{ 'is-skeleton': !personalFmTracks.length }" :title="personalFmTracks[0]?.name" @click="personalFmTracks.length && playPersonalFmByIndex(0)" @mouseenter="fmHovered = true" @mouseleave="fmHovered = false">
           <span class="fm-bg fade-in-bg" :class="{ 'bg-loaded': fmBgLoaded }" :style="{ backgroundImage: `url(${personalFmCoverUrl})` }"></span>
-          <span class="fm-poster-top">
-            <span class="fm-top-title">私人 FM</span>
-            <button
-              ref="fmModeBtnRef"
-              type="button"
-              class="fm-mode-btn"
-              :class="{ 'hover-visible': fmHovered, active: fmModePopoverOpen || playerStore.fmMode !== 'DEFAULT' }"
-              :title="`当前模式: ${fmModeLabel}`"
-              aria-label="私人 FM 模式选择"
-              @click.stop="toggleFmModePopover"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-              </svg>
-            </button>
-          </span>
-          <span class="fm-bottom-zone">
-            <span class="fm-poster-bottom">私人 FM｜从「{{ personalFmTracks[0]?.name || '今日漫游' }}」听起</span>
-            <span class="fm-control-panel" @click.stop>
+          <template v-if="personalFmTracks.length">
+            <span class="fm-poster-top">
+              <span class="fm-top-title">私人 FM</span>
               <button
+                ref="fmModeBtnRef"
                 type="button"
-                class="fm-control-btn fm-control-btn--ghost"
-                :title="fmDislikeTitle"
-                aria-label="不喜欢当前私人 FM"
-                @click.stop="dislikePersonalFm"
+                class="fm-mode-btn"
+                :class="{ 'hover-visible': fmHovered, active: fmModePopoverOpen || playerStore.fmMode !== 'DEFAULT' }"
+                :title="`当前模式: ${fmModeLabel}`"
+                aria-label="私人 FM 模式选择"
+                @click.stop="toggleFmModePopover"
               >
-                <span class="fm-control-icon" v-html="dislikeIconSvg"></span>
-              </button>
-              <button
-                type="button"
-                class="fm-control-btn fm-control-btn--primary"
-                :title="fmPlayTitle"
-                :aria-label="fmPlayTitle"
-                @click.stop="togglePersonalFmPlayback"
-              >
-                <span class="fm-control-icon" v-html="playToggleIconSvg"></span>
-              </button>
-              <button
-                type="button"
-                class="fm-control-btn fm-control-btn--ghost"
-                :title="fmNextTitle"
-                aria-label="下一首私人 FM"
-                @click.stop="nextPersonalFm"
-              >
-                <span class="fm-control-icon" v-html="nextIconSvg"></span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
               </button>
             </span>
-          </span>
-          <Teleport to="body">
-            <div
-              v-if="fmModePopoverOpen"
-              ref="fmPopoverRef"
-              class="fm-mode-popover"
-              :style="fmPopoverStyle"
-              @click.stop
-            >
-              <div class="fm-mode-popover-header">选择私人 FM 模式</div>
-              <div class="fm-mode-options">
+            <span class="fm-bottom-zone">
+              <span class="fm-poster-bottom">私人 FM｜从「{{ personalFmTracks[0]?.name || '今日漫游' }}」听起</span>
+              <span class="fm-control-panel" @click.stop>
                 <button
-                  v-for="opt in fmModeOptions"
-                  :key="opt.value"
                   type="button"
-                  class="fm-mode-option"
-                  :class="{ selected: selectedFmMode === opt.value }"
-                  @click="selectFmMode(opt.value)"
+                  class="fm-control-btn fm-control-btn--ghost"
+                  :title="fmDislikeTitle"
+                  aria-label="不喜欢当前私人 FM"
+                  @click.stop="dislikePersonalFm"
                 >
-                  <span class="fm-mode-option-radio">
-                    <span v-if="selectedFmMode === opt.value" class="fm-mode-option-dot"></span>
-                  </span>
-                  <span class="fm-mode-option-text">
-                    <span class="fm-mode-option-label">{{ opt.label }}</span>
-                    <span class="fm-mode-option-desc">{{ opt.desc }}</span>
-                  </span>
+                  <span class="fm-control-icon" v-html="dislikeIconSvg"></span>
                 </button>
-              </div>
-              <div v-if="selectedFmMode === 'SCENE_RCMD'" class="fm-submode-section">
-                <div class="fm-submode-label">选择场景</div>
-                <div class="fm-submode-options">
+                <button
+                  type="button"
+                  class="fm-control-btn fm-control-btn--primary"
+                  :title="fmPlayTitle"
+                  :aria-label="fmPlayTitle"
+                  @click.stop="togglePersonalFmPlayback"
+                >
+                  <span class="fm-control-icon" v-html="playToggleIconSvg"></span>
+                </button>
+                <button
+                  type="button"
+                  class="fm-control-btn fm-control-btn--ghost"
+                  :title="fmNextTitle"
+                  aria-label="下一首私人 FM"
+                  @click.stop="nextPersonalFm"
+                >
+                  <span class="fm-control-icon" v-html="nextIconSvg"></span>
+                </button>
+              </span>
+            </span>
+            <Teleport to="body">
+              <div
+                v-if="fmModePopoverOpen"
+                ref="fmPopoverRef"
+                class="fm-mode-popover"
+                :style="fmPopoverStyle"
+                @click.stop
+              >
+                <div class="fm-mode-popover-header">选择私人 FM 模式</div>
+                <div class="fm-mode-options">
                   <button
-                    v-for="opt in fmSubmodeOptions"
+                    v-for="opt in fmModeOptions"
                     :key="opt.value"
                     type="button"
-                    class="fm-mode-option fm-submode-option"
-                    :class="{ selected: selectedFmSubmode === opt.value }"
-                    @click="selectFmSubmode(opt.value)"
+                    class="fm-mode-option"
+                    :class="{ selected: selectedFmMode === opt.value }"
+                    @click="selectFmMode(opt.value)"
                   >
                     <span class="fm-mode-option-radio">
-                      <span v-if="selectedFmSubmode === opt.value" class="fm-mode-option-dot"></span>
+                      <span v-if="selectedFmMode === opt.value" class="fm-mode-option-dot"></span>
                     </span>
                     <span class="fm-mode-option-text">
                       <span class="fm-mode-option-label">{{ opt.label }}</span>
+                      <span class="fm-mode-option-desc">{{ opt.desc }}</span>
                     </span>
                   </button>
                 </div>
+                <div v-if="selectedFmMode === 'SCENE_RCMD'" class="fm-submode-section">
+                  <div class="fm-submode-label">选择场景</div>
+                  <div class="fm-submode-options">
+                    <button
+                      v-for="opt in fmSubmodeOptions"
+                      :key="opt.value"
+                      type="button"
+                      class="fm-mode-option fm-submode-option"
+                      :class="{ selected: selectedFmSubmode === opt.value }"
+                      @click="selectFmSubmode(opt.value)"
+                    >
+                      <span class="fm-mode-option-radio">
+                        <span v-if="selectedFmSubmode === opt.value" class="fm-mode-option-dot"></span>
+                      </span>
+                      <span class="fm-mode-option-text">
+                        <span class="fm-mode-option-label">{{ opt.label }}</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <div class="fm-mode-popover-footer">
+                  <button type="button" class="fm-mode-apply-btn" @click="applyFmMode">
+                    确定
+                  </button>
+                </div>
               </div>
-              <div class="fm-mode-popover-footer">
-                <button type="button" class="fm-mode-apply-btn" @click="applyFmMode">
-                  确定
-                </button>
-              </div>
-            </div>
-          </Teleport>
+            </Teleport>
+          </template>
+          <span v-else-if="personalFmLoading" class="skeleton-text">正在获取私人 FM…</span>
+          <span v-else-if="personalFmError" class="skeleton-text error">{{ personalFmError }}</span>
+          <span v-else class="skeleton-text">登录后可使用私人 FM</span>
         </button>
-        <p v-else class="mini-desc">登录后可使用私人 FM</p>
       </AnimatedAppear>
     </AnimatedAppear>
 
-    <section class="top-artists-section">
-      <p v-if="topArtistsLoading" class="custom-tip">热门歌手加载中…</p>
-      <p v-else-if="topArtistsError" class="custom-tip">{{ topArtistsError }}</p>
+    <AnimatedAppear tag="section" variant="content" rhythm="body" class-name="top-artists-section">
       <HorizontalScrollRail
-        v-else
         aria-label="热门歌手"
         content-class="top-artists-row"
         content-layout="flex"
       >
-        <button v-for="artist in topArtists" :key="artist.id" class="artist-chip" @click="openArtistDetail(artist)">
-          <span class="artist-avatar hover-scale-image" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
-          <span class="artist-name">{{ artist.name }}</span>
-        </button>
-        <span
-          ref="topArtistsSentinel"
-          class="top-artists-sentinel"
-          aria-hidden="true"
-        ></span>
+        <template v-if="topArtists.length">
+          <button v-for="artist in topArtists" :key="artist.id" class="artist-chip" @click="openArtistDetail(artist)">
+            <span class="artist-avatar hover-scale-image" :style="{ backgroundImage: `url(${artist.picUrl || artist.img1v1Url || ''})` }"></span>
+            <span class="artist-name">{{ artist.name }}</span>
+          </button>
+          <span
+            ref="topArtistsSentinel"
+            class="top-artists-sentinel"
+            aria-hidden="true"
+          ></span>
+        </template>
+        <span v-else-if="topArtistsLoading" class="rail-placeholder">热门歌手加载中…</span>
+        <span v-else-if="topArtistsError" class="rail-placeholder">{{ topArtistsError }}</span>
       </HorizontalScrollRail>
       <p v-if="topArtistsLoading && topArtists.length" class="custom-tip artists-loading">加载更多歌手中…</p>
-    </section>
+    </AnimatedAppear>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid">
       <AnimatedAppear
@@ -274,41 +281,54 @@
           <AnimatedAppear tag="h3" variant="title" rhythm="head">最新专辑推荐</AnimatedAppear>
           <p v-if="albumLoading" class="custom-tip">专辑加载中…</p>
           <p v-else-if="!albums.length" class="custom-tip">{{ albumLoadNote || '未获取到专辑数据' }}</p>
-          <HorizontalScrollRail
+          <AnimatedAppear
             v-else
-            aria-label="最新专辑推荐"
-            content-class="albums-row"
-            content-layout="flex"
+            tag="div"
+            variant="media"
+            rhythm="body"
           >
-            <div
-              v-for="(group, gi) in albumGroups"
-              :key="gi"
-              class="albums-column"
+            <HorizontalScrollRail
+              aria-label="最新专辑推荐"
+              content-class="albums-row"
+              content-layout="flex"
             >
-              <GradientCard
-                v-for="item in group"
-                :key="item.id"
-                tag="button"
-                :cover="item.pic"
-                :name="item.name"
-                hover-play-size="sm"
-                @click="openAlbumDetail(item.id)"
+              <div
+                v-for="(group, gi) in albumGroups"
+                :key="gi"
+                class="albums-column"
               >
-                <template #subtitle>
-                  <button
-                    v-for="artist in getAlbumArtists(item)"
-                    :key="`${item.id}-${artist.id || artist.name}`"
-                    type="button"
-                    class="artist-inline-btn"
-                    @click.stop="openArtistDetail(artist)"
+                <AnimatedAppear
+                  v-for="item in group"
+                  :key="item.id"
+                  tag="div"
+                  variant="media"
+                  rhythm="list"
+                  class-name="albums-card-item"
+                >
+                  <GradientCard
+                    tag="button"
+                    :cover="item.pic"
+                    :name="item.name"
+                    hover-play-size="sm"
+                    @click="openAlbumDetail(item.id)"
                   >
-                    {{ artist.name || '未知歌手' }}
-                  </button>
-                  <span v-if="!getAlbumArtists(item).length">{{ item.artist }}</span>
-                </template>
-              </GradientCard>
-            </div>
-          </HorizontalScrollRail>
+                    <template #subtitle>
+                      <button
+                        v-for="artist in getAlbumArtists(item)"
+                        :key="`${item.id}-${artist.id || artist.name}`"
+                        type="button"
+                        class="artist-inline-btn"
+                        @click.stop="openArtistDetail(artist)"
+                      >
+                        {{ artist.name || '未知歌手' }}
+                      </button>
+                      <span v-if="!getAlbumArtists(item).length">{{ item.artist }}</span>
+                    </template>
+                  </GradientCard>
+                </AnimatedAppear>
+              </div>
+            </HorizontalScrollRail>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'exclusive-recommend'">
@@ -316,39 +336,52 @@
           <p v-if="exclusiveRecoLoading" class="custom-tip">专属推荐加载中…</p>
           <p v-else-if="exclusiveRecoError" class="custom-tip">{{ exclusiveRecoError }}</p>
           <p v-else-if="!exclusiveRecoPlaylists.length" class="custom-tip">登录后可查看专属推荐</p>
-          <HorizontalScrollRail
+          <AnimatedAppear
             v-else
-            aria-label="你的专属推荐"
-            content-class="albums-row"
-            content-layout="flex"
+            tag="div"
+            variant="media"
+            rhythm="body"
           >
-            <div
-              v-for="(group, gi) in exclusiveRecoGroups"
-              :key="gi"
-              class="albums-column"
+            <HorizontalScrollRail
+              aria-label="你的专属推荐"
+              content-class="albums-row"
+              content-layout="flex"
             >
-              <GradientCard
-                v-for="item in group"
-                :key="item.id"
-                tag="button"
-                :cover="item.picUrl || ''"
-                :name="item.name"
-                hover-play-size="sm"
-                @click="openRecoDetail(item.id)"
+              <div
+                v-for="(group, gi) in exclusiveRecoGroups"
+                :key="gi"
+                class="albums-column"
               >
-                <template #subtitle>
-                  <button
-                    v-if="item.creator"
-                    type="button"
-                    class="artist-inline-btn"
-                    @click.stop="openUserDetailById(item.creator.userId)"
+                <AnimatedAppear
+                  v-for="item in group"
+                  :key="item.id"
+                  tag="div"
+                  variant="media"
+                  rhythm="list"
+                  class-name="albums-card-item"
+                >
+                  <GradientCard
+                    tag="button"
+                    :cover="item.picUrl || ''"
+                    :name="item.name"
+                    hover-play-size="sm"
+                    @click="openRecoDetail(item.id)"
                   >
-                    {{ item.creator.nickname || '创建者' }}
-                  </button>
-                </template>
-              </GradientCard>
-            </div>
-          </HorizontalScrollRail>
+                    <template #subtitle>
+                      <button
+                        v-if="item.creator"
+                        type="button"
+                        class="artist-inline-btn"
+                        @click.stop="openUserDetailById(item.creator.userId)"
+                      >
+                        {{ item.creator.nickname || '创建者' }}
+                      </button>
+                    </template>
+                  </GradientCard>
+                </AnimatedAppear>
+              </div>
+            </HorizontalScrollRail>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'radar-playlist'">
@@ -356,48 +389,66 @@
           <p v-if="radarPlaylistsLoading" class="custom-tip">雷达歌单加载中…</p>
           <p v-else-if="radarPlaylistsError" class="custom-tip">{{ radarPlaylistsError }}</p>
           <p v-else-if="!radarPlaylists.length" class="custom-tip">暂无雷达歌单数据</p>
-          <HorizontalScrollRail
+          <AnimatedAppear
             v-else
-            aria-label="雷达歌单"
-            content-class="albums-row"
-            content-layout="flex"
+            tag="div"
+            variant="media"
+            rhythm="body"
           >
-            <div
-              v-for="(group, gi) in radarPlaylistGroups"
-              :key="gi"
-              class="albums-column"
+            <HorizontalScrollRail
+              aria-label="雷达歌单"
+              content-class="albums-row"
+              content-layout="flex"
             >
-              <GradientCard
-                v-for="item in group"
-                :key="item.id"
-                tag="button"
-                :cover="item.coverImgUrl || item.picUrl || ''"
-                :name="radarPlaylistNames[item.id] || item.name"
-                hover-play-size="sm"
-                @click="openRecoDetail(item.id)"
+              <div
+                v-for="(group, gi) in radarPlaylistGroups"
+                :key="gi"
+                class="albums-column"
               >
-                <template #subtitle>
-                  <span class="radar-playlist-desc">{{ item.description ? item.description.slice(0, 30) : item.trackCount + '首' }}</span>
-                </template>
-              </GradientCard>
-            </div>
-          </HorizontalScrollRail>
+                <AnimatedAppear
+                  v-for="item in group"
+                  :key="item.id"
+                  tag="div"
+                  variant="media"
+                  rhythm="list"
+                  class-name="albums-card-item"
+                >
+                  <GradientCard
+                    tag="button"
+                    :cover="item.coverImgUrl || item.picUrl || ''"
+                    :name="radarPlaylistNames[item.id] || item.name"
+                    hover-play-size="sm"
+                    @click="openRecoDetail(item.id)"
+                  >
+                    <template #subtitle>
+                      <span class="radar-playlist-desc">{{ item.description ? item.description.slice(0, 30) : item.trackCount + '首' }}</span>
+                    </template>
+                  </GradientCard>
+                </AnimatedAppear>
+              </div>
+            </HorizontalScrollRail>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'latest-music'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">新歌速递</AnimatedAppear>
           <p v-if="latestMusicLoading" class="custom-tip">最新音乐加载中…</p>
           <p v-else-if="latestMusicError" class="custom-tip">{{ latestMusicError }}</p>
-          <HorizontalScrollRail
+          <AnimatedAppear
             v-else
-            ref="latestScrollRailRef"
-            aria-label="新歌速递"
-            content-class="latest-scroll"
-            content-layout="block"
-            :min-scroll="320"
-            @rail-scroll="onLatestScroll"
-            @rail-wheel="onLatestWheel"
+            tag="div"
+            variant="media"
+            rhythm="body"
           >
+            <HorizontalScrollRail
+              ref="latestScrollRailRef"
+              aria-label="新歌速递"
+              content-class="latest-scroll"
+              content-layout="block"
+              :min-scroll="320"
+              @rail-scroll="onLatestScroll"
+              @rail-wheel="onLatestWheel"
+            >
             <div class="latest-track">
               <div v-for="(band, bandIdx) in latestBands" :key="`band-${bandIdx}`" class="latest-band">
                 <div v-for="(col, colIdx) in band" :key="`band-${bandIdx}-col-${colIdx}`" class="latest-column">
@@ -432,18 +483,22 @@
               </div>
             </div>
           </HorizontalScrollRail>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'podcast'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">推荐播客</AnimatedAppear>
           <p v-if="podcastLoading" class="custom-tip">播客加载中…</p>
           <p v-else-if="podcastError" class="custom-tip">{{ podcastError }}</p>
-          <div v-else class="podcast-grid an-stagger-media">
-            <div
+          <AnimatedAppear v-else tag="div" variant="media" rhythm="body" class-name="podcast-grid">
+            <AnimatedAppear
               v-for="(item, idx) in podcastList"
               :key="item.id"
-              class="mv-card"
-              :style="{ '--i': idx }"
+              tag="div"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="mv-card"
               @click="openPodcast(item)"
             >
               <GradientCard
@@ -457,20 +512,23 @@
                   <span v-if="item.creatorName">{{ item.creatorName }}</span>
                 </template>
               </GradientCard>
-            </div>
-          </div>
+            </AnimatedAppear>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'mv'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">推荐 MV</AnimatedAppear>
           <p v-if="mvLoading" class="custom-tip">MV 加载中…</p>
           <p v-else-if="mvError" class="custom-tip">{{ mvError }}</p>
-          <div v-else class="mv-grid an-stagger-media">
-            <div
+          <AnimatedAppear v-else tag="div" variant="media" rhythm="body" class-name="mv-grid">
+            <AnimatedAppear
               v-for="(item, idx) in mvList"
               :key="item.id"
-              class="mv-card"
-              :style="{ '--i': idx }"
+              tag="div"
+              variant="media"
+              rhythm="list"
+              :index="idx"
+              class-name="mv-card"
               @click="openMv(item)"
             >
               <MvHoverPoster
@@ -483,36 +541,55 @@
                 <div class="mv-card__name" :title="item.name">{{ item.name }}</div>
                 <span v-if="item.artistName" class="mv-card__artist">{{ item.artistName }}</span>
               </div>
-            </div>
-          </div>
+            </AnimatedAppear>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'search-hot'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">热搜榜</AnimatedAppear>
-          <ol class="hot-list">
-            <li v-for="(item, idx) in hotList" :key="item" class="hot-item" @click="quickSearch(item)">
+          <AnimatedAppear tag="ol" variant="text" rhythm="body" class-name="hot-list">
+            <AnimatedAppear
+              v-for="(item, idx) in hotList"
+              :key="item"
+              tag="li"
+              variant="text"
+              rhythm="list"
+              :index="idx"
+              class-name="hot-item"
+              @click="quickSearch(item)"
+            >
               <span class="rank">{{ idx + 1 }}</span>
               <span class="kw">{{ item }}</span>
-            </li>
-          </ol>
+            </AnimatedAppear>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'search-history'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">搜索历史</AnimatedAppear>
-          <div class="history-tags">
-            <button v-for="item in searchHistory" :key="item" class="tag button-surface" @click="quickSearch(item)">{{ item }}</button>
+          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="history-tags">
+            <AnimatedAppear
+              v-for="item in searchHistory"
+              :key="item"
+              tag="button"
+              variant="control"
+              rhythm="list"
+              class-name="tag button-surface"
+              @click="quickSearch(item)"
+            >
+              {{ item }}
+            </AnimatedAppear>
             <p v-if="!searchHistory.length" class="custom-tip">暂无搜索历史</p>
-          </div>
+          </AnimatedAppear>
         </template>
 
         <template v-else-if="widget.id === 'settings-theme'">
           <AnimatedAppear tag="h3" variant="title" rhythm="head">主题模式</AnimatedAppear>
-          <p class="custom-desc">快速切换浅色/深色/跟随系统</p>
-          <select class="theme-select" :value="uiStore.themeMode" @change="onThemeChange">
+          <AnimatedAppear tag="p" variant="text" rhythm="body" class-name="custom-desc">快速切换浅色/深色/跟随系统</AnimatedAppear>
+          <AnimatedAppear tag="select" variant="control" rhythm="body" class="theme-select" :value="uiStore.themeMode" @change="onThemeChange">
             <option value="浅色">浅色</option>
             <option value="深色">深色</option>
             <option value="跟随系统">跟随系统</option>
-          </select>
+          </AnimatedAppear>
         </template>
 
         <template v-else>
@@ -528,6 +605,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useBgLoaded } from '../composables/useBgLoaded';
+import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import { getArtistDetail, getPersonalFm, getPlaylistDetail, getRecommendPlaylists, getRecommendSongs, getNewestAlbums, getTopAlbums, getTopArtists, getTopSongs, searchMusic, getAllMvs, getDjRecommend, setPersonalFmMode } from '../api/music';
 import { getUserCreatedPlaylist } from '../api/auth';
 import { playerStore } from '../stores/player';
@@ -1053,13 +1131,33 @@ async function fetchPublicRecoPlaylists() {
   }
 }
 
+/** 计算到次日 6:00 的毫秒数（每日推荐/雷达缓存到期时间） */
+function dailyTtl(): number {
+  const now = Date.now();
+  const next = new Date();
+  next.setDate(next.getDate() + 1);
+  next.setHours(6, 0, 0, 0);
+  return Math.max(next.getTime() - now, 60 * 60 * 1000);
+}
+
 async function fetchDailyRecommendPlaylists() {
+  // 每日更新数据：检查缓存
+  const cached = apiCache.get('daily:playlists');
+  if (cached?.data) {
+    privateRadar.value = cached.data;
+    privateRadarLoading.value = false;
+    await fetchRadarPlaylistDetail();
+    return;
+  }
+
   privateRadarLoading.value = true;
   privateRadarError.value = '';
 
   try {
     const { data } = await getRecommendPlaylists(userStore.loginCookie || undefined);
-    privateRadar.value = data?.recommend || [];
+    const list = data?.recommend || [];
+    privateRadar.value = list;
+    apiCache.set('daily:playlists', list, dailyTtl());
     await fetchRadarPlaylistDetail();
   } catch (e: any) {
     privateRadar.value = [];
@@ -1072,18 +1170,23 @@ async function fetchDailyRecommendPlaylists() {
 }
 
 async function fetchDailyRecommendSongs() {
+  // 每日更新数据：检查缓存
+  const cached = apiCache.get('daily:songs');
+  if (cached?.data) {
+    dailyRecommendSongs.value = cached.data;
+    playerStore.defaultPlaylist = cached.data;
+    dailyRecommendLoading.value = false;
+    return;
+  }
+
   dailyRecommendLoading.value = true;
   dailyRecommendError.value = '';
   try {
     const { data } = await getRecommendSongs(userStore.loginCookie || undefined);
-    console.log('[HomePanel][recommend/songs] raw response', data);
-    console.log('[HomePanel][recommend/songs] data keys', data ? Object.keys(data) : null);
-    console.log('[HomePanel][recommend/songs] nested data keys', data?.data ? Object.keys(data.data) : null);
-    console.log('[HomePanel][recommend/songs] nested result keys', data?.result ? Object.keys(data.result) : null);
     const list = Array.isArray(data?.recommend) ? data.recommend : Array.isArray(data?.songs) ? data.songs : Array.isArray(data?.data) ? data.data : Array.isArray(data?.data?.dailySongs) ? data.data.dailySongs : Array.isArray(data?.data?.recommend) ? data.data.recommend : Array.isArray(data?.data?.songs) ? data.data.songs : Array.isArray(data?.result?.songs) ? data.result.songs : [];
-    console.log('[HomePanel][recommend/songs] parsed list length', list.length, list[0]);
     dailyRecommendSongs.value = list;
     playerStore.defaultPlaylist = list;
+    apiCache.set('daily:songs', list, dailyTtl());
   } catch (e: any) {
     console.error('[HomePanel][recommend/songs] request failed', e);
     dailyRecommendSongs.value = [];
@@ -1692,7 +1795,16 @@ async function playLatestSong(index: number) {
 <style scoped>
 @import '../styles/hover-play-button.css';
 .home-page { display: grid; gap: var(--space-3); min-width: 0; overflow-x: clip; }
-.top-artists-section { display: grid; gap: var(--space-2); padding: 0; }
+.top-artists-section { display: grid; gap: var(--space-2); padding: 0; min-height: 154px; }
+.rail-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100px;
+  color: var(--text-soft);
+  font-size: var(--text-body-md);
+}
 :deep(.top-artists-row) { --horizontal-scroll-gap: var(--space-8); --horizontal-scroll-padding-bottom: 0; display: flex; align-items: flex-start; padding-top: var(--space-1); scroll-snap-type: none !important; }
 :deep(.top-artists-row) > * { flex: 0 0 auto; }
 .artist-chip {
@@ -2188,5 +2300,45 @@ async function playLatestSong(index: number) {
     width: calc(100vw - 32px);
     max-width: calc(100vw - 32px);
   }
+}
+
+/* ---- 骨架屏占位样式 ---- */
+.skeleton-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--text-body-md);
+  font-weight: 500;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 5;
+  pointer-events: none;
+}
+.skeleton-text.error {
+  color: rgba(248, 113, 113, 0.82);
+}
+.is-skeleton {
+  cursor: default !important;
+}
+
+/* 网格卡片区加载占位 min-height */
+.card.albums,
+.card.exclusive-recommend,
+.card.radar-playlist {
+  min-height: 280px;
+}
+.card.podcast {
+  min-height: 310px;
+}
+.card.mv {
+  min-height: 340px;
+}
+.card.latest-music {
+  min-height: 220px;
+}
+.card.list {
+  min-height: 580px;
 }
 </style>

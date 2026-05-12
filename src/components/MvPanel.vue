@@ -95,6 +95,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { getAllMvs } from '../api/music';
+import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 const emit = defineEmits<{ (e: 'open-user', userId: number): void; (e: 'play-mv', item: any): void }>();
@@ -168,6 +169,19 @@ async function fetchMvs(reset = false) {
 
   try {
     const offset = reset ? 0 : list.value.length;
+
+    // 首次加载检查缓存
+    if (reset && offset === 0) {
+      const cacheKey = `mv:list:${area.value}:${mvType.value}:${order.value}:0`;
+      const cached = apiCache.get(cacheKey);
+      if (cached?.data) {
+        list.value = cached.data.list as MvItem[];
+        hasMore.value = cached.data.hasMore;
+        loading.value = false;
+        return;
+      }
+    }
+
     const { data } = await getAllMvs({
       area: area.value,
       type: mvType.value,
@@ -179,6 +193,12 @@ async function fetchMvs(reset = false) {
     const next = (data?.data || []) as MvItem[];
     list.value = reset ? next : [...list.value, ...next];
     hasMore.value = Boolean(data?.hasMore);
+
+    // 首次加载结果写入缓存
+    if (reset && offset === 0) {
+      const cacheKey = `mv:list:${area.value}:${mvType.value}:${order.value}:0`;
+      apiCache.set(cacheKey, { list: next, hasMore: hasMore.value }, CACHE_TTL.LIST_VOLATILE);
+    }
   } catch (e: any) {
     error.value = e?.message || 'MV 加载失败';
     if (reset) list.value = [];

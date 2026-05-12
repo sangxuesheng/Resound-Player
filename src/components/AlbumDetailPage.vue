@@ -153,9 +153,11 @@
 <script setup lang="ts">
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { useDominantColor } from '../composables/useDominantColor';
+import { useApiData } from '../composables/useApiData';
+import { CACHE_TTL } from '../stores/apiCache';
 import { playerStore } from '../stores/player';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -196,9 +198,6 @@ const emit = defineEmits<{
   (e: 'open-user', userId: number): void;
 }>();
 
-const loading = ref(false);
-const error = ref('');
-const album = ref<any>(null);
 const isDescriptionExpanded = ref(false);
 const activeTab = ref<'songs' | 'comments'>('songs');
 const tabs = [
@@ -206,6 +205,20 @@ const tabs = [
   { key: 'comments', label: '评论' },
 ] as const;
 const searchQuery = ref('');
+
+// 使用 useApiData 获取专辑详情
+const { data: albumData, loading, error } = useApiData(
+  () => props.albumId ? `album:${props.albumId}` : '',
+  () => getAlbumDetail(props.albumId).then(r => {
+    const detail = r?.data?.album;
+    const list = r?.data?.songs || [];
+    if (!detail) throw new Error('专辑详情为空');
+    return { ...detail, songs: list };
+  }),
+  { ttl: CACHE_TTL.ENTITY }
+);
+
+const album = computed<any>(() => albumData.value);
 const songs = computed<any[]>(() => album.value?.songs || []);
 
 const filteredSongs = computed(() => {
@@ -242,28 +255,6 @@ const detailPageClassName = computed(() => {
   return classNames.join(' ');
 });
 const { isSticky, refresh } = useDetailStickyState();
-
-async function fetchDetail(id: number) {
-  if (!id) return;
-  loading.value = true;
-  error.value = '';
-  try {
-    const { data } = await getAlbumDetail(id);
-    const detail = data?.album;
-    const list = data?.songs || [];
-    if (!detail) {
-      album.value = null;
-      error.value = '专辑详情为空';
-      return;
-    }
-    album.value = { ...detail, songs: list };
-  } catch (e: any) {
-    album.value = null;
-    error.value = e?.message || '专辑详情加载失败';
-  } finally {
-    loading.value = false;
-  }
-}
 
 function getSongArtists(song: any) {
   const artists = Array.isArray(song?.ar)
@@ -391,16 +382,6 @@ function openComment(songId: number) {
 function openAlbum(albumId: number) {
   emit('open-album', albumId);
 }
-
-onMounted(() => {
-  fetchDetail(props.albumId);
-});
-
-watch(() => props.albumId, (id) => {
-  isDescriptionExpanded.value = false;
-  fetchDetail(id);
-  requestAnimationFrame(() => refresh());
-});
 </script>
 
 <style scoped>

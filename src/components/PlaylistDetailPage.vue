@@ -177,6 +177,7 @@ import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { getHistoryRecommendSongDates, getHistoryRecommendSongDetail, getPlaylistDetail, getPlaylistTrackAll, getSongDetailBatch, getRecommendSongs, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { playerStore } from '../stores/player';
 import { userStore } from '../stores/user';
+import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import { recordLocalHistoryEntry } from '../utils/localHistory';
 import { useAuthAction } from '../composables/useAuthAction';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -345,6 +346,18 @@ async function fetchDetail(id: number) {
   trackEnriching.value = false;
   error.value = '';
 
+  // 检查缓存：命中时先展示缓存数据，后台继续刷新
+  const cached = apiCache.get(`playlist:${id}`);
+  if (cached?.data?.playlist) {
+    const detail = cached.data.playlist;
+    playlist.value = {
+      ...detail,
+      coverImgUrl: resolvePlaylistCover(detail),
+      tracks: Array.isArray(detail.tracks) ? detail.tracks : [],
+    };
+    detailLoading.value = false;
+  }
+
   try {
     const { data } = await getPlaylistDetail(id, 30);
     if (currentToken !== fetchToken) return;
@@ -366,6 +379,7 @@ async function fetchDetail(id: number) {
       tracks: rawTracks,
     };
     detailLoading.value = false;
+    apiCache.set(`playlist:${id}`, { playlist: detail }, CACHE_TTL.LIST);
 
     // 如果一开始就没歌曲则跳过补全
     if (!rawTracks.length) return;
