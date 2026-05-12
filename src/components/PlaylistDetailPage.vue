@@ -357,6 +357,7 @@ async function fetchDetail(id: number) {
 
     const rawTracks = Array.isArray(detail.tracks) ? detail.tracks : [];
     const trackIds = Array.isArray(detail.trackIds) ? detail.trackIds.map((x: any) => Number(x?.id)).filter(Boolean) : [];
+    const trackCount = detail.trackCount || 0;
 
     // 先把已有数据渲染出来，避免用户长时间看到空白
     playlist.value = {
@@ -366,10 +367,12 @@ async function fetchDetail(id: number) {
     };
     detailLoading.value = false;
 
-    if (!trackIds.length) return;
+    // 如果一开始就没歌曲则跳过补全
+    if (!rawTracks.length) return;
 
-    const needEnrich = trackIds.length > rawTracks.length || rawTracks.length === 0;
-    if (!needEnrich) return;
+    // 用 trackCount 兜底（雷达歌单不返回 trackIds 但返回 trackCount）
+    const max = trackIds.length || trackCount;
+    if (max <= rawTracks.length) return;
 
     trackEnriching.value = true;
 
@@ -377,25 +380,26 @@ async function fetchDetail(id: number) {
       const CHUNK_SIZE = 30;
       let offset = rawTracks.length;
 
-      while (offset < trackIds.length) {
+      while (offset < max) {
         if (currentToken !== fetchToken) return;
-
         const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: CHUNK_SIZE, offset });
         if (currentToken !== fetchToken) return;
 
         const newSongs = Array.isArray(chunkRes?.songs) ? chunkRes.songs : [];
-        if (newSongs.length) {
-          playlist.value = {
-            ...playlist.value,
-            tracks: [...playlist.value.tracks, ...newSongs],
-          };
-          offset += newSongs.length;
-        } else {
-          break;
-        }
+        if (!newSongs.length) break;
+
+        const existingIds = new Set(playlist.value.tracks.map((s: any) => Number(s.id)));
+        const uniqueNew = newSongs.filter((s: any) => !existingIds.has(Number(s.id)));
+        if (!uniqueNew.length) break;
+
+        playlist.value = {
+          ...playlist.value,
+          tracks: [...playlist.value.tracks, ...uniqueNew],
+        };
+        offset += uniqueNew.length;
       }
 
-      if (currentToken !== fetchToken) return;
+      // 用 song/detail 补足 trackIds 中仍未获取到的
       const remaining = trackIds.length - playlist.value.tracks.length;
       if (remaining > 0) {
         const remainingIds = trackIds.slice(-remaining);

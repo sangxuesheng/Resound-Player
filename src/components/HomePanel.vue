@@ -818,7 +818,7 @@ const RADAR_PLAYLIST_IDS = [
   8402996200,    // 会员雷达
   5327906368,    // 乐迷雷达
   5362359247,    // 宝藏雷达
-  5300458264,    // 新歌雷达
+  13139913381,   // 新歌雷达
   13145008655,   // 云村高分雷达
   5341776086,    // 神秘雷达
   13146632040,   // 热单雷达
@@ -834,7 +834,7 @@ const radarPlaylistNames: Record<number, string> = {
   8402996200: '会员雷达',
   5327906368: '乐迷雷达',
   5362359247: '宝藏雷达',
-  5300458264: '新歌雷达',
+  13139913381: '新歌雷达',
   13145008655: '云村高分雷达',
   5341776086: '神秘雷达',
   13146632040: '热单雷达',
@@ -849,7 +849,7 @@ async function fetchRadarPlaylists() {
   radarPlaylistsError.value = '';
   try {
     const results = await Promise.allSettled(
-      RADAR_PLAYLIST_IDS.map((id) => getPlaylistDetail(id))
+      RADAR_PLAYLIST_IDS.map((id) => getPlaylistDetail(id, 0))
     );
     radarPlaylists.value = results
       .map((r) => (r.status === 'fulfilled' ? r.value?.data?.playlist : null))
