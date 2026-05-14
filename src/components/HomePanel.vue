@@ -678,7 +678,14 @@ const isUidLogin = computed(() => userStore.loginMode === 'uid');
 const publicRecoPlaylists = ref<Array<{ id: number; name: string; coverImgUrl?: string; picUrl?: string; creator?: any }>>([]);
 const publicRecoTracks = ref<any[]>([]);
 const publicRecoCoverUrl = ref('');
-const dailyRecoRadar = computed(() => privateRadar.value.find((item) => item.name.includes('私人雷达')) || null);
+/** 私人雷达歌单 ID 固定值，不依赖 API 返回结果 */
+const PRIVATE_RADAR_ID = 3136952023;
+const dailyRecoRadar = computed(() => ({
+  id: PRIVATE_RADAR_ID,
+  name: '私人雷达',
+  picUrl: '',
+  coverImgUrl: '',
+}));
 const topRecoCard = computed(() => (isUidLogin.value ? publicRecoPlaylists.value[0] || null : dailyRecoRadar.value));
 const topRecoTracks = computed(() => (isUidLogin.value ? publicRecoTracks.value : radarTopTracks.value));
 const topRecoCardTitle = computed(() => (isUidLogin.value ? '我的喜欢' : '私人雷达'));
@@ -1015,17 +1022,20 @@ function setupHotSongsObserver() {
 }
 
 async function fetchRadarPlaylistDetail() {
-  const radar = dailyRecoRadar.value;
-  if (!radar?.id) {
+  const id = PRIVATE_RADAR_ID;
+  if (!id) {
     radarTopTracks.value = [];
     radarCoverUrl.value = '';
     return;
   }
 
   try {
-    const { data } = await getPlaylistDetail(radar.id, 8);
+    // 必须传递 cookie，否则 API 可能返回非登录用户的默认/缓存数据（私人雷达是用户专属歌单）
+    const { data } = await getPlaylistDetail(id, 8, userStore.loginCookie || undefined);
     const playlist = data?.playlist;
     radarTopTracks.value = (playlist?.tracks || []).slice(0, 8);
+    // 调试：确认获取到的是正确歌单
+    console.log('[RadarDetail] id=', id, 'name=', playlist?.name, 'firstTrack=', radarTopTracks.value[0]?.name, 'trackCount=', playlist?.tracks?.length);
 
     const trackCover =
       playlist?.tracks?.[0]?.al?.picUrl ||
@@ -1036,9 +1046,12 @@ async function fetchRadarPlaylistDetail() {
       '';
 
     radarCoverUrl.value = trackCover;
+    // 缓存歌曲级封面，后续缓存命中时可直接恢复，避免先显示歌单封面再闪烁切换
+    apiCache.set('radar:coverUrl', trackCover, dailyTtl());
   } catch {
     radarTopTracks.value = [];
     radarCoverUrl.value = '';
+    console.warn('[RadarDetail] fetch failed for id=', id);
   }
 }
 
@@ -1130,6 +1143,11 @@ async function fetchDailyRecommendPlaylists() {
   if (cached?.data) {
     privateRadar.value = cached.data;
     privateRadarLoading.value = false;
+    // 缓存命中时，从子缓存恢复歌曲级封面，避免先显示歌单封面再闪烁切换
+    const cachedCover = apiCache.get('radar:coverUrl');
+    if (cachedCover?.data) {
+      radarCoverUrl.value = cachedCover.data;
+    }
     await fetchRadarPlaylistDetail();
     return;
   }

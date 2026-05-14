@@ -371,7 +371,7 @@ async function fetchDetail(id: number) {
   }
 
   try {
-    const { data } = await getPlaylistDetail(id, 30);
+    const { data } = await getPlaylistDetail(id, 30, userStore.loginCookie || undefined);
     if (currentToken !== fetchToken) return;
 
     const detail = data?.playlist || null;
