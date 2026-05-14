@@ -315,7 +315,7 @@ function openAlbum(albumId: number | undefined | null) {
 }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 const coverLoaded = useBgLoaded(() => playerStore.currentTrack?.al?.picUrl || '');
-const { uiRevealed, onActivity, onLeave, freeze, unfreeze } = useAutoHideUI({ idleTimeout: 3000 });
+const { uiRevealed, onActivity, onLeave, freeze, unfreeze } = useAutoHideUI(() => uiStore.autoHidePlayerUI, { idleTimeout: 3000 });
 function openUser(userId: number) { if (userId > 0) emit('open-user', userId); }
 function openPodcastDetail() {
   const rid = currentPodcastRid.value;
@@ -1006,9 +1006,13 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 }
 
 /* UI 自动显隐：隐藏时仅透明，保留布局占位 */
+/* an-enter-card 的入场动画会与我们的 transition 冲突，禁用之 */
 .panel-head,
-.right-actions,
 .bottom-console {
+  animation: none !important;
+  transition: opacity 0.4s ease-in-out;
+}
+.right-actions {
   transition: opacity 0.4s ease-in-out;
 }
 .ui-hidden {

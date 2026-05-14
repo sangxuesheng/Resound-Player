@@ -192,7 +192,20 @@ const { uiRevealed } = useAutoHideUI({ idleTimeout: 3000 })
 | 页面有其他浮层（设置面板、EQ面板等）打开时 | 覆盖现有逻辑：浮层打开时保持 `uiRevealed = true`，可通过 `watch` 或 `onMounted` hook 暴露 |
 | `@click.self="playerStore.closeExpanded()"` | 保留在 `.expanded-wrap` 上。当 UI 隐藏时用户点击空白区域应能关闭全屏页，不受影响 |
 
-### 5. 为什么要用 composable 而不是在组件内直接写
+### 5. 事件守卫清单（所有处理函数都必须检查开关状态）
+
+`useAutoHideUI` 共有 4 个事件处理函数，当开关关闭时它们都必须提前返回，否则会导致 UI 永久隐藏：
+
+| 函数 | 守卫 | 绑定事件 | 遗漏后果 |
+|---|---|---|---|
+| `onActivity` | `if (!enabledSource()) return` | 根元素 `@mousemove`、`@click` | 无影响（仅节流噪声） |
+| `onLeave` | `if (!enabledSource()) return` | 根元素 `@mouseleave` | 无影响（提前返回） |
+| `freeze` | `if (!enabledSource()) return` | 控制区 `@mouseenter` | 无害（仅设置状态） |
+| `unfreeze` | `if (!enabledSource()) return` | 控制区 `@mouseleave` | **触发空闲计时器 → 3 秒后隐藏 UI → 永久不可恢复** |
+
+**`unfreeze()` 是问题的关键**：开关关闭时 `uiRevealed` 为 `true`，`unfreeze()` 没有守卫就会调用 `startIdleTimer()` → 3 秒后 `hide()` 设置 `uiRevealed = false`。由于开关关闭后 `onActivity()` 和 `onLeave()` 都提前返回，再无任何机制能将 `uiRevealed` 恢复为 `true`，UI 永久隐藏。
+
+### 6. 为什么要用 composable 而不是在组件内直接写
 
 - **复用性**：以后其他全屏页面（如视频播放）可直接复用
 - **可测性**：逻辑与模板解耦

@@ -499,6 +499,7 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'accentCustomColor', label: '自定义主题色', desc: '在调色盘中选择任意颜色', type: 'action' },
         { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
         { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
+        { key: 'autoHidePlayerUI', label: '全屏播放页自动隐藏 UI', desc: '在全屏播放页中，无操作时自动隐藏顶部栏、右侧按钮和底部控制台', type: 'switch' },
       ],
     },
   ],
@@ -636,6 +637,7 @@ const switchState = reactive<Record<string, boolean>>({
   barLyric: lyricsSettings.showBarLyric,
   resumeAfterMv: uiStore.resumeAfterMv,
   showIntelligenceIndicator: uiStore.showIntelligenceIndicator,
+  autoHidePlayerUI: uiStore.autoHidePlayerUI,
   paidContentSkip: playerStore.paidContentSkip,
 });
 
@@ -782,6 +784,13 @@ watch(
   () => switchState.showIntelligenceIndicator,
   (enabled) => {
     uiStore.setShowIntelligenceIndicator(Boolean(enabled));
+  },
+);
+
+watch(
+  () => switchState.autoHidePlayerUI,
+  (enabled) => {
+    uiStore.setAutoHidePlayerUI(Boolean(enabled));
   },
 );
 

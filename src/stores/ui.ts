@@ -14,6 +14,7 @@ const ACCENT_KEY = 'tm_accent_mode';
 const ACCENT_COLOR_KEY = 'tm_accent_custom_color';
 const RESUME_AFTER_MV_KEY = 'tm_resume_after_mv';
 const SHOW_INTEL_KEY = 'tm_show_intel_indicator';
+const AUTO_HIDE_UI_KEY = 'tm_auto_hide_player_ui';
 let mediaQuery: MediaQueryList | null = null;
 let mediaListener: ((e: MediaQueryListEvent) => void) | null = null;
 
@@ -79,6 +80,7 @@ export const uiStore = reactive({
   unblockSources: ['bodian', 'kugou', 'migu', 'qq', 'bilibili'],
   resumeAfterMv: true,
   showIntelligenceIndicator: true,
+  autoHidePlayerUI: true,
   showPlayQueue: false,
   searchKeyword: '',
   searchType: 1,
@@ -103,6 +105,8 @@ export const uiStore = reactive({
     this.resumeAfterMv = savedResume === null ? true : savedResume === '1';
     const savedIntel = localStorage.getItem(SHOW_INTEL_KEY);
     this.showIntelligenceIndicator = savedIntel === null ? true : savedIntel === '1';
+    const savedAutoHide = localStorage.getItem(AUTO_HIDE_UI_KEY);
+    this.autoHidePlayerUI = savedAutoHide === null ? true : savedAutoHide === '1';
 
     this.resolvedTheme = resolveTheme(this.themeMode);
     applyThemeToDom(this.resolvedTheme);
@@ -157,6 +161,10 @@ export const uiStore = reactive({
   setShowIntelligenceIndicator(enabled: boolean) {
     this.showIntelligenceIndicator = enabled;
     localStorage.setItem(SHOW_INTEL_KEY, enabled ? '1' : '0');
+  },
+  setAutoHidePlayerUI(enabled: boolean) {
+    this.autoHidePlayerUI = enabled;
+    localStorage.setItem(AUTO_HIDE_UI_KEY, enabled ? '1' : '0');
   },
   togglePlayQueue() {
     this.showPlayQueue = !this.showPlayQueue;
