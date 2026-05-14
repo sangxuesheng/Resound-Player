@@ -342,45 +342,35 @@
             variant="media"
             rhythm="body"
           >
-            <HorizontalScrollRail
-              aria-label="你的专属推荐"
-              content-class="albums-row"
-              content-layout="flex"
-            >
-              <div
-                v-for="(group, gi) in exclusiveRecoGroups"
-                :key="gi"
-                class="albums-column"
+            <div class="exclusive-recommend-grid">
+              <AnimatedAppear
+                v-for="item in exclusiveRecoPlaylists.slice(0, 18)"
+                :key="item.id"
+                tag="div"
+                variant="media"
+                rhythm="list"
+                class-name="albums-card-item"
               >
-                <AnimatedAppear
-                  v-for="item in group"
-                  :key="item.id"
-                  tag="div"
-                  variant="media"
-                  rhythm="list"
-                  class-name="albums-card-item"
+                <GradientCard
+                  tag="button"
+                  :cover="item.picUrl || ''"
+                  :name="item.name"
+                  hover-play-size="sm"
+                  @click="openRecoDetail(item.id)"
                 >
-                  <GradientCard
-                    tag="button"
-                    :cover="item.picUrl || ''"
-                    :name="item.name"
-                    hover-play-size="sm"
-                    @click="openRecoDetail(item.id)"
-                  >
-                    <template #subtitle>
-                      <button
-                        v-if="item.creator"
-                        type="button"
-                        class="artist-inline-btn"
-                        @click.stop="openUserDetailById(item.creator.userId)"
-                      >
-                        {{ item.creator.nickname || '创建者' }}
-                      </button>
-                    </template>
-                  </GradientCard>
-                </AnimatedAppear>
-              </div>
-            </HorizontalScrollRail>
+                  <template #subtitle>
+                    <button
+                      v-if="item.creator"
+                      type="button"
+                      class="artist-inline-btn"
+                      @click.stop="openUserDetailById(item.creator.userId)"
+                    >
+                      {{ item.creator.nickname || '创建者' }}
+                    </button>
+                  </template>
+                </GradientCard>
+              </AnimatedAppear>
+            </div>
           </AnimatedAppear>
         </template>
 
@@ -875,13 +865,7 @@ const albumGroups = computed(() => {
   return groups;
 });
 const exclusiveRecoPlaylists = computed(() => privateRadar.value);
-const exclusiveRecoGroups = computed(() => {
-  const groups: any[] = [];
-  for (let i = 0; i < exclusiveRecoPlaylists.value.length; i += 2) {
-    groups.push([exclusiveRecoPlaylists.value[i], exclusiveRecoPlaylists.value[i + 1]].filter(Boolean));
-  }
-  return groups;
-});
+
 const exclusiveRecoLoading = computed(() => privateRadarLoading.value);
 const exclusiveRecoError = computed(() => privateRadarError.value);
 
@@ -2006,13 +1990,22 @@ async function playLatestSong(index: number) {
   align-items: flex-start;
 }
 :deep(.albums-row) > * {
-  flex: 0 0 auto;
-  width: 220px;
+  flex: 1 1 0;
+  min-width: 160px;
 }
 .albums-column {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+.exclusive-recommend-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.exclusive-recommend-grid > * {
+  width: calc((100% - 5 * var(--space-3)) / 6);
+  min-width: 0;
 }
 .radar-playlist-desc {
   display: block;
@@ -2032,14 +2025,16 @@ async function playLatestSong(index: number) {
 .latest-band {
   display: flex;
   gap: var(--space-3);
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-width: 0;
   contain: content;
 }
 .latest-column {
   display: grid;
   gap: var(--space-2);
-  width: 300px;
-  flex: 0 0 300px;
+  flex: 1 1 0;
+  min-width: 240px;
+  max-width: 360px;
   contain: content;
 }
 .latest-row {

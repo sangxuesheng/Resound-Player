@@ -508,15 +508,15 @@ function openMenu() {
 
 ## 6. 动画规范
 
-项目已建立统一入场动画体系，所有新增页面/组件默认应接入 `AnimatedAppear`。
+项目已建立统一入场动画体系，**所有新增页面/组件必须接入** `AnimatedAppear`。不允许出现任何不带 `AnimatedAppear` 的顶层组件或区块。
 
-### 5.1 基础要求
+### 6.1 基础要求
 
 - 全局动画样式入口：`src/styles/animations.css`
 - 全局引入位置：`src/main.ts`
 - 统一动画包装组件：`src/components/AnimatedAppear.vue`
 
-### 5.2 设计约束
+### 6.2 设计约束
 
 - 只做首次出现动画，不做循环重播
 - 不改变原有布局流，不允许出现重叠错位
@@ -525,49 +525,135 @@ function openMenu() {
 - 列表项支持错峰延迟，通过 `:index` 实现
 - 必须兼容 `prefers-reduced-motion: reduce`
 
-### 5.3 语义映射
+### 6.3 语义映射（variant）
 
-- 容器/区块：`variant="content"`
-- 标题：`variant="title"`
-- 普通文本/列表行：`variant="text"`
-- 图片/封面/媒体卡片：`variant="media"`
-- 按钮/图标/可点击控件：`variant="control"`
-- 导航项：`variant="nav"`
-- 侧边栏容器：`variant="sidebar"`
-- 弹窗/浮层：`variant="modal"`
+| 场景 | variant | 动画类 |
+|---|---|---|
+| 容器/区块/卡片外层 | `content` | `an-enter-card` |
+| 标题 | `title` | `an-title-enter` |
+| 普通文本/列表行 | `text` | `an-enter-text` |
+| 图片/封面/媒体卡片 | `media` | `an-enter-media` |
+| 按钮/图标/可点击控件 | `control` | `an-enter-control` |
+| 弹窗/浮层 | `modal` | `an-enter-modal` |
+| 导航项 | `nav` | `an-enter-nav` |
+| 侧边栏容器 | `sidebar` | `an-sidebar-enter` |
 
-### 5.4 节奏槽位
+### 6.4 节奏槽位（rhythm）
 
-所有 `AnimatedAppear` 场景统一使用 `rhythm`：
+| 节奏 | 适用场景 |
+|---|---|
+| `shell` | 页面根容器 |
+| `head` | 头部工具区、功能栏 |
+| `title` | 标题 |
+| `body` | 主体内容、卡片内容区 |
+| `actions` | 操作按钮组 |
+| `list` | 列表循环项（必须配合 `:index`） |
+| `overlay` | 弹窗与浮层 |
 
-- `shell`
-- `head`
-- `title`
-- `body`
-- `actions`
-- `list`
-- `overlay`
+### 6.5 强制约束
 
-推荐映射：
+#### 6.5.1 新增组件强制接入
 
-- 页面根容器：`rhythm="shell"`
-- 头部工具区：`rhythm="head"`
-- 标题：`rhythm="title"`
-- 主体内容：`rhythm="body"`
-- 操作按钮组：`rhythm="actions"`
-- 列表循环项：`rhythm="list"` + `:index="idx"`
-- 弹窗与浮层：`rhythm="overlay"`
-
-### 5.5 强制约束
-
-- 新增组件必须使用 `AnimatedAppear`
+- **所有新增组件**（页面、区块、卡片、列表、面板、弹窗、侧栏）必须用 `AnimatedAppear` 包裹其根元素
 - 新增节点必须先选语义 `variant`，再写样式
 - 必须明确设置 `rhythm`
-- 列表项必须错峰
+- 列表项必须使用 `rhythm="list"` + `:index="idx"` 实现错峰
+
+#### 6.5.2 条件渲染（v-if / v-else）必须覆盖所有分支
+
+这是最常见的遗漏点。当组件存在 `v-if/v-else/v-else-if` 多分支时，**每个分支都必须被 `AnimatedAppear` 覆盖**：
+
+- ✅ 正确：`v-else` 的内容（如 `HorizontalScrollRail`、`<div class="grid">`）包裹 `AnimatedAppear`
+- ✅ 正确：loading/error 文本所在的容器也包裹 `AnimatedAppear`
+- ❌ 错误：只在 `v-if` 分支包裹动画，`v-else` 分支裸露
+
+```html
+<!-- ✅ 正确：v-else 分支也包裹 AnimatedAppear -->
+<AnimatedAppear v-else tag="div" variant="media" rhythm="body">
+  <HorizontalScrollRail ...>
+    ...
+  </HorizontalScrollRail>
+</AnimatedAppear>
+
+<!-- ❌ 错误：v-else 的 HorizontalScrollRail 直接裸露 -->
+<HorizontalScrollRail v-else ...>
+```
+
+#### 6.5.3 循环列表项必须错峰
+
+- 使用 `:index="idx"` 传递索引
+- 每个循环项独立包裹 `AnimatedAppear`
+- 避免在整个列表容器上只用一个 `AnimatedAppear`
+
+```html
+<!-- ✅ 正确 -->
+<AnimatedAppear
+  v-for="(item, idx) in items"
+  :key="item.id"
+  tag="li"
+  variant="text"
+  rhythm="list"
+  :index="idx"
+>
+  {{ item.name }}
+</AnimatedAppear>
+
+<!-- ❌ 错误 -->
+<ul class="music-list">
+  <li v-for="(item, idx) in items" :key="item.id">
+    {{ item.name }}
+  </li>
+</ul>
+```
+
+#### 6.5.4 嵌套组件注意点
+
+- 外层 `AnimatedAppear` 和内层 `AnimatedAppear` 的 `rhythm` 应逐层递增（shell → head → title → body → list）
 - 同一元素禁止叠加多重入场动画
-- 弹层必须使用 `overlay` 节奏
+- 禁止在组件内部自行引入 `animations.css` 中的 CSS 动画类替代 `AnimatedAppear`
+
+#### 6.5.5 弹窗与浮层
+
+- 必须使用 `variant="modal"` + `rhythm="overlay"`
+- 弹窗内容也需要包裹 `AnimatedAppear`（包括 loading/empty/error 态）
+
+#### 6.5.6 通用规则
+
 - 不得破坏 `prefers-reduced-motion`
 - 扩展动画令牌只允许集中维护在 `animations.css`
+- 禁止在组件中写私有 `@keyframes` 或 `transition` 替代入场动画
+
+### 6.6 各场景接入速查表
+
+| 场景 | 模板写法 |
+|---|---|
+| 页面根容器 | `<AnimatedAppear tag="div" variant="content" rhythm="shell" class-name="page-root">` |
+| 区块（section） | `<AnimatedAppear tag="section" variant="content" rhythm="head/body">` |
+| 卡片外层 | `<AnimatedAppear tag="section/article" variant="content" rhythm="body" class-name="card">` |
+| 卡片标题 | `<AnimatedAppear tag="h3" variant="title" rhythm="head">标题</AnimatedAppear>` |
+| 横向滚动列（v-else） | `<AnimatedAppear v-else tag="div" variant="media" rhythm="body"><HorizontalScrollRail .../></AnimatedAppear>` |
+| 网格卡片项 | `<AnimatedAppear v-for="..." tag="div" variant="media" rhythm="list" :index="idx">` |
+| 列表中每一行 | `<AnimatedAppear v-for="..." tag="li" variant="text" rhythm="list" :index="idx">` |
+| 列表行内图片 | `<AnimatedAppear tag="div" variant="media" rhythm="list" :index="idx" />` |
+| 列表行内操作按钮 | `<AnimatedAppear tag="div" variant="control" rhythm="actions" :index="idx">` |
+| 按钮组 | `<AnimatedAppear tag="div" variant="control" rhythm="actions">` |
+| loading/empty 文本 | 所在容器包裹 `AnimatedAppear`（若父容器已包裹则无需重复） |
+| 弹窗 | `<AnimatedAppear tag="div" variant="modal" rhythm="overlay">` |
+| 搜索热词列表 | `<AnimatedAppear tag="ol" variant="text" rhythm="body"><AnimatedAppear tag="li" variant="text" rhythm="list" :index="idx"></AnimatedAppear>` |
+
+### 6.7 Code Review 检查项
+
+新增或修改页面/组件时，必须逐项检查：
+
+- [ ] 所有 **顶层容器** 是否都包裹了 `AnimatedAppear`？
+- [ ] `v-if/v-else/v-else-if` 的 **每个分支** 是否都有动画覆盖？
+- [ ] 加载中（loading）、空数据（empty）、错误（error）等状态是否也有动画？
+- [ ] 列表/循环项是否使用了 `rhythm="list"` + `:index` 实现错峰？
+- [ ] 弹窗/浮层是否使用了 `variant="modal"` + `rhythm="overlay"`？
+- [ ] 是否使用了 CSS 动画类（如 `an-stagger-media`）替代 `AnimatedAppear`？（禁止）
+- [ ] `variant` 是否匹配元素的语义类型？
+- [ ] `rhythm` 是否遵循嵌套递进顺序？
+- [ ] 是否有多余的私有 `@keyframes` 或 `transition` 可删除？
 
 ## 7. 收藏按钮规范
 

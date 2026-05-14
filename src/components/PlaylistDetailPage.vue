@@ -81,7 +81,8 @@
         />
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="add-to-queue" @click="addAllToQueue">添加到播放列表</AnimatedAppear>
         <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="play-all" @click="playAll">播放全部</AnimatedAppear>
-        <AnimatedAppear v-if="trackEnriching" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表补全中…</AnimatedAppear>
+        <AnimatedAppear v-if="infiniteState.loading" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">歌曲列表加载中 {{ infiniteState.loaded }}/{{ infiniteState.total }}…</AnimatedAppear>
+        <AnimatedAppear v-else-if="infiniteState.hasMore" tag="span" variant="text" rhythm="actions" class-name="track-loading-tip">共 {{ infiniteState.total }} 首，滑动加载更多</AnimatedAppear>
       </template>
       <template #tabs>
         <DetailTabBar
@@ -131,6 +132,15 @@
           <SongActions :song="song" @play-next="playNext" @add-to-playlist="showAddToPlaylist" @open-comment="openComment" @open-album="openAlbum" @open-artist="openArtistDetail" @open-language="openLanguageDetail" @open-mv-player="(mv) => emit('open-mv-player', mv)" />
           </AnimatedAppear>
           </AnimatedAppear>
+          <!-- 无限滚动哨兵 -->
+          <div
+            v-if="infiniteState.hasMore"
+            ref="sentinelRef"
+            class="infinite-sentinel"
+          >
+            <span v-if="infiniteState.loading" class="infinite-loading">加载中…</span>
+            <span v-else class="infinite-tip">向下滑动加载更多</span>
+          </div>
         </template>
         <template v-else-if="activeTab === 'comments'">
           <div :key="`${tabContentKey}:comments`" class="playlist-comment-section">
@@ -226,7 +236,9 @@ const emit = defineEmits<{
 }>();
 
 const detailLoading = ref(false);
-const trackEnriching = ref(false);
+const infiniteState = ref({ loading: false, hasMore: false, loaded: 0, total: 0 });
+const sentinelRef = ref<HTMLElement | null>(null);
+let scrollObserver: IntersectionObserver | null = null;
 const error = ref('');
 const playlist = ref<any>(null);
 const isDescriptionExpanded = ref(false);
@@ -304,6 +316,8 @@ watch(
 onBeforeUnmount(() => {
   const el = document.querySelector('.content') as HTMLElement | null;
   el?.style.removeProperty('--cover-bg-url');
+  scrollObserver?.disconnect();
+  scrollObserver = null;
 });
 
 function resolvePlaylistCover(playlistLike: any) {
@@ -334,7 +348,6 @@ async function fetchDetail(id: number) {
       tracks: Array.isArray(injectedPlaylist.value.tracks) ? injectedPlaylist.value.tracks : [],
     };
     detailLoading.value = false;
-    trackEnriching.value = false;
     error.value = '';
     return;
   }
@@ -343,7 +356,6 @@ async function fetchDetail(id: number) {
 
   const currentToken = ++fetchToken;
   detailLoading.value = true;
-  trackEnriching.value = false;
   error.value = '';
 
   // 检查缓存：命中时先展示缓存数据，后台继续刷新
@@ -386,67 +398,97 @@ async function fetchDetail(id: number) {
 
     // 用 trackCount 兜底（雷达歌单不返回 trackIds 但返回 trackCount）
     const max = trackIds.length || trackCount;
-    if (max <= rawTracks.length) return;
-
-    trackEnriching.value = true;
-
-    try {
-      const CHUNK_SIZE = 30;
-      let offset = rawTracks.length;
-
-      while (offset < max) {
-        if (currentToken !== fetchToken) return;
-        const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: CHUNK_SIZE, offset });
-        if (currentToken !== fetchToken) return;
-
-        const newSongs = Array.isArray(chunkRes?.songs) ? chunkRes.songs : [];
-        if (!newSongs.length) break;
-
-        const existingIds = new Set(playlist.value.tracks.map((s: any) => Number(s.id)));
-        const uniqueNew = newSongs.filter((s: any) => !existingIds.has(Number(s.id)));
-        if (!uniqueNew.length) break;
-
-        playlist.value = {
-          ...playlist.value,
-          tracks: [...playlist.value.tracks, ...uniqueNew],
-        };
-        offset += uniqueNew.length;
-      }
-
-      // 用 song/detail 补足 trackIds 中仍未获取到的
-      const remaining = trackIds.length - playlist.value.tracks.length;
-      if (remaining > 0) {
-        const remainingIds = trackIds.slice(-remaining);
-        const BATCH_SIZE = 100;
-        for (let i = 0; i < remainingIds.length; i += BATCH_SIZE) {
-          if (currentToken !== fetchToken) return;
-          const batchIds = remainingIds.slice(i, i + BATCH_SIZE);
-          const { data: batchRes } = await getSongDetailBatch(batchIds);
-          if (currentToken !== fetchToken) return;
-          const batchSongs = Array.isArray(batchRes?.songs) ? batchRes.songs : [];
-          if (batchSongs.length) {
-            playlist.value = {
-              ...playlist.value,
-              tracks: [...playlist.value.tracks, ...batchSongs],
-            };
-          }
-        }
-      }
-    } catch {
-      // 补全失败时保留已显示的数据
-    } finally {
-      if (currentToken === fetchToken) {
-        trackEnriching.value = false;
-      }
+    if (max > rawTracks.length) {
+      infiniteState.value = {
+        loading: false,
+        hasMore: true,
+        loaded: rawTracks.length,
+        total: max,
+      };
     }
   } catch (e: any) {
     if (currentToken !== fetchToken) return;
     error.value = e?.message || '歌单详情加载失败';
     playlist.value = null;
     detailLoading.value = false;
-    trackEnriching.value = false;
   }
 }
+
+// 模块级会话缓存（内存 Map，不持久化到 localStorage）
+const sessionTrackCache = new Map<number, { tracks: any[]; total: number }>();
+
+async function loadMoreSongs(id: number) {
+  if (infiniteState.value.loading || !infiniteState.value.hasMore) return;
+  if (currentToken !== fetchToken) return;
+
+  const st = infiniteState.value;
+  infiniteState.value = { ...st, loading: true };
+
+  try {
+    const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: 30, offset: st.loaded });
+    if (currentToken !== fetchToken) return;
+
+    const newSongs = Array.isArray(chunkRes?.songs) ? chunkRes.songs : [];
+    if (!newSongs.length) {
+      infiniteState.value = { ...infiniteState.value, loading: false, hasMore: false };
+      return;
+    }
+
+    const existingIds = new Set(playlist.value.tracks.map((s: any) => Number(s.id)));
+    const uniqueNew = newSongs.filter((s: any) => !existingIds.has(Number(s.id)));
+    if (!uniqueNew.length) {
+      infiniteState.value = { ...infiniteState.value, loading: false, hasMore: false };
+      return;
+    }
+
+    playlist.value = {
+      ...playlist.value,
+      tracks: [...playlist.value.tracks, ...uniqueNew],
+    };
+
+    const newLoaded = st.loaded + uniqueNew.length;
+    infiniteState.value = {
+      loading: false,
+      hasMore: newLoaded < st.total,
+      loaded: newLoaded,
+      total: st.total,
+    };
+  } catch {
+    infiniteState.value = { ...infiniteState.value, loading: false };
+  }
+}
+
+function setupInfiniteScroll() {
+  scrollObserver?.disconnect();
+  scrollObserver = null;
+
+  // 等 DOM 更新后再挂载 observer
+  requestAnimationFrame(() => {
+    const sentinel = sentinelRef.value;
+    if (!sentinel) return;
+
+    scrollObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && infiniteState.value.hasMore && playlist.value?.id) {
+          loadMoreSongs(Number(playlist.value.id));
+        }
+      },
+      { rootMargin: '200px' },
+    );
+    scrollObserver.observe(sentinel);
+  });
+}
+
+// 当 infiniteState.hasMore 变为 true 时挂载哨兵（首次渲染也会触发）
+watch(
+  () => infiniteState.value.hasMore,
+  (hasMore) => {
+    if (hasMore) {
+      requestAnimationFrame(() => setupInfiniteScroll());
+    }
+  },
+  { immediate: true },
+);
 
 function normalizeRecommendSong(song: any) {
   return {

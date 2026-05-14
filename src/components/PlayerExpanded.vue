@@ -32,14 +32,28 @@
           :has-lyric="true"
         />
       </div>
-      <section class="expanded-panel">
-        <AnimatedAppear tag="header" variant="content" rhythm="head" class-name="panel-head">
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="showComments ? showComments = false : playerStore.closeExpanded()">返回</AnimatedAppear>
-          <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :data-tooltip="isFullscreen ? '退出全屏' : '全屏'" data-tooltip-dir="down" :title="isFullscreen ? '退出全屏' : '全屏'">
-            <svg v-if="isFullscreen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
-            <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+      <section
+        class="expanded-panel"
+        :style="{ cursor: uiRevealed ? 'auto' : 'none' }"
+        @mousemove="onActivity"
+        @click="onActivity"
+        @mouseleave="onLeave"
+      >
+          <AnimatedAppear
+            tag="header"
+            variant="content"
+            rhythm="head"
+            class-name="panel-head"
+            :class="{ 'ui-hidden': !uiRevealed }"
+            @mouseenter="freeze"
+            @mouseleave="unfreeze"
+          >
+            <AnimatedAppear tag="button" variant="control" rhythm="actions" class-name="ghost" @click="showComments ? showComments = false : playerStore.closeExpanded()">返回</AnimatedAppear>
+            <AnimatedAppear tag="button" variant="control" rhythm="actions" :index="1" class-name="ghost ra-icon" @click="toggleFullscreen" :data-tooltip="isFullscreen ? '退出全屏' : '全屏'" data-tooltip-dir="down" :title="isFullscreen ? '退出全屏' : '全屏'">
+              <svg v-if="isFullscreen" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+              <svg v-else width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2h-3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/></svg>
+            </AnimatedAppear>
           </AnimatedAppear>
-        </AnimatedAppear>
 
         <div class="panel-body" :class="{ 'comments-mode': showComments }" :style="panelBodyStyle">
           <div v-if="!lyricsSettings.showCover || lyricsSettings.displayMode === 'fullscreen'" class="cover-hidden-head">
@@ -153,7 +167,10 @@
           </div>
         </div>
 
-        <div class="right-actions" :style="{ opacity: showComments ? 0 : undefined, pointerEvents: showComments ? 'none' : undefined }">
+        <div
+          class="right-actions"
+          :class="{ 'ui-hidden': !uiRevealed }"
+        >
           <button ref="gearBtnRef" class="ra-btn" title="歌词设置" @click="onOpenSettings"><Settings :size="22" /></button>
           <button class="ra-btn" title="歌词延迟0.5秒" @click="playerStore.adjustLyricsOffset(-0.5)"><Minus :size="22" /></button>
           <button class="ra-btn ra-btn--rect" title="点击打开精细调整" @click="showOffsetPanel = !showOffsetPanel">{{ formatOffset(playerStore.lyricsOffset) }}</button>
@@ -201,7 +218,7 @@
           </transition>
         </Teleport>
 
-        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console">
+        <AnimatedAppear v-if="lyricsSettings.showMiniBar" tag="div" variant="content" rhythm="overlay" class-name="bottom-console" :class="{ 'ui-hidden': !uiRevealed }" @mouseenter="freeze" @mouseleave="unfreeze">
           <div class="cc-left">
             <button class="con-btn" @click="playerStore.closeExpanded()" data-tooltip="关闭播放页" aria-label="关闭播放页"><ChevronDown :size="18" /></button>
             <button class="con-btn con-fav" :class="{ saved: isCurrentLiked }" type="button" :data-tooltip="isCurrentLiked ? '取消收藏' : '收藏'" :aria-label="isCurrentLiked ? '取消收藏' : '收藏'" :disabled="likeLoading || !canToggleCurrentLike" @click="toggleCurrentLike"><Heart :size="14" /></button>
@@ -286,6 +303,7 @@ import { openSelection } from '../stores/lyricsSelection';
 import FancySwitch from './ui/FancySwitch.vue';
 import EqPanel from './EqPanel.vue';
 import { useBgLoaded } from '../composables/useBgLoaded';
+import { useAutoHideUI } from '../composables/useAutoHideUI';
 
 const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number]; 'open-user': [userId: number]; 'open-podcast-detail': [item: any] }>();
 
@@ -297,6 +315,7 @@ function openAlbum(albumId: number | undefined | null) {
 }
 const coverStyle = computed(() => { const url = playerStore.currentTrack?.al?.picUrl; return url ? { backgroundImage: `url(${url})` } : {}; });
 const coverLoaded = useBgLoaded(() => playerStore.currentTrack?.al?.picUrl || '');
+const { uiRevealed, onActivity, onLeave, freeze, unfreeze } = useAutoHideUI({ idleTimeout: 3000 });
 function openUser(userId: number) { if (userId > 0) emit('open-user', userId); }
 function openPodcastDetail() {
   const rid = currentPodcastRid.value;
@@ -984,6 +1003,17 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
     0 4px 16px rgba(0,0,0,0.5);
   position: relative;
   z-index: 1;
+}
+
+/* UI 自动显隐：隐藏时仅透明，保留布局占位 */
+.panel-head,
+.right-actions,
+.bottom-console {
+  transition: opacity 0.4s ease-in-out;
+}
+.ui-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 </style>
 <style>
