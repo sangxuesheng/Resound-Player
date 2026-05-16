@@ -173,8 +173,25 @@
       >
         <AnimatedAppear tag="h3" variant="title" rhythm="title" class-name="group-title">关于 Resound-Player</AnimatedAppear>
         <div class="about-project">
-          <p class="about-project-name">Resound-Player v0.1.0</p>
-          <p class="about-project-desc">基于 Vue 3 + Vite + Electron 构建的桌面音乐播放器，融合网易云音乐生态与多端播放体验。</p>
+          <div class="about-project-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="64" height="64">
+              <defs>
+                <linearGradient id="logoGradAbout" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                  <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="200" height="200" rx="44" fill="#121317" />
+              <path d="M55,100 A45,45 0 0,1 145,100" fill="none" stroke="url(#logoGradAbout)" stroke-width="16" stroke-linecap="round" />
+              <rect x="40" y="100" width="30" height="45" rx="12" fill="url(#logoGradAbout)" />
+              <rect x="130" y="100" width="30" height="45" rx="12" fill="url(#logoGradAbout)" />
+              <circle cx="145" cy="122.5" r="5" fill="#121317" opacity="0.8" />
+            </svg>
+          </div>
+          <div class="about-project-text">
+            <p class="about-project-name">Resound-Player v0.1.0</p>
+            <p class="about-project-desc">基于 Vue 3 + Vite + Electron 构建的桌面音乐播放器，融合网易云音乐生态与多端播放体验。</p>
+          </div>
         </div>
         <div class="about-actions">
           <button class="about-update-btn" type="button" @click="checkUpdate" :disabled="checkingUpdate">
@@ -1300,7 +1317,29 @@ async function handleAction(key: string) {
 /* --- About / 开源致谢 --- */
 
 .about-project {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
   padding: var(--space-2) 0;
+}
+
+.about-project-logo {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.about-project-logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.about-project-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .about-project-name {

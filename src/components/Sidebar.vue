@@ -7,10 +7,23 @@
   >
     <AnimatedAppear tag="div" variant="sidebar" rhythm="shell" class-name="sidebar-shell">
       <AnimatedAppear tag="div" variant="content" rhythm="head" class-name="profile" :class="{ compact: isCollapsed }">
-        <AnimatedAppear tag="div" variant="control" rhythm="actions" class-name="avatar">TW</AnimatedAppear>
+        <AnimatedAppear tag="div" variant="control" rhythm="actions" class-name="avatar" @click="toggleCollapsed">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="48" height="48">
+            <defs>
+              <linearGradient id="logoGradSidebar" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="200" height="200" rx="44" fill="#121317" />
+            <path d="M55,100 A45,45 0 0,1 145,100" fill="none" stroke="url(#logoGradSidebar)" stroke-width="16" stroke-linecap="round" />
+            <rect x="40" y="100" width="30" height="45" rx="12" fill="url(#logoGradSidebar)" />
+            <rect x="130" y="100" width="30" height="45" rx="12" fill="url(#logoGradSidebar)" />
+            <circle cx="145" cy="122.5" r="5" fill="#121317" opacity="0.8" />
+          </svg>
+        </AnimatedAppear>
         <div class="user" :class="{ collapsedText: isCollapsed }">
-          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">Resound-Player 用户</AnimatedAppear>
-          <AnimatedAppear tag="div" variant="text" rhythm="body" :index="1" class-name="sub">在线</AnimatedAppear>
+          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">Resound-Player</AnimatedAppear>
         </div>
       </AnimatedAppear>
 
@@ -130,6 +143,7 @@ const items = [
   will-change: width;
   transition: width 0.28s cubic-bezier(0.34, 1, 0.64, 1);
   z-index: 10;
+  border: none !important;
 }
 
 .sidebar-shell {
@@ -156,11 +170,12 @@ const items = [
   border-radius: 14px;
   transition: padding 0.26s ease, gap 0.26s ease;
   flex-shrink: 0;
+  border: none !important;
 }
 
 .profile.compact {
   justify-content: center;
-  padding: var(--space-2);
+  padding: 0;
   gap: 0;
 }
 
@@ -189,15 +204,14 @@ const items = [
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 92%, #fff), color-mix(in srgb, var(--accent) 74%, #000));
-  color: #fff;
   display: grid;
   place-items: center;
-  font-weight: 700;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .user .name {

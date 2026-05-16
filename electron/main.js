@@ -194,6 +194,8 @@ async function createMainWindow(ports) {
 
   const isMac = process.platform === 'darwin';
 
+  const iconPath = path.join(__dirname, '..', 'build', isMac ? 'icon.png' : 'icon.png');
+
   win = new BrowserWindow({
     width: 1280,
     height: 820,
@@ -201,6 +203,7 @@ async function createMainWindow(ports) {
     minHeight: 700,
     show: false,
     backgroundColor: '#1a1a2e',
+    icon: iconPath,
     // macOS: titleBarStyle hidden → 红绿灯 hover 显示、无原生标题栏边条
     // 其他平台：frame: false → 无边框，依赖自定义控件
     ...(isMac
@@ -271,6 +274,7 @@ async function createErrorWindow(errorMessage) {
     width: 600,
     height: 500,
     resizable: false,
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     webPreferences: { nodeIntegration: false, contextIsolation: true },
   });
 

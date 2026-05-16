@@ -2,7 +2,20 @@
   <AnimatedAppear tag="footer" variant="content" rhythm="overlay" class-name="bar">
     <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="left">
       <AnimatedAppear tag="div" variant="media" rhythm="list" class-name="cover-wrap">
-        <button class="cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle" @click="playerStore.openExpanded()" />
+        <button class="cover" :class="{ 'fade-in-bg': !!playerStore.currentTrack, 'bg-loaded': coverLoaded }" :style="coverStyle" @click="playerStore.openExpanded()">
+          <svg class="cover-logo" xmlns="http://www.w3.org/2000/svg" viewBox="30 30 140 140" width="100%" height="100%">
+            <defs>
+              <linearGradient id="logoGradBar" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+              </linearGradient>
+            </defs>
+            <path d="M55,100 A45,45 0 0,1 145,100" fill="none" stroke="url(#logoGradBar)" stroke-width="16" stroke-linecap="round" />
+            <rect x="40" y="100" width="30" height="45" rx="12" fill="url(#logoGradBar)" />
+            <rect x="130" y="100" width="30" height="45" rx="12" fill="url(#logoGradBar)" />
+            <circle cx="145" cy="122.5" r="5" fill="currentColor" opacity="0.3" />
+          </svg>
+        </button>
         <button class="cover-fullscreen-btn" title="全屏" @click="playerStore.openExpanded()"><svg width="24" height="24" viewBox="0 0 1024 1024" fill="currentColor" transform="scale(-1,1)"><path d="M256 170.666667a128 128 0 0 0-128 128v213.333333a42.666667 42.666667 0 1 0 85.333333 0V298.666667a42.666667 42.666667 0 0 1 42.666667-42.666667h213.333333a42.666667 42.666667 0 1 0 0-85.333333H256z m512 682.666666a128 128 0 0 0 128-128v-170.666666a42.666667 42.666667 0 1 0-85.333333 0v170.666666a42.666667 42.666667 0 0 1-42.666667 42.666667h-192a42.666667 42.666667 0 1 0 0 85.333333H768z"/></svg></button>
       </AnimatedAppear>
       <div class="meta">
@@ -516,8 +529,19 @@ function formatTime(sec: number) {
 .left { display: flex; align-items: center; gap: var(--space-2); min-width: 0; overflow: hidden; }
 .cover-wrap { position: relative; flex-shrink: 0; display: inline-flex; border-radius: 12px; overflow: hidden; }
 .cover-wrap:hover .cover-fullscreen-btn { opacity: 1; pointer-events: auto; }
-.cover { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: #e5e7eb center/cover no-repeat; cursor: pointer; transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease; }
+.cover {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #e5e7eb center/cover no-repeat;
+  cursor: pointer;
+  position: relative;
+  transition: box-shadow 0.18s ease, transform 0.18s ease, border-color 0.18s ease;
+}
 .cover:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--accent) 36%, var(--border)); }
+.cover-logo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.cover.bg-loaded .cover-logo { display: none; }
 .cover-fullscreen-btn {
   position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 12px;
   border: none; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer;

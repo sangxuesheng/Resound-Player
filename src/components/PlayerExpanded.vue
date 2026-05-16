@@ -75,6 +75,18 @@
                   <Transition name="cover-switch" mode="out-in" appear>
                     <div :key="trackId" class="album-shell" :class="{ playing: playerStore.isPlaying }">
                       <div class="album-cover fade-in-bg" :class="{ 'bg-loaded': coverLoaded }" :style="coverStyle"></div>
+                      <svg class="album-cover-logo" xmlns="http://www.w3.org/2000/svg" viewBox="30 30 140 140" width="100%" height="100%">
+                        <defs>
+                          <linearGradient id="logoGradExp" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M55,100 A45,45 0 0,1 145,100" fill="none" stroke="url(#logoGradExp)" stroke-width="16" stroke-linecap="round" />
+                        <rect x="40" y="100" width="30" height="45" rx="12" fill="url(#logoGradExp)" />
+                        <rect x="130" y="100" width="30" height="45" rx="12" fill="url(#logoGradExp)" />
+                        <circle cx="145" cy="122.5" r="5" fill="currentColor" opacity="0.3" />
+                      </svg>
                     </div>
                   </Transition>
                 </template>
@@ -655,9 +667,11 @@ function formatOffset(v: number) { if (v === 0) return '0s'; const sign = v > 0 
 .panel-body { min-height: 0; overflow: hidden; display: grid; grid-template-columns: 40% 60%; gap: 24px; align-items: start; }
 .left-zone { width: 100%; box-sizing: border-box; align-self: center; display: grid; justify-items: center; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) var(--space-4); }
 .left-zone.l-only-cover { padding: var(--space-2) 0 var(--space-2) var(--space-4); }
-.album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.album-shell { width: 480px; height: 480px; border-radius: 24px; padding: 0; background: transparent; border: none; box-shadow: none; transform: scale(0.92); transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; }
 .album-shell.playing { transform: scale(1); }
 .album-cover { width: 100%; height: 100%; border-radius: 18px; background: #d9dee8 center/cover no-repeat; }
+.album-cover-logo { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: 18px; }
+.album-cover.bg-loaded ~ .album-cover-logo { display: none; }
 .song-name { width: 480px; margin: var(--space-2) 0 0; color: #ffffff !important; font-size: var(--text-headline-lg); font-weight: 700; text-align: center;  }
 .song-artist { width: 480px; margin: 0; color: rgba(255,255,255,0.82); text-align: center;  }
 .progress-wrap { width: 300px; display: grid; gap: var(--space-1); position: relative; }

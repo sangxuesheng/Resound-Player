@@ -109,8 +109,7 @@
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "unicode": true,
-      "compressor": "lzma"
+      "unicode": true
     },
     "mac": {
       "icon": "build/icon.icns",
