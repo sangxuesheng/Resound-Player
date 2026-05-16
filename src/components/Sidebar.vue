@@ -23,7 +23,7 @@
           </svg>
         </AnimatedAppear>
         <div class="user" :class="{ collapsedText: isCollapsed }">
-          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">Resound-Player</AnimatedAppear>
+          <AnimatedAppear tag="div" variant="text" rhythm="body" class-name="name">Resound</AnimatedAppear>
         </div>
       </AnimatedAppear>
 
@@ -166,7 +166,7 @@ const items = [
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border-radius: 14px;
   transition: padding 0.26s ease, gap 0.26s ease;
   flex-shrink: 0;
@@ -215,7 +215,7 @@ const items = [
 }
 
 .user .name {
-  font-size: var(--text-label-md);
+  font-size: 26px;
   font-weight: 600;
   color: var(--text-main);
 }

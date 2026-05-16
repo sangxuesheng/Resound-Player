@@ -133,6 +133,13 @@
       </div>
     </div>
   </AnimatedAppear>
+
+  <Teleport to="body">
+    <HeartbeatActivateEffect
+      :visible="showHeartbeatEffect"
+      @done="showHeartbeatEffect = false"
+    />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -146,6 +153,7 @@ import { userStore } from '../stores/user';
 import { playerStore } from '../stores/player';
 import { useAuthAction } from '../composables/useAuthAction';
 import { showGlobalToast } from '../stores/loginModal';
+import HeartbeatActivateEffect from './effects/HeartbeatActivateEffect.vue';
 
 const RECENT_KEY = 'tm_search_history';
 const emit = defineEmits<{
@@ -200,7 +208,7 @@ const { checkAuth } = useAuthAction(
   'playlist',
 );
 
-const isFirstIntelligenceSuccess = ref(true);
+const showHeartbeatEffect = ref(false);
 
 async function handleIntelligencePlay() {
   if (playerStore.currentIntelligenceLoading) return;
@@ -210,6 +218,7 @@ async function handleIntelligencePlay() {
     playerStore.isIntelligenceActive = false;
     playerStore.clearPlaylist();
     showGlobalToast('已退出心动模式', 'success');
+    showHeartbeatEffect.value = true;
     return;
   }
 
@@ -228,10 +237,8 @@ async function handleIntelligencePlay() {
     showGlobalToast(err, 'warning');
   } else {
     playerStore.isIntelligenceActive = true;
-    if (isFirstIntelligenceSuccess.value) {
-      isFirstIntelligenceSuccess.value = false;
-      showGlobalToast('已开启心动模式', 'success');
-    }
+    showGlobalToast('已开启心动模式', 'success');
+    showHeartbeatEffect.value = true;
   }
 }
 
@@ -240,6 +247,7 @@ watch(() => playerStore.currentPlaylistId, () => {
   if (playerStore.isIntelligenceActive) {
     playerStore.isIntelligenceActive = false;
     showGlobalToast('已退出心动模式', 'success');
+    showHeartbeatEffect.value = true;
   }
 });
 

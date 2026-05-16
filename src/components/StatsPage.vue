@@ -603,7 +603,6 @@ function onDocClick(e: MouseEvent) {
 .stats-page {
   display: grid;
   gap: var(--space-6);
-  max-width: 1080px;
 }
 
 /* ── Header ── */
