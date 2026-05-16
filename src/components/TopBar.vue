@@ -119,12 +119,13 @@
           </div>
         </transition>
       </div>
-      <div class="win-controls">
+      <div v-if="platform.isDesktop" class="win-controls">
         <button class="win-btn" type="button" title="最小化" @click="minimizeWindow">
           <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="5.5" width="10" height="1" fill="currentColor"/></svg>
         </button>
-        <button class="win-btn" type="button" title="最大化" @click="maximizeWindow">
-          <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+        <button class="win-btn" type="button" :title="isMaximized ? '还原' : '最大化'" @click="maximizeWindow">
+          <svg v-if="isMaximized" width="12" height="12" viewBox="0 0 12 12"><rect x="2" y="0.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1"/><rect x="0.5" y="2" width="9" height="9" rx="1" fill="var(--bg-surface)" stroke="currentColor" stroke-width="1"/></svg>
+          <svg v-else width="12" height="12" viewBox="0 0 12 12"><rect x="1.5" y="1.5" width="9" height="9" rx="1" fill="none" stroke="currentColor" stroke-width="1"/></svg>
         </button>
         <button class="win-btn win-btn--close" type="button" title="关闭" @click="closeWindow">
           <svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
@@ -138,6 +139,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Sparkles, Search } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
+import { platform } from '../utils/platform';
 
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
@@ -467,9 +469,27 @@ function forceReload() {
   window.location.reload();
 }
 
-function minimizeWindow() { document.title = 'cmd:minimize'; }
-function maximizeWindow() { document.title = 'cmd:maximize'; }
+// ── 窗口控制 ──
+const isMaximized = ref(false);
+
+function minimizeWindow() { document.title = 'cmd:minimize:' + Date.now(); }
+function maximizeWindow() {
+  document.title = (isMaximized.value ? 'cmd:restore:' : 'cmd:maximize:') + Date.now();
+}
 function closeWindow() { window.close(); }
+
+// 监听最大化状态变更（通过 preload 设置的 data-win-maximized + MutationObserver）
+onMounted(() => {
+  isMaximized.value = 'winMaximized' in document.documentElement.dataset;
+  const observer = new MutationObserver(() => {
+    isMaximized.value = 'winMaximized' in document.documentElement.dataset;
+  });
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-win-maximized'],
+  });
+  onBeforeUnmount(() => observer.disconnect());
+});
 
 function onDocClick(e: MouseEvent) {
   const target = e.target as Node;
@@ -934,6 +954,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 2px;
   margin-left: 6px;
+  -webkit-app-region: no-drag;
 }
 .win-btn {
   width: 36px;

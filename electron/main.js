@@ -192,13 +192,21 @@ async function createMainWindow(ports) {
     `--service-ports=${JSON.stringify(ports)}`,
   ];
 
+  const isMac = process.platform === 'darwin';
+
   win = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 1100,
     minHeight: 700,
     show: false,
-    backgroundColor: '#111827',
+    backgroundColor: '#1a1a2e',
+    // macOS: titleBarStyle hidden → 红绿灯 hover 显示、无原生标题栏边条
+    // 其他平台：frame: false → 无边框，依赖自定义控件
+    ...(isMac
+      ? { titleBarStyle: 'customButtonsOnHover' }
+      : { frame: false }
+    ),
     webPreferences: {
       preload: preloadPath,
       contextIsolation: true,
@@ -213,23 +221,34 @@ async function createMainWindow(ports) {
     win.show();
   });
 
-  // 窗口控制：先在 loadURL 前注册 page-title-updated 事件监听
-  // 确保从页面加载初期就能捕获 document.title 变更
+  // 向渲染进程广播窗口最大化状态变更（供右上角自定义按钮切换图标）
+  win.on('maximize', () => {
+    win.webContents.send('win-state-change', true);
+  });
+  win.on('unmaximize', () => {
+    win.webContents.send('win-state-change', false);
+  });
+
+  // 窗口控制：通过 page-title-updated 事件监听 document.title 变更
+  // 必须在 loadURL 之前注册，确保从页面加载初期就能捕获标题变更
   let _originalTitle = '';
   win.webContents.on('page-title-updated', (event, title) => {
-    if (title === 'cmd:minimize' || title === 'cmd:maximize') {
+    if (title.startsWith('cmd:')) {
       event.preventDefault();
-      if (title === 'cmd:minimize') {
+      const cmd = title.split(':')[1];
+      if (cmd === 'minimize') {
         win.minimize();
-      } else if (win.isMaximized()) {
+      } else if (cmd === 'restore') {
         win.unmaximize();
-      } else {
+      } else if (cmd === 'maximize') {
+        // frameless 窗口二次最大化修复：先重置 maximizable 再调用 maximize
+        win.setMaximizable(true);
         win.maximize();
       }
-      // 延迟恢复原标题，确保 macOS 窗口动画完成后再重置
+      // 延迟恢复原标题，确保 macOS 窗口动画（~350ms）完成后再重置
       setTimeout(() => {
         if (!win.isDestroyed()) win.setTitle(_originalTitle || 'Resound-Player');
-      }, 80);
+      }, 500);
     } else {
       _originalTitle = title;
     }
@@ -354,12 +373,12 @@ app.on('before-quit', () => {
 });
 
 // ── 窗口控制 IPC ──
-ipcMain.on('window-minimize', (event) => {
+ipcMain.handle('window-minimize', (event) => {
   const bw = BrowserWindow.fromWebContents(event.sender);
   bw?.minimize();
 });
 
-ipcMain.on('window-maximize', (event) => {
+ipcMain.handle('window-maximize', (event) => {
   const bw = BrowserWindow.fromWebContents(event.sender);
   if (bw?.isMaximized()) {
     bw.unmaximize();
@@ -373,7 +392,7 @@ ipcMain.handle('window-is-maximized', (event) => {
   return bw?.isMaximized() ?? false;
 });
 
-ipcMain.on('window-close', (event) => {
+ipcMain.handle('window-close', (event) => {
   const bw = BrowserWindow.fromWebContents(event.sender);
   bw?.close();
 });
@@ -390,7 +409,7 @@ ipcMain.handle('cache:get', () => {
   }
 });
 
-ipcMain.handle('cache:set', (_event, data: string) => {
+ipcMain.handle('cache:set', (_event, data) => {
   try {
     const dir = path.dirname(CACHE_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });

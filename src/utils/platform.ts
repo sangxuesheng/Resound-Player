@@ -10,14 +10,18 @@ export const platform = {
    * 是否运行在 Electron 桌面端
    */
   get isDesktop(): boolean {
-    return typeof window !== 'undefined' && !!(window as any).appEnv?.isDesktop
+    if (typeof window === 'undefined') return false
+    // 优先通过 preload contextBridge 检测
+    if (!!(window as any).appEnv?.isDesktop) return true
+    // 兜底：User-Agent 检测（不受 contextBridge 影响）
+    return typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')
   },
 
   /**
    * 是否运行在 Web 浏览器
    */
   get isWeb(): boolean {
-    return typeof window !== 'undefined' && !(window as any).appEnv?.isDesktop
+    return !this.isDesktop
   },
 
   /**

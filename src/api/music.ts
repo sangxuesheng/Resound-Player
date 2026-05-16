@@ -944,3 +944,54 @@ export async function setPersonalFmMode(params: {
   }
   return apiClient.get('/personal/fm/mode', { params: queryParams });
 }
+
+/* ── Listening Data APIs ── */
+
+/** 总收听时长（秒） */
+export async function getListenTotal(cookie?: string) {
+  const params: Record<string, any> = { timestamp: Date.now() };
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/listen/data/total', { params });
+  return data as { code: number; data: { totalDuration: number }; message: string };
+}
+
+/** 今日收听 */
+export async function getListenTodaySong(cookie?: string) {
+  const params: Record<string, any> = { timestamp: Date.now() };
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/listen/data/today/song', { params });
+  return data;
+}
+
+/** 实时收听报告（本周/本月）type: week | month */
+export async function getListenRealtimeReport(type: 'week' | 'month', cookie?: string) {
+  const params: Record<string, any> = { type, timestamp: Date.now() };
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/listen/data/realtime/report', { params });
+  return data;
+}
+
+/** 收听报告（周/月/年）type: week | month | year, endTime?: number */
+export async function getListenReport(type: 'week' | 'month' | 'year', endTime?: number, cookie?: string) {
+  const params: Record<string, any> = { type, timestamp: Date.now() };
+  if (endTime) params.endTime = endTime;
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/listen/data/report', { params });
+  return data;
+}
+
+/** 年度听歌足迹 */
+export async function getListenYearReport(cookie?: string) {
+  const params: Record<string, any> = { timestamp: Date.now() };
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/listen/data/year/report', { params });
+  return data as { code: number; data: { displayYear: number; yearItems: { year: number; playNum: number; playDuration: number }[] }; message: string };
+}
+
+/** 用户播放记录 type=0 allData, type=1 weekData */
+export async function getUserRecord(uid: number, type: 0 | 1 = 0, cookie?: string) {
+  const params: Record<string, any> = { uid, type, timestamp: Date.now() };
+  if (cookie) params.cookie = cookie;
+  const { data } = await apiClient.get('/user/record', { params });
+  return data;
+}

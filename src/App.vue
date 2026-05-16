@@ -121,6 +121,7 @@
             @open-playlist-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, 'history')"
             @open-album-detail="(albumId) => openAlbumDetail(albumId, 'history')"
           />
+          <StatsPage v-else-if="activePage === 'stats'" @open-artist="openArtistFromDetail" />
           <PodcastListPage
             v-else-if="activePage === 'podcast-list'"
             :items="podcastItems"
@@ -203,6 +204,7 @@ import PodcastDetailPage from './components/PodcastDetailPage.vue';
 import PodcastSubscribedPage from './components/PodcastSubscribedPage.vue';
 import UserPanel from './components/UserPanel.vue';
 import HistoryPanel from './components/HistoryPanel.vue';
+import StatsPage from './components/StatsPage.vue';
 import Sidebar from './components/Sidebar.vue';
 import TopBar from './components/TopBar.vue';
 import { waitForApiReady } from './api/client';
@@ -288,7 +290,7 @@ const contentStyle = computed<Record<string, string>>(() => (isHeroStickyPage.va
 // 核心页面缓存，切换时不销毁重建；详情页每次进入重新加载
 const keepAlivePages = new Set([
   'home', 'search', 'playlist', 'rank', 'user',
-  'history', 'settings', 'mv', 'podcast-list',
+  'history', 'settings', 'mv', 'podcast-list', 'stats',
 ]);
 // KeepAlive include 匹配组件名需与文件名（PascalCase）一致
 const keepAliveNames = computed(() =>
@@ -1106,7 +1108,8 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-rows: var(--topbar-height) minmax(0, 1fr);
   min-width: 0;
-  transition: left 0.26s ease, width 0.26s ease;
+  will-change: left;
+  transition: left 0.28s cubic-bezier(0.34, 1, 0.64, 1), width 0.28s cubic-bezier(0.34, 1, 0.64, 1);
 }
 
 .content {

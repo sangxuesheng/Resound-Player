@@ -23,7 +23,25 @@ contextBridge.exposeInMainWorld('appEnv', {
   nodeVersion: process.versions.node,
   cacheApi: {
     getItem: () => ipcRenderer.invoke('cache:get'),
-    setItem: (data: string) => ipcRenderer.invoke('cache:set', data),
+    setItem: (data) => ipcRenderer.invoke('cache:set', data),
     clear: () => ipcRenderer.invoke('cache:clear'),
   },
+});
+
+// ── 窗口控制：通过主进程 page-title-updated 事件实现 ──
+// 最小化/最大化通过 document.title 触发 page-title-updated 事件
+// 关闭使用原生 window.close()（Electron 会将其转为 BrowserWindow.close()）
+
+// 主进程广播最大化状态 → data-win-maximized 渲染进程通过 MutationObserver 获取
+ipcRenderer.on('win-state-change', (_event, maximized) => {
+  if (maximized) {
+    document.documentElement.dataset.winMaximized = '';
+  } else {
+    delete document.documentElement.dataset.winMaximized;
+  }
+});
+
+// 标记桌面端，供 CSS 选择器控制平台专属 UI 显隐
+document.addEventListener('DOMContentLoaded', () => {
+  document.documentElement.classList.add('resound-desktop');
 });
