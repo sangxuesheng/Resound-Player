@@ -221,7 +221,6 @@
         <span v-else-if="topArtistsLoading" class="rail-placeholder">热门歌手加载中…</span>
         <span v-else-if="topArtistsError" class="rail-placeholder">{{ topArtistsError }}</span>
       </HorizontalScrollRail>
-      <p v-if="topArtistsLoading && topArtists.length" class="custom-tip artists-loading">加载更多歌手中…</p>
     </AnimatedAppear>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="home-grid">

@@ -442,7 +442,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { getPlaylistDetail, searchMusic, searchMusicDefault, searchMusicHotDetail } from '../api/music';
+import { getPlaylistDetail, getSongDetailBatch, searchMusic, searchMusicDefault, searchMusicHotDetail } from '../api/music';
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { normalizeImageUrl, resolveArtistImageUrl } from '../utils/image';
@@ -453,7 +453,7 @@ import PlayPauseButton from './ui/PlayPauseButton.vue';
 
 defineProps<{ disabled?: boolean }>();
 
-type HotSearchItem = { keyword: string; hot?: string | number };
+type HotSearchItem = { keyword: string; hot?: string | number; id?: number };
 type BoardKey = 'hot' | 'rock' | 'folk' | 'ancient' | 'acg' | 'rap';
 
 type BoardMeta = {
@@ -788,8 +788,38 @@ function normalizePlaylistBoard(raw: any): HotSearchItem[] {
     .map((item: any) => ({
       keyword: item.name || item.keyword || '',
       hot: item.pop ?? item.popularity ?? item.score ?? item.playCount,
+      id: item.id,
     }))
     .filter((item: HotSearchItem) => Boolean(item.keyword));
+}
+
+/** 从 playlist 响应中提取 track ids，去重后批量获取真实播放量 */
+async function enrichBoardWithPlayCounts(items: HotSearchItem[]): Promise<HotSearchItem[]> {
+  if (!items.length) return items;
+  const ids = items
+    .map((item) => item.id)
+    .filter((id): id is number => typeof id === 'number' && id > 0);
+  if (!ids.length) return items;
+
+  try {
+    const res = await getSongDetailBatch(ids);
+    const songs: Array<{ id: number; playCount?: number }> =
+      res?.data?.songs || [];
+    const playCountMap = new Map(
+      songs.map((s) => [s.id, s.playCount]),
+    );
+    return items.map((item) => {
+      if (item.id && playCountMap.has(item.id)) {
+        const pc = playCountMap.get(item.id);
+        if (typeof pc === 'number' && pc > 0) {
+          return { ...item, hot: pc };
+        }
+      }
+      return item;
+    });
+  } catch {
+    return items;
+  }
 }
 
 async function loadDefaults() {
@@ -805,21 +835,29 @@ async function loadDefaults() {
   if (hotRes.status === 'fulfilled') {
     hotList.value = normalizeHotList(hotRes.value);
   }
+  // 并行获取分类榜单的真实播放量
+  const boardPromises: Promise<HotSearchItem[]>[] = [];
   if (rockRes.status === 'fulfilled') {
-    rockList.value = normalizePlaylistBoard(rockRes.value.data);
+    boardPromises.push(enrichBoardWithPlayCounts(normalizePlaylistBoard(rockRes.value.data)));
   }
   if (folkRes.status === 'fulfilled') {
-    folkList.value = normalizePlaylistBoard(folkRes.value.data);
+    boardPromises.push(enrichBoardWithPlayCounts(normalizePlaylistBoard(folkRes.value.data)));
   }
   if (ancientRes.status === 'fulfilled') {
-    ancientList.value = normalizePlaylistBoard(ancientRes.value.data);
+    boardPromises.push(enrichBoardWithPlayCounts(normalizePlaylistBoard(ancientRes.value.data)));
   }
   if (acgRes.status === 'fulfilled') {
-    acgList.value = normalizePlaylistBoard(acgRes.value.data);
+    boardPromises.push(enrichBoardWithPlayCounts(normalizePlaylistBoard(acgRes.value.data)));
   }
   if (rapRes.status === 'fulfilled') {
-    rapList.value = normalizePlaylistBoard(rapRes.value.data);
+    boardPromises.push(enrichBoardWithPlayCounts(normalizePlaylistBoard(rapRes.value.data)));
   }
+  const enriched = await Promise.all(boardPromises);
+  if (enriched.length > 0) rockList.value = enriched[0];
+  if (enriched.length > 1) folkList.value = enriched[1];
+  if (enriched.length > 2) ancientList.value = enriched[2];
+  if (enriched.length > 3) acgList.value = enriched[3];
+  if (enriched.length > 4) rapList.value = enriched[4];
 }
 
 async function refreshHotList() {
@@ -833,11 +871,18 @@ async function refreshHotList() {
       getPlaylistDetail(RAP_TOPLIST_ID),
     ]);
     hotList.value = normalizeHotList(hotRes.data);
-    rockList.value = normalizePlaylistBoard(rockRes.data);
-    folkList.value = normalizePlaylistBoard(folkRes.data);
-    ancientList.value = normalizePlaylistBoard(ancientRes.data);
-    acgList.value = normalizePlaylistBoard(acgRes.data);
-    rapList.value = normalizePlaylistBoard(rapRes.data);
+    const [rock, folk, ancient, acg, rap] = await Promise.all([
+      enrichBoardWithPlayCounts(normalizePlaylistBoard(rockRes.data)),
+      enrichBoardWithPlayCounts(normalizePlaylistBoard(folkRes.data)),
+      enrichBoardWithPlayCounts(normalizePlaylistBoard(ancientRes.data)),
+      enrichBoardWithPlayCounts(normalizePlaylistBoard(acgRes.data)),
+      enrichBoardWithPlayCounts(normalizePlaylistBoard(rapRes.data)),
+    ]);
+    rockList.value = rock;
+    folkList.value = folk;
+    ancientList.value = ancient;
+    acgList.value = acg;
+    rapList.value = rap;
   } catch {
     // ignore refresh errors and keep last known board data
   }
