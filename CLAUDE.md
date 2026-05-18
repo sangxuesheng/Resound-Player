@@ -93,6 +93,20 @@ Both are layered in `.renderer-stack` with `v-show` to keep both mounted.
 ### API Server
 Requires `@neteasecloudmusicapienhanced` running on port 38761. Development proxy via `VITE_API_PROXY_TARGET`. Unblock music sources run on ports 38762 (unblock server) and 38763 (match server).
 
+### Local Music (Desktop Only)
+- **Storage**: JSON file (`local-music.json`) in Electron's `userData` directory — no native/WASM dependencies
+- **Scanner** (`electron/services/scanner/NodeMusicScanner.js`):
+  - Recursively collects supported audio files (mp3/flac/wav/ogg/m4a/aac/wma/ape/dsf/opus/aiff/alac)
+  - Reports progress during file collection phase (important for 10k+ file directories)
+  - Parallel parsing with `music-metadata`, batches of 20 tracks per IPC yield
+- **Playback**: Local files are read via IPC (`local:read-file`) and converted to blob URLs, avoiding `local://` protocol CORS issues
+- **Song List** (`src/components/VirtualSongList.vue`):
+  - Custom virtual scroll implementation (no external library), fixed row height 38px
+  - Container height measured via `ResizeObserver`, visible range calculated from `scrollTop`
+  - 15-row overscan for smooth scrolling
+  - Supports selection mode, context menu, sort-by columns
+- **IPC Handlers** (`electron/services/ipc/localMusicIpc.js`): scan, CRUD tracks, playlist management, file I/O (lyric/cover/read)
+
 ## Key Patterns
 
 ### CSS Variables for Covers

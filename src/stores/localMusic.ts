@@ -251,6 +251,7 @@ export const localMusicStore = reactive({
     if (!platform.localApi || this.scanning) return
     this.scanning = true
     this.progress = { current: 0, total: 0 }
+    console.log('[localMusic] scanAll start, dirs=', this.directories)
 
     // 先清理旧的监听器再注册，防重复注册
     platform.localApi.removeScanListeners()
@@ -262,14 +263,18 @@ export const localMusicStore = reactive({
 
     for (const dir of this.directories) {
       try {
-        await platform.localApi.scan(dir)
+        console.log('[localMusic] scanning dir:', dir)
+        const result = await platform.localApi.scan(dir)
+        console.log('[localMusic] scan result for', dir, ':', result)
       } catch (e) {
         console.error('[localMusic] scan failed:', dir, e)
       }
     }
     this.scanning = false
     platform.localApi.removeScanListeners()
+    console.log('[localMusic] scanAll done, loading tracks...')
     await this.loadTracks()
+    console.log('[localMusic] after scanAll, tracks count:', this.tracks.length)
   },
 
   async scanSingleDirectory(dirPath: string) {
@@ -322,9 +327,14 @@ export const localMusicStore = reactive({
   },
 
   async loadTracks() {
-    if (!platform.localApi) return
+    if (!platform.localApi) {
+      console.log('[localMusic] loadTracks skipped: no localApi')
+      return
+    }
     try {
+      console.log('[localMusic] loadTracks calling getAll()...')
       const rows = await platform.localApi.getAll()
+      console.log('[localMusic] loadTracks got rows:', rows?.length ?? 0, rows?.length ? JSON.stringify(rows[0]).slice(0, 120) : 'empty')
       this.tracks = (rows || []).map((t: any) => ({
         id: t.id,
         path: t.path,
@@ -338,6 +348,7 @@ export const localMusicStore = reactive({
         source: 'local' as const,
         createdAt: t.createdAt || '',
       }))
+      console.log('[localMusic] loadTracks completed, this.tracks.length=', this.tracks.length)
       // 重置封面加载状态，确保新 tracks 能重新开始加载封面
       this._coversLoading = false
       // 懒加载封面（在空闲时逐个加载）
@@ -367,10 +378,14 @@ export const localMusicStore = reactive({
   _coversLoading: false,
   _statsRefresh: 0,
 
-  lazyLoadCovers() {
+  lazyLoadCovers(trackIds?: Set<string>) {
     if (!platform.localApi || !this.tracks.length || this._coversLoading) return
     this._coversLoading = true
-    const pending = this.tracks.filter(t => !this._coverCache.has(t.id))
+    let pending = this.tracks.filter(t => !this._coverCache.has(t.id))
+    // 如果指定了 trackIds，只加载这些 track 的封面
+    if (trackIds && trackIds.size > 0) {
+      pending = pending.filter(t => trackIds.has(t.id))
+    }
     if (!pending.length) {
       this._coversLoading = false
       return

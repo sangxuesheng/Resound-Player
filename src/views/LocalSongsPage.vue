@@ -52,46 +52,18 @@
       正在扫描… {{ localMusicStore.progress.current }} / {{ localMusicStore.progress.total }}
     </div>
 
-    <div v-if="list.length" class="local-song-list">
-      <div class="local-song-header" :class="{ 'has-checkbox': selectionMode }">
-        <span v-if="selectionMode" class="local-song-check" @click.stop="toggleSelectAll">
-          <input type="checkbox" :checked="allSelected" @click.stop="toggleSelectAll" />
-        </span>
-        <span class="local-song-idx">#</span>
-        <span class="local-song-cover"></span>
-        <span class="local-song-title" @click="sortBy('title')">标题</span>
-        <span class="local-song-artist" @click="sortBy('artist')">歌手</span>
-        <span class="local-song-album" @click="sortBy('album')">专辑</span>
-        <span class="local-song-action"></span>
-        <span class="local-song-duration" @click="sortBy('duration')">时长</span>
-      </div>
-      <div
-        v-for="(track, idx) in filteredList"
-        :key="track.id"
-        class="local-song-row"
-        :class="{ playing: nowPlayingId === track.id, 'row-selected': selectionMode && selectedIds.has(track.id), 'has-checkbox': selectionMode }"
-        @dblclick="playTrack(track, idx)"
-        @contextmenu.prevent="showContextMenu($event, track, idx)"
-        @click="selectionMode && toggleSelect(track.id)"
-      >
-        <span v-if="selectionMode" class="local-song-check" @click.stop="toggleSelect(track.id)">
-          <input type="checkbox" :checked="selectedIds.has(track.id)" @click.stop="toggleSelect(track.id)" />
-        </span>
-        <span class="local-song-idx">{{ idx + 1 }}</span>
-        <span class="local-song-cover">
-          <img v-if="track.coverUrl" :src="track.coverUrl" class="local-cover-img" alt="" />
-          <span v-else class="local-cover-placeholder"></span>
-        </span>
-        <span class="local-song-title" :title="track.title">
-          <span v-if="track.hasLyrics" class="local-lyric-icon" title="有歌词">♪</span>
-          {{ track.title }}
-        </span>
-        <span class="local-song-artist" :title="track.artist">{{ track.artist }}</span>
-        <span class="local-song-album" :title="track.album">{{ track.album }}</span>
-        <button class="local-song-play btn-text" @click="playTrack(track, idx)" title="播放">▶</button>
-        <span class="local-song-duration">{{ localMusicStore.formatDuration(track.duration) }}</span>
-      </div>
-    </div>
+    <VirtualSongList
+      v-if="list.length"
+      :tracks="filteredList"
+      :selection-mode="selectionMode"
+      :selected-ids="selectedIds"
+      :now-playing-id="nowPlayingId"
+      @play="playTrack"
+      @show-context-menu="showContextMenu"
+      @toggle-select="toggleSelect"
+      @toggle-select-all="toggleSelectAll"
+      @sort-by="sortBy"
+    />
 
     <LocalContextMenu
       :visible="ctxVisible"
@@ -133,6 +105,7 @@ import { localMusicStore, type LocalTrack, type SortField } from '../stores/loca
 import { playerStore } from '../stores/player'
 import { platform } from '../utils/platform'
 import LocalContextMenu, { type ContextMenuItem } from '../components/LocalContextMenu.vue'
+import VirtualSongList from '../components/VirtualSongList.vue'
 
 const showSortMenu = ref(false)
 const nowPlayingId = computed(() => playerStore.currentTrack?.id ?? null)
@@ -200,7 +173,11 @@ const sortOptions = [
   { key: 'duration' as SortField, label: '时长 ↑↓' },
 ]
 
-const list = computed(() => localMusicStore.filteredTracks)
+const list = computed(() => {
+  const tracks = localMusicStore.filteredTracks
+  console.log('[LocalSongsPage] filteredTracks count=', tracks.length, 'total in store=', localMusicStore.tracks.length, 'directories=', localMusicStore.directories.length)
+  return tracks
+})
 
 // 结合搜索关键词 + 目录过滤
 const filteredList = computed(() => {
@@ -212,9 +189,15 @@ const filteredList = computed(() => {
   return result
 })
 
-onMounted(() => {
-  if (localMusicStore.hasLocalSupport && !localMusicStore.tracks.length) {
-    localMusicStore.loadTracks()
+onMounted(async () => {
+  if (!localMusicStore.hasLocalSupport) return
+  if (!localMusicStore.tracks.length) {
+    await localMusicStore.loadTracks()
+  }
+  // 如果数据库为空但存了目录，自动触发扫描
+  if (!localMusicStore.tracks.length && localMusicStore.directories.length && !localMusicStore.scanning) {
+    console.log('[LocalSongsPage] 数据库为空，自动扫描', localMusicStore.directories.length, '个目录')
+    localMusicStore.scanAll()
   }
 })
 
@@ -391,65 +374,6 @@ function handlePlayAll() {
 .sort-menu-item:hover { background: var(--bg-muted); }
 .sort-menu-item.active { color: var(--accent); font-weight: 600; }
 
-/* 歌曲表头与行 */
-.local-song-list { display: grid; gap: 2px; }
-.local-song-header,
-.local-song-row {
-  display: grid;
-  grid-template-columns: 32px 36px minmax(160px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) 40px 60px;
-  gap: var(--space-2);
-  align-items: center;
-  padding: var(--space-2) var(--space-2);
-  font-size: var(--text-body-sm);
-}
-.local-song-header.has-checkbox,
-.local-song-row.has-checkbox {
-  grid-template-columns: 28px 32px 36px minmax(160px, 2fr) minmax(120px, 1fr) minmax(120px, 1fr) 40px 60px;
-}
-.local-song-header {
-  color: var(--text-soft); font-size: var(--text-label-xs); text-transform: uppercase;
-  border-bottom: 1px solid var(--border); padding-bottom: var(--space-1);
-}
-.local-song-header span { cursor: default; }
-.local-song-header span:nth-child(3),
-.local-song-header span:nth-child(4),
-.local-song-header span:nth-child(5),
-.local-song-header span:nth-child(7) {
-  cursor: pointer; user-select: none;
-}
-.local-song-header span:nth-child(3):hover,
-.local-song-header span:nth-child(4):hover,
-.local-song-header span:nth-child(5):hover,
-.local-song-header span:nth-child(7):hover {
-  color: var(--accent);
-}
-.local-song-row {
-  border-radius: var(--radius-sm); cursor: default; transition: background 0.15s;
-}
-.local-song-row:hover { background: var(--bg-muted); }
-.local-song-row.playing { background: var(--accent-soft); }
-.local-song-row.playing .local-song-title { color: var(--accent); }
-.local-song-row.row-selected { background: color-mix(in srgb, var(--accent) 8%, var(--bg-surface)); }
-.local-song-check {
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-}
-.local-song-check input[type="checkbox"] {
-  cursor: pointer; margin: 0;
-  accent-color: var(--accent);
-  width: 14px; height: 14px;
-}
-.local-song-idx { color: var(--text-soft); text-align: right; font-size: var(--text-label-sm); }
-.local-song-cover { display: flex; align-items: center; justify-content: center; }
-.local-cover-img { width: 30px; height: 30px; border-radius: 4px; object-fit: cover; }
-.local-cover-placeholder { display: block; width: 30px; height: 30px; border-radius: 4px; background: var(--bg-muted); }
-.local-song-title { color: var(--text-main); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px; }
-.local-lyric-icon { font-size: 13px; color: var(--accent); flex-shrink: 0; }
-.local-song-artist { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.local-song-album { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.local-song-play { background: none; border: none; cursor: pointer; color: var(--text-soft); padding: 0; font-size: 12px; }
-.local-song-row:hover .local-song-play { color: var(--accent); }
-.local-song-duration { color: var(--text-soft); text-align: right; font-size: var(--text-label-sm); }
 .dir-filter-select {
   background: var(--bg-surface);
   border: 1px solid var(--border);
@@ -540,7 +464,7 @@ function handlePlayAll() {
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--bg-muted);
+  background: color-mix(in srgb, var(--bg-muted) 70%, var(--border));
   color: var(--text-main);
   font-size: var(--text-body-sm);
   cursor: pointer;

@@ -1,328 +1,215 @@
-import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
 import { app } from 'electron'
 import type { TrackRecord, IMetadataDB } from '../types'
 
-const DB_PATH = path.join(app.getPath('userData'), 'local-music.db')
+const DB_PATH = path.join(app.getPath('userData'), 'local-music.json')
+
+interface StoreData {
+  tracks: TrackRecord[]
+  scanDirs: { id: number; path: string; label: string; lastScan: string }[]
+  playlists: { id: string; name: string; description: string; coverPath: string; createdAt: string; updatedAt: string }[]
+  playlistTracks: { playlistId: string; trackId: string; sortOrder: number; addedAt: string }[]
+}
+
+function now() {
+  return new Date().toISOString().replace('T', ' ').slice(0, 19)
+}
 
 export class LocalMusicDB implements IMetadataDB {
-  private db!: Database.Database
-  private writeQueue: Promise<void> = Promise.resolve()
+  private data!: StoreData
+  private dirty = false
 
   async init() {
     const dir = path.dirname(DB_PATH)
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-
-    this.db = new Database(DB_PATH)
-    this.db.pragma('journal_mode = WAL')
-    this.db.pragma('foreign_keys = ON')
-    this.createTables()
-    this.rebuildFtsIndex()
-  }
-
-  /** 重建 FTS 索引（用于首次启用或追加已有数据） */
-  private rebuildFtsIndex() {
-    const count = this.db.prepare('SELECT COUNT(*) as cnt FROM tracks_fts').get() as { cnt: number }
-    const total = this.db.prepare('SELECT COUNT(*) as cnt FROM tracks').get() as { cnt: number }
-    // FTS 行数少于 tracks 行数时，重建索引
-    if (count.cnt < total.cnt) {
-      this.db.exec(`
-        INSERT INTO tracks_fts(tracks_fts) VALUES('rebuild');
-      `)
+    if (fs.existsSync(DB_PATH)) {
+      try {
+        this.data = JSON.parse(fs.readFileSync(DB_PATH, 'utf-8'))
+      } catch {
+        this.data = this.emptyStore()
+      }
+    } else {
+      this.data = this.emptyStore()
     }
+    this.persist()
   }
 
-  private createTables() {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS tracks (
-        id          TEXT PRIMARY KEY,
-        path        TEXT UNIQUE NOT NULL,
-        title       TEXT NOT NULL DEFAULT '',
-        artist      TEXT DEFAULT '',
-        album       TEXT DEFAULT '',
-        albumArtist TEXT DEFAULT '',
-        duration    REAL DEFAULT 0,
-        bitrate     INTEGER DEFAULT 0,
-        sampleRate  INTEGER DEFAULT 0,
-        trackNo     INTEGER DEFAULT 0,
-        discNo      INTEGER DEFAULT 0,
-        genre       TEXT DEFAULT '',
-        year        INTEGER DEFAULT 0,
-        coverPath   TEXT DEFAULT '',
-        fileSize    INTEGER DEFAULT 0,
-        mtime       INTEGER DEFAULT 0,
-        hasLyrics   INTEGER DEFAULT 0,
-        createdAt   TEXT DEFAULT (datetime('now')),
-        updatedAt   TEXT DEFAULT (datetime('now'))
-      );
-      CREATE INDEX IF NOT EXISTS idx_tracks_path ON tracks(path);
-      CREATE INDEX IF NOT EXISTS idx_tracks_artist ON tracks(artist);
-      CREATE INDEX IF NOT EXISTS idx_tracks_album ON tracks(album);
+  private emptyStore(): StoreData {
+    return { tracks: [], scanDirs: [], playlists: [], playlistTracks: [] }
+  }
 
-      -- FTS5 全文搜索虚拟表
-      CREATE VIRTUAL TABLE IF NOT EXISTS tracks_fts USING fts5(
-        title, artist, album,
-        content='tracks',
-        content_rowid='rowid',
-        tokenize='unicode61'
-      );
-
-      -- 插入触发器：新行加入 FTS
-      CREATE TRIGGER IF NOT EXISTS tracks_ai AFTER INSERT ON tracks BEGIN
-        INSERT INTO tracks_fts(rowid, title, artist, album)
-        VALUES (new.rowid, new.title, new.artist, new.album);
-      END;
-
-      -- 删除触发器：删除行时同步 FTS
-      CREATE TRIGGER IF NOT EXISTS tracks_ad AFTER DELETE ON tracks BEGIN
-        INSERT INTO tracks_fts(tracks_fts, rowid, title, artist, album)
-        VALUES ('delete', old.rowid, old.title, old.artist, old.album);
-      END;
-
-      -- 更新触发器：行更新时同步 FTS
-      CREATE TRIGGER IF NOT EXISTS tracks_au AFTER UPDATE ON tracks BEGIN
-        INSERT INTO tracks_fts(tracks_fts, rowid, title, artist, album)
-        VALUES ('delete', old.rowid, old.title, old.artist, old.album);
-        INSERT INTO tracks_fts(rowid, title, artist, album)
-        VALUES (new.rowid, new.title, new.artist, new.album);
-      END;
-
-      CREATE TABLE IF NOT EXISTS scan_dirs (
-        id       INTEGER PRIMARY KEY AUTOINCREMENT,
-        path     TEXT UNIQUE NOT NULL,
-        label    TEXT DEFAULT '',
-        lastScan TEXT
-      );
-
-      CREATE TABLE IF NOT EXISTS playlists (
-        id          TEXT PRIMARY KEY,
-        name        TEXT NOT NULL,
-        description TEXT DEFAULT '',
-        coverPath   TEXT DEFAULT '',
-        createdAt   TEXT DEFAULT (datetime('now')),
-        updatedAt   TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS playlist_tracks (
-        playlistId TEXT NOT NULL,
-        trackId    TEXT NOT NULL,
-        sortOrder  INTEGER NOT NULL,
-        addedAt    TEXT DEFAULT (datetime('now')),
-        PRIMARY KEY (playlistId, trackId),
-        FOREIGN KEY (playlistId) REFERENCES playlists(id) ON DELETE CASCADE,
-        FOREIGN KEY (trackId) REFERENCES tracks(id) ON DELETE CASCADE
-      );
-    `)
+  private persist() {
+    if (!this.dirty) return
+    fs.writeFileSync(DB_PATH, JSON.stringify(this.data, null, 1))
+    this.dirty = false
   }
 
   private serializedWrite<T>(fn: () => T): Promise<T> {
-    this.writeQueue = this.writeQueue.then(fn, fn)
-    return this.writeQueue
+    try {
+      const result = fn()
+      this.persist()
+      return Promise.resolve(result)
+    } catch (e) { return Promise.reject(e) }
   }
 
   getAllTracks(): Promise<TrackRecord[]> {
-    const rows = this.db.prepare('SELECT * FROM tracks ORDER BY title ASC').all()
-    return Promise.resolve(rows as TrackRecord[])
+    const sorted = [...this.data.tracks].sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+    return Promise.resolve(sorted)
   }
 
   getTrackByPath(filePath: string): Promise<TrackRecord | null> {
-    const row = this.db.prepare('SELECT * FROM tracks WHERE path = ?').get(filePath)
-    return Promise.resolve((row as TrackRecord) || null)
+    const norm = filePath.replace(/\\/g, '/')
+    return Promise.resolve(this.data.tracks.find(t => t.path.replace(/\\/g, '/') === norm) || null)
   }
 
   async upsertTracks(tracks: TrackRecord[]) {
     if (!tracks.length) return
     return this.serializedWrite(() => {
-      const stmt = this.db.prepare(`
-        INSERT INTO tracks (id, path, title, artist, album, albumArtist, duration,
-          bitrate, sampleRate, trackNo, discNo, genre, year, coverPath, fileSize, mtime, hasLyrics, updatedAt)
-        VALUES (@id, @path, @title, @artist, @album, @albumArtist, @duration,
-          @bitrate, @sampleRate, @trackNo, @discNo, @genre, @year, @coverPath, @fileSize, @mtime, @hasLyrics, datetime('now'))
-        ON CONFLICT(path) DO UPDATE SET
-          title=excluded.title, artist=excluded.artist, album=excluded.album,
-          albumArtist=excluded.albumArtist, duration=excluded.duration, bitrate=excluded.bitrate,
-          sampleRate=excluded.sampleRate, mtime=excluded.mtime, fileSize=excluded.fileSize,
-          hasLyrics=excluded.hasLyrics, coverPath=excluded.coverPath, updatedAt=datetime('now')
-      `)
-      const insertMany = this.db.transaction((rows: TrackRecord[]) => {
-        for (const r of rows) stmt.run(r)
-      })
-      insertMany(tracks)
+      const keyMap = new Map<string, number>()
+      this.data.tracks.forEach((t, i) => keyMap.set(t.path.replace(/\\/g, '/').toLowerCase(), i))
+      for (const t of tracks) {
+        const key = t.path.replace(/\\/g, '/').toLowerCase()
+        const idx = keyMap.get(key)
+        if (idx !== undefined) {
+          this.data.tracks[idx] = { ...this.data.tracks[idx], ...t, updatedAt: now() }
+        } else {
+          keyMap.set(key, this.data.tracks.length)
+          this.data.tracks.push({ ...t, id: t.id || crypto.randomUUID(), createdAt: now(), updatedAt: now() })
+        }
+      }
     })
   }
 
   async removeTracks(paths: string[]) {
     if (!paths.length) return
-    const stmt = this.db.prepare('DELETE FROM tracks WHERE path = ?')
-    const delMany = this.db.transaction((rows: string[]) => {
-      for (const p of rows) stmt.run(p)
+    return this.serializedWrite(() => {
+      const toRemove = new Set(paths.map(p => p.replace(/\\/g, '/').toLowerCase()))
+      const removedIds = new Set<string>()
+      this.data.tracks = this.data.tracks.filter(t => {
+        const key = t.path.replace(/\\/g, '/').toLowerCase()
+        if (toRemove.has(key)) { removedIds.add(t.id); return false }
+        return true
+      })
+      this.data.playlistTracks = this.data.playlistTracks.filter(pt => !removedIds.has(pt.trackId))
     })
-    delMany(paths)
-    console.log('[LocalMusicDB] removeTracks: 删除了', paths.length, '条')
   }
 
   async clearAllTracks(): Promise<number> {
     return this.serializedWrite(() => {
-      this.db.exec('DELETE FROM playlist_tracks')
-      const info = this.db.prepare('DELETE FROM tracks').run()
-      this.db.exec('DELETE FROM scan_dirs')
-      console.log('[LocalMusicDB] clearAllTracks: 删除了', info.changes, '行')
-      return info.changes
+      const count = this.data.tracks.length
+      this.data.tracks = []
+      this.data.playlistTracks = []
+      this.data.scanDirs = []
+      return count
     })
   }
 
   async removeTracksByDirectory(dirPath: string): Promise<number> {
-    const prefix = dirPath.replace(/\/$/g, '') + '/'
-    const result = this.db.prepare('DELETE FROM tracks WHERE path LIKE ?').run(prefix + '%')
-    console.log('[LocalMusicDB] removeTracksByDirectory:', dirPath, 'prefix:', prefix + '%', 'deleted:', result.changes)
-    return result.changes
+    const prefix = dirPath.replace(/\/$/g, '').replace(/\\/g, '/').toLowerCase() + '/'
+    return this.serializedWrite(() => {
+      const removed: string[] = []
+      this.data.tracks = this.data.tracks.filter(t => {
+        const key = t.path.replace(/\\/g, '/').toLowerCase()
+        if (key.startsWith(prefix)) { removed.push(t.id); return false }
+        return true
+      })
+      const rs = new Set(removed)
+      this.data.playlistTracks = this.data.playlistTracks.filter(pt => !rs.has(pt.trackId))
+      return removed.length
+    })
   }
 
   search(query: string): Promise<TrackRecord[]> {
     if (!query) return this.getAllTracks()
-    // 使用 FTS5 全文搜索，对查询词做前缀匹配优化
-    const ftsQuery = query.trim().split(/\s+/).map(w => `"${w}"*`).join(' AND ')
-    try {
-      const rows = this.db.prepare(
-        `SELECT tracks.* FROM tracks
-         JOIN tracks_fts ON tracks.rowid = tracks_fts.rowid
-         WHERE tracks_fts MATCH ?
-         ORDER BY rank
-         LIMIT 500`
-      ).all(ftsQuery)
-      if (rows.length) return Promise.resolve(rows as TrackRecord[])
-    } catch {
-      // FTS 查询失败时降级到 LIKE
-    }
-    // 降级：LIKE 模糊搜索
-    const like = `%${query}%`
-    const rows = this.db.prepare(
-      `SELECT * FROM tracks WHERE title LIKE ? OR artist LIKE ? OR album LIKE ?
-       ORDER BY title ASC LIMIT 500`
-    ).all(like, like, like)
-    return Promise.resolve(rows as TrackRecord[])
+    const q = query.toLowerCase()
+    const results = this.data.tracks.filter(t =>
+      t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q) || t.album.toLowerCase().includes(q))
+    results.sort((a, b) => a.title.localeCompare(b.title, 'zh-CN'))
+    return Promise.resolve(results.slice(0, 500))
   }
 
-  getTrackCount(): Promise<number> {
-    const row = this.db.prepare('SELECT COUNT(*) as cnt FROM tracks').get() as { cnt: number }
-    return Promise.resolve(row?.cnt || 0)
-  }
+  getTrackCount(): Promise<number> { return Promise.resolve(this.data.tracks.length) }
 
   getAllMtimes(): Promise<Map<string, number>> {
-    const rows = this.db.prepare('SELECT path, mtime FROM tracks').all() as { path: string; mtime: number }[]
     const map = new Map<string, number>()
-    for (const r of rows) map.set(r.path, r.mtime)
+    for (const t of this.data.tracks) map.set(t.path, t.mtime)
     return Promise.resolve(map)
   }
 
-  close(): Promise<void> {
-    this.db.close()
-    return Promise.resolve()
-  }
-
-  // ── 歌单管理 ──
+  close(): Promise<void> { this.persist(); return Promise.resolve() }
 
   createPlaylist(name: string, description = ''): Promise<{ id: string }> {
-    const id = crypto.createHash('md5').update(`${name}|${Date.now()}`).digest('hex')
-    this.db.prepare(
-      'INSERT INTO playlists (id, name, description) VALUES (?, ?, ?)'
-    ).run(id, name, description)
-    return Promise.resolve({ id })
+    return this.serializedWrite(() => {
+      const id = crypto.createHash('md5').update(`${name}|${Date.now()}`).digest('hex')
+      this.data.playlists.push({ id, name, description, coverPath: '', createdAt: now(), updatedAt: now() })
+      return { id }
+    })
   }
 
   listPlaylists(): Promise<any[]> {
-    const rows = this.db.prepare(`
-      SELECT p.*, COUNT(pt.trackId) as trackCount
-      FROM playlists p
-      LEFT JOIN playlist_tracks pt ON p.id = pt.playlistId
-      GROUP BY p.id
-      ORDER BY p.updatedAt DESC
-    `).all()
-    return Promise.resolve(rows as any[])
+    const rows = this.data.playlists.map(p => ({ ...p, trackCount: this.data.playlistTracks.filter(pt => pt.playlistId === p.id).length }))
+    rows.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    return Promise.resolve(rows)
   }
 
   getPlaylist(id: string): Promise<any | null> {
-    const row = this.db.prepare(`
-      SELECT p.*, COUNT(pt.trackId) as trackCount
-      FROM playlists p
-      LEFT JOIN playlist_tracks pt ON p.id = pt.playlistId
-      WHERE p.id = ?
-      GROUP BY p.id
-    `).get(id)
-    return Promise.resolve((row as any) || null)
+    const p = this.data.playlists.find(pl => pl.id === id)
+    if (!p) return Promise.resolve(null)
+    return Promise.resolve({ ...p, trackCount: this.data.playlistTracks.filter(pt => pt.playlistId === id).length })
   }
 
   deletePlaylist(id: string): Promise<void> {
     return this.serializedWrite(() => {
-      this.db.prepare('DELETE FROM playlist_tracks WHERE playlistId = ?').run(id)
-      this.db.prepare('DELETE FROM playlists WHERE id = ?').run(id)
+      this.data.playlists = this.data.playlists.filter(p => p.id !== id)
+      this.data.playlistTracks = this.data.playlistTracks.filter(pt => pt.playlistId !== id)
     })
   }
 
   renamePlaylist(id: string, name: string): Promise<void> {
     return this.serializedWrite(() => {
-      this.db.prepare('UPDATE playlists SET name = ?, updatedAt = datetime(\'now\') WHERE id = ?').run(name, id)
+      const p = this.data.playlists.find(pl => pl.id === id)
+      if (p) { p.name = name; p.updatedAt = now() }
     })
   }
 
   addTrackToPlaylist(playlistId: string, trackId: string): Promise<void> {
     return this.serializedWrite(() => {
-      const maxOrder = this.db.prepare(
-        'SELECT COALESCE(MAX(sortOrder), -1) + 1 as next FROM playlist_tracks WHERE playlistId = ?'
-      ).get(playlistId) as { next: number }
-      this.db.prepare(
-        'INSERT OR IGNORE INTO playlist_tracks (playlistId, trackId, sortOrder) VALUES (?, ?, ?)'
-      ).run(playlistId, trackId, maxOrder.next)
-      this.db.prepare('UPDATE playlists SET updatedAt = datetime(\'now\') WHERE id = ?').run(playlistId)
+      if (this.data.playlistTracks.some(pt => pt.playlistId === playlistId && pt.trackId === trackId)) return
+      const max = this.data.playlistTracks.filter(pt => pt.playlistId === playlistId).reduce((m, pt) => Math.max(m, pt.sortOrder), -1)
+      this.data.playlistTracks.push({ playlistId, trackId, sortOrder: max + 1, addedAt: now() })
+      const p = this.data.playlists.find(pl => pl.id === playlistId)
+      if (p) p.updatedAt = now()
     })
   }
 
   removeTrackFromPlaylist(playlistId: string, trackId: string): Promise<void> {
     return this.serializedWrite(() => {
-      this.db.prepare('DELETE FROM playlist_tracks WHERE playlistId = ? AND trackId = ?').run(playlistId, trackId)
-      this.db.prepare('UPDATE playlists SET updatedAt = datetime(\'now\') WHERE id = ?').run(playlistId)
+      this.data.playlistTracks = this.data.playlistTracks.filter(pt => !(pt.playlistId === playlistId && pt.trackId === trackId))
+      const p = this.data.playlists.find(pl => pl.id === playlistId)
+      if (p) p.updatedAt = now()
     })
   }
 
   getPlaylistTracks(playlistId: string): Promise<TrackRecord[]> {
-    const rows = this.db.prepare(`
-      SELECT t.* FROM tracks t
-      JOIN playlist_tracks pt ON t.id = pt.trackId
-      WHERE pt.playlistId = ?
-      ORDER BY pt.sortOrder ASC
-    `).all(playlistId)
-    return Promise.resolve(rows as TrackRecord[])
+    const trackIds = this.data.playlistTracks.filter(pt => pt.playlistId === playlistId).sort((a, b) => a.sortOrder - b.sortOrder).map(pt => pt.trackId)
+    const map = new Map<string, TrackRecord>()
+    for (const t of this.data.tracks) map.set(t.id, t)
+    return Promise.resolve(trackIds.map(id => map.get(id)).filter(Boolean) as TrackRecord[])
   }
 
   getRecentTracks(limit = 10): Promise<TrackRecord[]> {
-    const rows = this.db.prepare('SELECT * FROM tracks ORDER BY createdAt DESC LIMIT ?').all(limit)
-    return Promise.resolve(rows as TrackRecord[])
+    return Promise.resolve([...this.data.tracks].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, limit))
   }
 
-  getTrackStats(): Promise<{
-    totalTracks: number
-    totalArtists: number
-    totalAlbums: number
-    totalDuration: number
-    totalSize: number
-  }> {
-    const stats = this.db.prepare(`
-      SELECT
-        COUNT(*) as totalTracks,
-        COUNT(DISTINCT artist) as totalArtists,
-        COUNT(DISTINCT album) as totalAlbums,
-        COALESCE(SUM(duration), 0) as totalDuration,
-        COALESCE(SUM(fileSize), 0) as totalSize
-      FROM tracks
-    `).get() as any
-    return Promise.resolve({
-      totalTracks: stats?.totalTracks || 0,
-      totalArtists: stats?.totalArtists || 0,
-      totalAlbums: stats?.totalAlbums || 0,
-      totalDuration: stats?.totalDuration || 0,
-      totalSize: stats?.totalSize || 0,
-    })
+  getTrackStats() {
+    const artists = new Set<string>(); const albums = new Set<string>(); let dur = 0; let size = 0
+    for (const t of this.data.tracks) {
+      if (t.artist) artists.add(t.artist)
+      if (t.album) albums.add(t.album)
+      dur += t.duration || 0; size += t.fileSize || 0
+    }
+    return Promise.resolve({ totalTracks: this.data.tracks.length, totalArtists: artists.size, totalAlbums: albums.size, totalDuration: dur, totalSize: size })
   }
 }

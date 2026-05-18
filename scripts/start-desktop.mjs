@@ -131,7 +131,11 @@ if (process.platform === 'win32') {
   spawnProcess('vite', 'npx', ['vite', '--port', String(ports.vite), '--strictPort'], viteEnv);
 }
 
-// 2. Unblock proxy
+// 2. Netease API server (port 38761)
+const apiEntry = path.resolve(root, 'node_modules/@neteasecloudmusicapienhanced/api/app.js');
+spawnProcess('netease-api', 'node', ['scripts/start-api.cjs'], { ...commonEnv, PORT: String(ports.api) });
+
+// 3. Unblock proxy
 spawnProcess('unblock-proxy', 'node', [
   'node_modules/@unblockneteasemusic/server/app.js',
   '-p', String(ports.unblockProxy),
@@ -139,10 +143,10 @@ spawnProcess('unblock-proxy', 'node', [
   '-s',
 ], unblockProxyEnv);
 
-// 3. Unblock match server
+// 4. Unblock match server
 spawnProcess('unblock-match', 'node', ['server/unblock-match-server.mjs'], unblockMatchEnv);
 
-// 4. Electron (waits for Vite)
+// 5. Electron (waits for Vite)
 // wait a moment for Vite to start, then launch Electron
 setTimeout(() => {
   spawnProcess('electron', 'npx', ['electron', '.'], electronEnv);

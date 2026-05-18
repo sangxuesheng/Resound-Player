@@ -29,6 +29,9 @@ desktop-dist/
 # OS files
 .DS_Store
 
+# TypeScript compile output
+.tsc-out/
+
 # project generated assets
 .arts/
 

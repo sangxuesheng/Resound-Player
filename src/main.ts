@@ -35,4 +35,12 @@ document.addEventListener('selectstart', blockGlobalCopyActions);
 document.addEventListener('contextmenu', blockGlobalCopyActions);
 document.addEventListener('keydown', blockShortcutCopyActions);
 
+// 全局捕获 Unhandled Promise Rejection，辅助排查 URL 错误
+window.addEventListener('unhandledrejection', (event) => {
+  const err = event.reason;
+  if (err && err.message && err.message.includes("Failed to construct 'URL'")) {
+    console.warn('[global] Unhandled URL rejection:', err.message, err.stack);
+  }
+});
+
 createApp(App).mount('#app');

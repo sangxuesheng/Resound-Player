@@ -750,16 +750,32 @@ export const playerStore = reactive({
     try {
       let playUrl = track.url || '';
 
-      // ── 本地歌曲：直接使用 local:// 协议，不走在线流程 ──
+      // ── 本地歌曲：通过 IPC 读取文件 → blob URL，避免 local:// 跨协议 CORS 问题 ──
       if (track.source === 'local' && (track as any).path) {
-        playUrl = `local:///${(track as any).path}`;
         this.currentSource = 'local';
         this.loading = false;
+        // 使用 IPC 读取文件内容，创建 blob URL 给 audio 播放
+        if (platform.localApi) {
+          try {
+            const buffer = await platform.localApi.readFile((track as any).path);
+            if (buffer) {
+              const ext = (track as any).path?.split('.').pop()?.toLowerCase() || 'mp3';
+              const mime = ext === 'flac' ? 'audio/flac' : ext === 'wav' ? 'audio/wav' : ext === 'ogg' ? 'audio/ogg' : ext === 'm4a' ? 'audio/mp4' : 'audio/mpeg';
+              const blob = new Blob([buffer], { type: mime });
+              playUrl = URL.createObjectURL(blob);
+            }
+          } catch {}
+        }
+        if (!playUrl) {
+          // 降级：直接使用 local://（桌面端可能支持，Web 端会报 CORS）
+          playUrl = `local:///${(track as any).path}`;
+        }
         this.audio.src = playUrl;
         try {
           await this.audio.play();
         } catch {
           this.isPlaying = false;
+          if (playUrl.startsWith('blob:')) URL.revokeObjectURL(playUrl);
           this.persist();
           return false;
         }
