@@ -26,7 +26,7 @@
       <div v-else-if="!lyricLines.length" class="amll-status">暂无歌词</div>
       <!-- 有歌词数据：双渲染器层叠，v-show 保持两个组件始终挂载 -->
       <div v-else class="renderer-stack">
-        <div v-show="lyricsSettings.useAmllRenderer" class="renderer-layer">
+        <div v-if="lyricsSettings.useAmllRenderer" class="renderer-layer">
           <LyricPlayer
             ref="amllPlayerCompRef"
             :lyricLines="amllLines"
@@ -62,13 +62,19 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch, nextTick, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, watch, nextTick, ref, onMounted, onBeforeUnmount, defineAsyncComponent } from 'vue';
 import { playerStore } from '../stores/player';
 import { lyricsSettings } from '../stores/lyricsSettings';
 import { useLyrics, getLineWrapStyle, getLineStyle, getWordStyle, getTranslationStyle, getAnchorRatio } from '../composables/useLyrics';
 import { convertToAmmlLyrics, mapAnchorPos } from '../composables/useAmllAdapter';
-import { LyricPlayer } from '@applemusic-like-lyrics/vue';
-import '@applemusic-like-lyrics/core/style.css';
+
+const LyricPlayer = defineAsyncComponent({
+  loader: async () => {
+    await import('@applemusic-like-lyrics/core/style.css');
+    const mod = await import('@applemusic-like-lyrics/vue');
+    return mod.LyricPlayer;
+  },
+});
 
 const props = defineProps<{
   vinylMode?: boolean;

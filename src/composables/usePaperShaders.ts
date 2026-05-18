@@ -1,5 +1,4 @@
 import { nextTick, watch, onUnmounted, type Ref } from 'vue';
-import * as THREE from 'three';
 
 /* ------------------------------------------------------------------ */
 /*  MeshGradient — 有机流动渐变网格                                    */
@@ -56,7 +55,8 @@ export function usePaperShaders(
 ) {
   let cleanup: (() => void) | null = null;
 
-  function start() {
+  async function start() {
+    const THREE = await import('three');
     const ctn = containerRef.value;
     if (!ctn) return;
 

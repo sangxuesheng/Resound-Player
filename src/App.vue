@@ -180,7 +180,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, KeepAlive, onBeforeUnmount, onMounted, watch, ref } from 'vue';
+import { computed, KeepAlive, onBeforeUnmount, onMounted, watch, ref, defineAsyncComponent } from 'vue';
 import { platform } from './utils/platform';
 import HomePanel from './components/HomePanel.vue';
 import PlayerBar from './components/PlayerBar.vue';
@@ -194,30 +194,32 @@ import ArtistDetailPage from './components/ArtistDetailPage.vue';
 import UserDetailPage from './components/UserDetailPage.vue';
 import PlaylistPanel from './components/PlaylistPanel.vue';
 import SearchPage from './components/SearchPage.vue';
-import SettingsPage from './components/SettingsPage.vue';
 import RankPanel from './components/RankPanel.vue';
 import MvPanel from './components/MvPanel.vue';
-import SongCommentPage from './components/SongCommentPage.vue';
 import LoginModal from './components/LoginModal.vue';
-import MvPlayPage from './components/MvPlayPage.vue';
-import LanguageDetailPage from './components/LanguageDetailPage.vue';
-import LocalMusicHub from './components/LocalMusicHub.vue';
-import LocalSongsPage from './views/LocalSongsPage.vue';
-import LocalArtistsPage from './views/LocalArtistsPage.vue';
-import LocalAlbumsPage from './views/LocalAlbumsPage.vue';
-import LocalFoldersPage from './views/LocalFoldersPage.vue';
-import LocalPlaylistsPage from './views/LocalPlaylistsPage.vue';
-import LocalPlaylistDetailPage from './views/LocalPlaylistDetailPage.vue';
-import LocalStatsPage from './views/LocalStatsPage.vue';
-import PodcastListPage from './components/PodcastListPage.vue';
-import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
-import PodcastDetailPage from './components/PodcastDetailPage.vue';
-import PodcastSubscribedPage from './components/PodcastSubscribedPage.vue';
 import UserPanel from './components/UserPanel.vue';
 import HistoryPanel from './components/HistoryPanel.vue';
-import StatsPage from './components/StatsPage.vue';
 import Sidebar from './components/Sidebar.vue';
 import TopBar from './components/TopBar.vue';
+
+/* ---- 二级页面懒加载 ---- */
+const SettingsPage = defineAsyncComponent(() => import('./components/SettingsPage.vue'));
+const StatsPage = defineAsyncComponent(() => import('./components/StatsPage.vue'));
+const SongCommentPage = defineAsyncComponent(() => import('./components/SongCommentPage.vue'));
+const MvPlayPage = defineAsyncComponent(() => import('./components/MvPlayPage.vue'));
+const LanguageDetailPage = defineAsyncComponent(() => import('./components/LanguageDetailPage.vue'));
+const LocalMusicHub = defineAsyncComponent(() => import('./components/LocalMusicHub.vue'));
+const LocalSongsPage = defineAsyncComponent(() => import('./views/LocalSongsPage.vue'));
+const LocalArtistsPage = defineAsyncComponent(() => import('./views/LocalArtistsPage.vue'));
+const LocalAlbumsPage = defineAsyncComponent(() => import('./views/LocalAlbumsPage.vue'));
+const LocalFoldersPage = defineAsyncComponent(() => import('./views/LocalFoldersPage.vue'));
+const LocalPlaylistsPage = defineAsyncComponent(() => import('./views/LocalPlaylistsPage.vue'));
+const LocalPlaylistDetailPage = defineAsyncComponent(() => import('./views/LocalPlaylistDetailPage.vue'));
+const LocalStatsPage = defineAsyncComponent(() => import('./views/LocalStatsPage.vue'));
+const PodcastListPage = defineAsyncComponent(() => import('./components/PodcastListPage.vue'));
+const PodcastCategoryPage = defineAsyncComponent(() => import('./components/PodcastCategoryPage.vue'));
+const PodcastDetailPage = defineAsyncComponent(() => import('./components/PodcastDetailPage.vue'));
+const PodcastSubscribedPage = defineAsyncComponent(() => import('./components/PodcastSubscribedPage.vue'));
 import { waitForApiReady } from './api/client';
 import { getDjCategoryRecommend, getDjDetail, getDjProgram, getDjRecommend, getDjRecommendType, getDjSublist, getRecentDj, getSongDetail, getVoiceListDetail, getVoiceListItems, getVoiceListSearch } from './api/music';
 import { playerStore } from './stores/player';

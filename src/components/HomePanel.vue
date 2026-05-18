@@ -913,6 +913,13 @@ const radarPlaylistsLoading = ref(false);
 const radarPlaylistsError = ref('');
 
 async function fetchRadarPlaylists() {
+  const cacheKey = 'home:radarPlaylists';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    radarPlaylists.value = cached.data;
+    radarPlaylistsLoading.value = false;
+    return;
+  }
   radarPlaylistsLoading.value = true;
   radarPlaylistsError.value = '';
   try {
@@ -922,6 +929,9 @@ async function fetchRadarPlaylists() {
     radarPlaylists.value = results
       .map((r) => (r.status === 'fulfilled' ? r.value?.data?.playlist : null))
       .filter(Boolean);
+    if (radarPlaylists.value.length) {
+      apiCache.set(cacheKey, radarPlaylists.value, CACHE_TTL.LIST_VOLATILE);
+    }
     if (!radarPlaylists.value.length) {
       radarPlaylistsError.value = '雷达歌单获取失败';
     }
@@ -1285,15 +1295,29 @@ async function resolveArtistDisplay(song: any) {
   }
 }
 
+/** 并发池：同时最多运行 concurrency 个异步任务 */
+async function asyncPool<T, R>(items: T[], concurrency: number, fn: (item: T, idx: number) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  const executing: Promise<void>[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const p = fn(items[i], i).then(r => { results[i] = r; });
+    executing.push(p.then(() => executing.splice(executing.indexOf(p), 1)));
+    if (executing.length >= concurrency) {
+      await Promise.race(executing);
+    }
+  }
+  await Promise.all(executing);
+  return results;
+}
+
 async function normalizeLatestSongs(list: any[], baseOffset: number) {
   const limited = list.slice(0, latestSongsLimit);
-  return Promise.all(
-    limited.map(async (song: any, idx: number) => ({
-      ...song,
-      __artistDisplay: await resolveArtistDisplay(song),
-      __idx: baseOffset + idx,
-    })),
-  );
+  const results = await asyncPool(limited, 4, async (song: any, idx: number) => ({
+    ...song,
+    __artistDisplay: await resolveArtistDisplay(song),
+    __idx: baseOffset + idx,
+  }));
+  return results;
 }
 
 function splitLatestColumns(page: any[]) {
@@ -1361,6 +1385,14 @@ function onLatestWheel(e: WheelEvent, root: HTMLElement) {
 }
 
 async function fetchLatestMusic() {
+  const cacheKey = 'home:latestMusic';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    latestSongs.value = cached.data.songs;
+    latestSongSource.value = cached.data.source;
+    latestMusicLoading.value = false;
+    return;
+  }
   latestMusicLoading.value = true;
   latestMusicError.value = '';
   latestSongs.value = [];
@@ -1375,6 +1407,10 @@ async function fetchLatestMusic() {
     await loadMoreLatestSongs();
     if (latestSongsHasMore.value) {
       await loadMoreLatestSongs();
+    }
+
+    if (latestSongs.value.length) {
+      apiCache.set(cacheKey, { songs: latestSongs.value, source: latestSongSource.value }, CACHE_TTL.LIST_VOLATILE);
     }
 
     if (!latestSongs.value.length) {
@@ -1394,6 +1430,14 @@ async function fetchLatestMusic() {
 }
 
 async function fetchTopArtists() {
+  const cacheKey = 'home:topArtists';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    topArtists.value = cached.data;
+    topArtistsLoading.value = false;
+    if (topArtistsHasMore.value) loadMoreTopArtists();
+    return;
+  }
   topArtistsLoading.value = true;
   topArtistsError.value = '';
 
@@ -1403,6 +1447,9 @@ async function fetchTopArtists() {
     topArtists.value = list;
     topArtistsOffset.value = list.length;
     topArtistsHasMore.value = list.length >= ARTISTS_PAGE_SIZE;
+    if (topArtists.value.length) {
+      apiCache.set(cacheKey, topArtists.value, CACHE_TTL.LIST);
+    }
     if (!topArtists.value.length) {
       topArtistsError.value = '暂未获取到热门歌手';
     }
@@ -1444,6 +1491,13 @@ async function loadMoreTopArtists() {
 }
 
 async function fetchTopAlbums() {
+  const cacheKey = 'home:topAlbums';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    albums.value = cached.data;
+    albumLoading.value = false;
+    return;
+  }
   albumLoading.value = true;
   albumLoadNote.value = '';
 
@@ -1464,6 +1518,7 @@ async function fetchTopAlbums() {
 
     if (albums.value.length) {
       albumLoadNote.value = '来源：/top/album';
+      apiCache.set(cacheKey, albums.value, CACHE_TTL.LIST);
       return;
     }
 
@@ -1473,6 +1528,7 @@ async function fetchTopAlbums() {
     albums.value = normalizeAlbums(newestPayload).slice(0, 12);
     if (albums.value.length) {
       albumLoadNote.value = '来源：/album/newest';
+      apiCache.set(cacheKey, albums.value, CACHE_TTL.LIST);
       return;
     }
 
@@ -1494,6 +1550,7 @@ async function fetchTopAlbums() {
 
     if (albums.value.length) {
       albumLoadNote.value = '来源：搜索兜底';
+      apiCache.set(cacheKey, albums.value, CACHE_TTL.LIST_VOLATILE);
       return;
     }
 
@@ -1512,6 +1569,13 @@ async function fetchTopAlbums() {
 }
 
 async function fetchMvList() {
+  const cacheKey = 'home:mvList';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    mvList.value = cached.data;
+    mvLoading.value = false;
+    return;
+  }
   mvLoading.value = true;
   mvError.value = '';
   try {
@@ -1524,6 +1588,9 @@ async function fetchMvList() {
       playCount: item.playCount || item.playTime || 0,
       artistName: item.artistName || item.artist?.name || item.creator?.nickname || '',
     })).filter((item: any) => item.id);
+    if (mvList.value.length) {
+      apiCache.set(cacheKey, mvList.value, CACHE_TTL.LIST);
+    }
     if (!mvList.value.length) {
       mvError.value = '暂未获取到 MV 数据';
     }
@@ -1536,6 +1603,13 @@ async function fetchMvList() {
 }
 
 async function fetchPodcastList() {
+  const cacheKey = 'home:podcastList';
+  const cached = apiCache.get(cacheKey);
+  if (cached?.data) {
+    podcastList.value = cached.data;
+    podcastLoading.value = false;
+    return;
+  }
   podcastLoading.value = true;
   podcastError.value = '';
   try {
@@ -1548,6 +1622,9 @@ async function fetchPodcastList() {
       subCount: item.subCount || item.programCount || 0,
       creatorName: item.creator?.nickname || item.radio?.creator?.nickname || '',
     })).filter((item: any) => item.id);
+    if (podcastList.value.length) {
+      apiCache.set(cacheKey, podcastList.value, CACHE_TTL.LIST);
+    }
     if (!podcastList.value.length) {
       podcastError.value = '暂未获取到播客数据';
     }
@@ -1561,13 +1638,13 @@ async function fetchPodcastList() {
 
 onMounted(async () => {
 
-  await loadMoreHotSongs();
-  await nextTick();
-  setupHotSongsObserver();
   window.addEventListener('click', onFmPopoverDocClick);
   window.addEventListener('keydown', onFmPopoverKeydown);
 
-  await Promise.all([fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList(), fetchRadarPlaylists()]);
+  await Promise.all([loadMoreHotSongs(), fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList(), fetchRadarPlaylists()]);
+
+  await nextTick();
+  setupHotSongsObserver();
 });
 
 onBeforeUnmount(() => {

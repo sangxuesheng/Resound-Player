@@ -1,5 +1,4 @@
 import { nextTick, watch, onUnmounted, type Ref } from 'vue';
-import * as THREE from 'three';
 
 const vertexShader = `
 uniform float time;
@@ -86,7 +85,8 @@ export function useThreeScene(
 ) {
   let cleanup: (() => void) | null = null;
 
-  function start() {
+  async function start() {
+    const THREE = await import('three');
     const ctn = containerRef.value;
     if (!ctn) return;
 

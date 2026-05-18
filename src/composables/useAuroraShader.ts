@@ -1,5 +1,4 @@
 import { nextTick, watch, onUnmounted, type Ref } from 'vue';
-import * as THREE from 'three';
 
 const fragmentShader = `
 uniform float iTime;
@@ -67,7 +66,8 @@ export function useAuroraShader(
 ) {
   let cleanup: (() => void) | null = null;
 
-  function start() {
+  async function start() {
+    const THREE = await import('three');
     const ctn = containerRef.value;
     if (!ctn) return;
 

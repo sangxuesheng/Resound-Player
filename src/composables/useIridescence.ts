@@ -1,5 +1,4 @@
 import { nextTick, watch, onUnmounted, type Ref } from 'vue';
-import { Renderer, Program, Mesh, Triangle, Color } from 'ogl';
 
 const vertexShader = `
 attribute vec2 uv;
@@ -75,7 +74,8 @@ export function useIridescence(
     program.uniforms.uSpeed.value = speed;
   }
 
-  function start() {
+  async function start() {
+    const { Renderer, Program, Mesh, Triangle, Color } = await import('ogl');
     const ctn = containerRef.value;
     if (!ctn || started) { return; }
 

@@ -23,7 +23,7 @@
       <div v-show="showLoom" ref="loomRef" class="loom-container"></div>
       <div v-show="showSilk" ref="silkRef" class="silk-container"></div>
       <div v-show="showAurora" ref="auroraRef" class="aurora-container"></div>
-      <div v-show="showAmllFluid" class="amll-fluid-container">
+      <div v-if="showAmllFluid" class="amll-fluid-container">
         <BackgroundRender
           :album="playerStore.currentTrack?.al?.picUrl || ''"
           :playing="!playerStore.isPlaying"
@@ -304,7 +304,11 @@ import { useMistBackground } from '../composables/useMistBackground';
 import { useDigitalLoom } from '../composables/useDigitalLoom';
 import { useSilkBackground } from '../composables/useSilkBackground';
 import { useAuroraShader } from '../composables/useAuroraShader';
-import { BackgroundRender } from '@applemusic-like-lyrics/vue';
+import { defineAsyncComponent } from 'vue';
+
+const BackgroundRender = defineAsyncComponent(() =>
+  import('@applemusic-like-lyrics/vue').then(m => m.BackgroundRender)
+);
 import AnimatedAppear from './AnimatedAppear.vue';
 import LyricsPanel from './LyricsPanel.vue';
 import LyricsSettingsPanel from './LyricsSettingsPanel.vue';

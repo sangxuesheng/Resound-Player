@@ -99,5 +99,16 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       entries: ['index.html'],
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-vue': ['vue'],
+            'vendor-axios': ['axios'],
+            'vendor-icons': ['lucide-vue-next'],
+          },
+        },
+      },
+    },
   };
 });
