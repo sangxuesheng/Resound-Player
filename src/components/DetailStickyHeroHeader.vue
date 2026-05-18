@@ -108,11 +108,9 @@ onMounted(remeasureHeight);
   backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   -webkit-backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   transition:
-    height 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     border-radius 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    box-shadow 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    padding 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    margin 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+    box-shadow 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+  /* transition 历史: height / padding / margin 曾在此 transition，因触发布局重排已移除 */
 }
 
 /* 分隔线 */
@@ -144,8 +142,7 @@ onMounted(remeasureHeight);
   border-radius: 18px;
   transform: translateZ(0);
   opacity: calc(1 - var(--sticky-progress, 0) * 0.08);
-  transition:
-    margin 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+  /* transition 历史: margin 曾在此 transition，因触发布局重排已移除 */
 }
 .hero-actions-shell--under-cover {
   display: flex;
@@ -209,8 +206,8 @@ onMounted(remeasureHeight);
 :deep(.hero-meta-shell) {
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    max-width 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+  /* transition 历史: max-width 曾在此 transition，因触发布局重排已移除 */
 }
 :deep(.desc) {
   transition:
@@ -219,23 +216,12 @@ onMounted(remeasureHeight);
 }
 :deep(.hero-title-shell .title) {
   transition:
-    font-size 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    line-height 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    margin 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+  /* transition 历史: font-size / line-height / margin 曾在此 transition，因触发布局重排已移除 */
 }
 
 /* Grid 列宽过渡 */
-:deep(.page-hero-header) {
-  transition:
-    grid-template-columns 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    gap 0.3s cubic-bezier(0.33, 0, 0.1, 1);
-}
-:deep(.page-hero-header__media) {
-  transition:
-    width 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    min-width 0.3s cubic-bezier(0.33, 0, 0.1, 1);
-}
+/* transition 历史: grid-template-columns / gap / width / min-width 曾在此 transition，因触发布局重排已移除 */
 
 /* =========================================
  * 吸顶状态 — 网易云音乐风格
