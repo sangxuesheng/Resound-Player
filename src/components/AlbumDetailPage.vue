@@ -254,7 +254,9 @@ const detailPageClassName = computed(() => {
   if (props.embedded) classNames.push('playlist-detail-page--embedded');
   return classNames.join(' ');
 });
-const { isSticky, refresh } = useDetailStickyState();
+const { isSticky, refresh } = useDetailStickyState({
+  scrollHostSelector: () => '.content',
+});
 
 function getSongArtists(song: any) {
   const artists = Array.isArray(song?.ar)

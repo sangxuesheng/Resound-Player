@@ -100,46 +100,61 @@
       <AnimatedAppear v-else-if="error" tag="div" variant="text" rhythm="body" class-name="state error">{{ error }}</AnimatedAppear>
       <AnimatedAppear v-else-if="playlist" tag="div" variant="content" rhythm="body" class-name="playlist-detail-body">
         <template v-if="activeTab === 'songs'">
-          <AnimatedAppear :key="`${tabContentKey}:songs`" tag="ul" variant="content" rhythm="list" class-name="song-list">
-          <AnimatedAppear
-            v-for="(song, idx) in filteredTracks"
-            :key="song.id"
-            tag="li"
-            variant="text"
-            rhythm="list"
-            :index="idx"
-            class-name="song-item"
-            :class="{ 'song-item--playing': isCurrentTrack(song) }"
-            @dblclick="onSongItemDblClick($event, idx)"
-          >
-            <PlayPauseButton :song-id="Number(song.id || 0)" :index-label="idx + 1" @play="playOne(idx)" />
-            <AnimatedAppear tag="img" variant="media" rhythm="list" :index="idx" class-name="song-cover" :src="song.al?.picUrl || playlist.coverImgUrl" :alt="song.name" />
-            <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="song-meta">
-              <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-name">{{ song.name }}</AnimatedAppear>
-              <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="song-artist">
-              <button
-                v-for="artist in getSongArtists(song)"
-                :key="`${song.id}-${artist.id || artist.name}`"
-                type="button"
-                class="artist-link"
-                @click="openArtistDetail(artist)"
+          <div ref="songListRef" class="song-list song-list--virtual">
+            <div :style="{ height: `${totalListHeight}px`, position: 'relative' }">
+              <div
+                v-for="vi in visibleTracks"
+                :key="vi.track?.id || vi.index"
+                class="song-item"
+                :class="{ 'song-item--playing': isCurrentTrack(vi.track) }"
+                :style="{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${ROW_HEIGHT}px`,
+                  transform: `translateY(${vi.index * ROW_HEIGHT}px)`,
+                }"
+                @dblclick="onSongItemDblClick($event, vi.index)"
               >
-                {{ artist.name || '未知歌手' }}
-              </button>
-              <span v-if="!getSongArtists(song).length">未知歌手</span>
-            </AnimatedAppear>
-          </AnimatedAppear>
-          <SongActions :song="song" @play-next="playNext" @add-to-playlist="showAddToPlaylist" @open-comment="openComment" @open-album="openAlbum" @open-artist="openArtistDetail" @open-language="openLanguageDetail" @open-mv-player="(mv) => emit('open-mv-player', mv)" />
-          </AnimatedAppear>
-          </AnimatedAppear>
-          <!-- 无限滚动哨兵 -->
-          <div
-            v-if="infiniteState.hasMore"
-            ref="sentinelRef"
-            class="infinite-sentinel"
-          >
-            <span v-if="infiniteState.loading" class="infinite-loading">加载中…</span>
-            <span v-else class="infinite-tip">向下滑动加载更多</span>
+                <PlayPauseButton :song-id="Number(vi.track?.id || 0)" :index-label="vi.index + 1" @play="playOne(vi.index)" />
+                <img v-if="vi.track?.al?.picUrl" :src="vi.track.al.picUrl" class="song-cover" alt="" loading="lazy" />
+                <span v-else-if="playlist?.coverImgUrl" class="song-cover-placeholder" />
+                <div class="song-meta">
+                  <p class="song-name">{{ vi.track?.name || '' }}</p>
+                  <p class="song-artist">
+                    <button
+                      v-for="artist in getSongArtists(vi.track)"
+                      :key="`${vi.track?.id}-${artist.id || artist.name}`"
+                      type="button"
+                      class="artist-link"
+                      @click="openArtistDetail(artist)"
+                    >
+                      {{ artist.name || '未知歌手' }}
+                    </button>
+                    <span v-if="!getSongArtists(vi.track).length">未知歌手</span>
+                  </p>
+                </div>
+                <SongActions
+                  :song="vi.track"
+                  @play-next="playNext"
+                  @add-to-playlist="showAddToPlaylist"
+                  @open-comment="openComment"
+                  @open-album="openAlbum"
+                  @open-artist="openArtistDetail"
+                  @open-language="openLanguageDetail"
+                  @open-mv-player="(mv) => emit('open-mv-player', mv)"
+                />
+              </div>
+            </div>
+            <div
+              v-if="infiniteState.hasMore"
+              ref="sentinelRef"
+              class="infinite-sentinel"
+            >
+              <span v-if="infiniteState.loading" class="infinite-loading">加载中…</span>
+              <span v-else class="infinite-tip">向下滑动加载更多</span>
+            </div>
           </div>
         </template>
         <template v-else-if="activeTab === 'comments'">
@@ -292,6 +307,80 @@ const detailPageClassName = computed(() => {
   if (props.embedded) classNames.push('playlist-detail-page--embedded');
   return classNames.join(' ');
 });
+
+/* ---- 虚拟滚动 ---- */
+const songListRef = ref<HTMLElement | null>(null);
+const ROW_HEIGHT = 68;
+const OVERSCAN = 15;
+const songListScrollTop = ref(0);
+const songListHeight = ref(600);
+
+const visibleRange = computed(() => {
+  const total = filteredTracks.value.length;
+  if (!total) return { start: 0, end: 0 };
+  const start = Math.max(0, Math.floor(songListScrollTop.value / ROW_HEIGHT) - OVERSCAN);
+  const end = Math.min(total, Math.ceil((songListScrollTop.value + songListHeight.value) / ROW_HEIGHT) + OVERSCAN);
+  return { start, end };
+});
+
+const visibleTracks = computed(() => {
+  const r = visibleRange.value;
+  const items: { track: any; index: number }[] = [];
+  for (let i = r.start; i < r.end; i++) {
+    const track = filteredTracks.value[i];
+    if (track) items.push({ track, index: i });
+  }
+  return items;
+});
+
+const totalListHeight = computed(() => filteredTracks.value.length * ROW_HEIGHT);
+
+/* 缓存滚动宿主引用，避免每帧 document.querySelector */
+let cachedPageEl: HTMLElement | null = null;
+
+function onSongListScroll(): void {
+  const list = songListRef.value;
+  if (cachedPageEl && list) {
+    songListScrollTop.value = Math.max(0, cachedPageEl.scrollTop - list.offsetTop);
+  }
+}
+
+let songListResizeObserver: ResizeObserver | null = null;
+let pageScrollListener: (() => void) | null = null;
+
+onMounted(() => {
+  if (songListRef.value) {
+    songListHeight.value = songListRef.value.clientHeight;
+    songListResizeObserver = new ResizeObserver(() => {
+      if (songListRef.value) {
+        songListHeight.value = songListRef.value.clientHeight;
+      }
+    });
+    songListResizeObserver.observe(songListRef.value);
+  }
+  // 监听 .playlist-detail-page 滚动，更新虚拟滚动位置
+  const page = document.querySelector('.playlist-detail-page');
+  if (page) {
+    cachedPageEl = page as HTMLElement;
+    pageScrollListener = () => onSongListScroll();
+    page.addEventListener('scroll', pageScrollListener, { passive: true });
+  }
+});
+
+// 合并的清理逻辑（替代之前分散的两个 onBeforeUnmount）
+onBeforeUnmount(() => {
+  songListResizeObserver?.disconnect();
+  if (pageScrollListener) {
+    if (cachedPageEl) {
+      cachedPageEl.removeEventListener('scroll', pageScrollListener);
+    }
+    pageScrollListener = null;
+  }
+  const el = document.querySelector('.content') as HTMLElement | null;
+  el?.style.removeProperty('--cover-bg-url');
+  scrollObserver?.disconnect();
+  scrollObserver = null;
+});
 const shellStyle = computed<Record<string, string>>(() => {
   const coverUrl = playlist.value?.coverImgUrl?.trim();
   return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
@@ -312,14 +401,6 @@ watch(
   { immediate: true },
 );
 
-// 离开页面时清理 .content 上的封面图，避免残留到下一个详情页
-onBeforeUnmount(() => {
-  const el = document.querySelector('.content') as HTMLElement | null;
-  el?.style.removeProperty('--cover-bg-url');
-  scrollObserver?.disconnect();
-  scrollObserver = null;
-});
-
 function resolvePlaylistCover(playlistLike: any) {
   const firstTrack = Array.isArray(playlistLike?.tracks) ? playlistLike.tracks[0] : null;
   const firstTrackCover = firstTrack?.al?.picUrl || firstTrack?.album?.picUrl || '';
@@ -332,7 +413,7 @@ function resolvePlaylistCover(playlistLike: any) {
 }
 
 const { isSticky, refresh } = useDetailStickyState({
-  scrollHostSelector: () => props.scrollHostSelector || '.content',
+  scrollHostSelector: () => '.playlist-detail-page',
 });
 
 let fetchToken = 0;
@@ -371,7 +452,7 @@ async function fetchDetail(id: number) {
   }
 
   try {
-    const { data } = await getPlaylistDetail(id, 30, userStore.loginCookie || undefined);
+    const { data } = await getPlaylistDetail(id, 100, userStore.loginCookie || undefined);
     if (currentToken !== fetchToken) return;
 
     const detail = data?.playlist || null;
@@ -425,7 +506,7 @@ async function loadMoreSongs(id: number) {
   infiniteState.value = { ...st, loading: true };
 
   try {
-    const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: 30, offset: st.loaded });
+    const { data: chunkRes } = await getPlaylistTrackAll({ id, limit: 100, offset: st.loaded });
     if (currentToken !== fetchToken) return;
 
     const newSongs = Array.isArray(chunkRes?.songs) ? chunkRes.songs : [];
@@ -473,7 +554,7 @@ function setupInfiniteScroll() {
           loadMoreSongs(Number(playlist.value.id));
         }
       },
-      { rootMargin: '200px' },
+      { rootMargin: '400px' },
     );
     scrollObserver.observe(sentinel);
   });
@@ -791,6 +872,8 @@ function openAlbum(albumId: number) {
   background: transparent;
   box-shadow: none;
   overflow: visible;
+  margin: 0;
+  width: auto;
 }
 
 .playlist-detail-page--embedded::before,
@@ -803,6 +886,101 @@ function openAlbum(albumId: number) {
 .playlist-detail-page--embedded .playlist-detail-header {
   padding-left: 0;
   padding-right: 0;
+}
+
+/* 虚拟滚动容器 — .playlist-detail-page 作为滚动容器 */
+.playlist-detail-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: clip auto;
+  overflow-clip-margin: 16px;
+  /* 延伸至 .content 的 padding 区域，使 overflow-x:clip 裁切边界对齐视口边缘，
+     让 header 负 margin 可以真正铺满全宽 */
+  margin-left: calc(var(--space-4) * -1);
+  margin-right: calc(var(--space-4) * -1);
+  width: calc(100% + var(--space-4) * 2);
+}
+.playlist-detail-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.song-list--virtual {
+  flex: 1;
+  min-height: 400px;
+}
+
+/* 在 PlaylistDetailPage 中，.playlist-detail-page 已通过自身负 margin 延伸至视口边缘，
+   header 无需额外负 margin，避免被 overflow-x:clip 裁切掉左下/右下圆角 */
+.playlist-detail-page .playlist-detail-header-wrap {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+.song-list--virtual .song-item {
+  display: grid;
+  grid-template-columns: 40px 52px 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 16px;
+}
+.song-list--virtual .song-item:last-child {
+  border-bottom: 0;
+}
+.song-list--virtual .song-cover {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+.song-list--virtual .song-cover-placeholder {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--bg-muted);
+}
+.song-list--virtual .song-meta {
+  min-width: 0;
+}
+.song-list--virtual .song-name {
+  margin: 0;
+  color: var(--text-main);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-body-sm);
+}
+.song-list--virtual .song-artist {
+  margin: 2px 0 0;
+  color: var(--text-sub);
+  font-size: var(--text-label-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.song-list--virtual .song-artist .artist-link {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+}
+.song-list--virtual .song-artist .artist-link:hover {
+  color: var(--accent);
+}
+.song-list--virtual .infinite-sentinel {
+  text-align: center;
+  padding: var(--space-3);
+  color: var(--text-soft);
+  font-size: var(--text-label-sm);
 }
 
 .playlist-detail-page--embedded .song-list {

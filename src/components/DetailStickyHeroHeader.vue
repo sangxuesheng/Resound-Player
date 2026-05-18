@@ -239,7 +239,8 @@ onMounted(remeasureHeight);
   margin: 0 calc(var(--space-4) * -1) 0;
   padding: 22px var(--space-4) 8px;
   border-radius: 0 0 16px 16px;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.1);
+  clip-path: inset(0 round 0 0 16px 16px);
+  box-shadow: 0 8px 20px var(--shadow-sticky);
 }
 .playlist-detail-header-wrap.is-sticky-header.has-header-tabs {
   height: 134px;
@@ -362,6 +363,24 @@ onMounted(remeasureHeight);
   top: -18px;
   margin: 0 -18px 0;
   padding: var(--space-3) 18px;
+}
+
+/* =========================================
+ * 减少动效降级
+ * ========================================= */
+@media (prefers-reduced-motion: reduce) {
+  .playlist-detail-header-wrap {
+    transition: none;
+  }
+  .playlist-detail-header-wrap::after,
+  .hero-actions-shell--under-cover,
+  :deep(.hero-meta-shell),
+  :deep(.desc),
+  :deep(.hero-title-shell .title),
+  :deep(.cover-motion-shell),
+  :deep(img.cover) {
+    transition: none;
+  }
 }
 
 </style>

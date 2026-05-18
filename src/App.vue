@@ -1201,7 +1201,7 @@ onBeforeUnmount(() => {
 }
 
 .content.content--hero-sticky::before {
-  opacity: 1;
+  opacity: var(--blur-opacity, 1);
 }
 
 .content.content--user-page,

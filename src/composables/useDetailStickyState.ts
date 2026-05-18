@@ -20,6 +20,9 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   let headerEl: HTMLElement | null = null;
   let initialOffset = 0;
   const PROGRESS_DISTANCE = 324;
+  // 标记是否需要同步 blur 到 .content（仅当 scrollHost 不是 .content 自身时，
+  // 即 PlaylistDetailPage 场景，::before 无法随滚动自然消失）
+  let shouldSyncBlur = false;
 
   function resolveScrollHostSelector(): string {
     if (typeof scrollHostSelector === 'function') {
@@ -40,21 +43,38 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     if (!scrollHost || !headerEl) return;
     const st = scrollHost.scrollTop;
 
-    // 连续进度：从 initialOffset 开始算，与 isSticky 同步
+    // 已吸顶时：用 hysteresis 阈值算 progress，使背景随回滚平滑淡出而非瞬间归零
+    if (isSticky.value) {
+      const hysteresisThreshold = Math.max(1, initialOffset - 150);
+      isSticky.value = st >= hysteresisThreshold;
+      const effectiveSt = Math.max(0, st - hysteresisThreshold);
+      const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
+      headerEl.style.setProperty('--sticky-progress', String(progress));
+      syncBlurOpacity(progress);
+      return;
+    }
+
+    // 普通态：从 initialOffset 开始算
     const effectiveSt = Math.max(0, st - initialOffset);
     const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
     headerEl.style.setProperty('--sticky-progress', String(progress));
-
-    // 已吸顶时只判断 scrollTop，不因内容高度波动反复切换
-    if (isSticky.value) {
-      isSticky.value = st >= initialOffset;
-      return;
-    }
+    syncBlurOpacity(progress);
 
     // 首次激活：内容高度必须足够
     const scrollRange = scrollHost.scrollHeight - scrollHost.clientHeight;
     const requiredRange = Math.max(initialOffset, PROGRESS_DISTANCE) + 40;
     isSticky.value = st >= initialOffset && scrollRange >= requiredRange;
+  }
+
+  /** 同步 content::before blur 的透明度，仅在 scrollHost 不是 .content 时生效 */
+  function syncBlurOpacity(progress: number): void {
+    if (!shouldSyncBlur) return;
+    const contentEl = document.querySelector('.content');
+    if (contentEl) {
+      // progress 0→1 时 blur 从 1→0 消失，比 sticky 背景渐入稍快
+      const blurOpacity = Math.max(0, 1 - progress * 1.5);
+      contentEl.style.setProperty('--blur-opacity', String(blurOpacity));
+    }
   }
 
   function onScroll(): void {
@@ -90,6 +110,8 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
         scrollHost.addEventListener('scroll', onScroll, { passive: true });
         // 初始设一次 progress=0
         headerEl.style.setProperty('--sticky-progress', '0');
+        // 检测是否需要同步 blur：scrollHost 不是 .content（即 PlaylistDetailPage）
+        shouldSyncBlur = resolveScrollHostSelector() !== '.content';
       }
     });
   });
@@ -97,6 +119,15 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   onBeforeUnmount(() => {
     scrollHost?.removeEventListener('scroll', onScroll);
     cancelAnimationFrame(rafId);
+    // 清理 --sticky-progress，避免下一个页面复用 header 时有视觉残留
+    if (headerEl) {
+      headerEl.style.removeProperty('--sticky-progress');
+    }
+    // 清理 blur opacity，仅 PlaylistDetailPage 设置了它
+    if (shouldSyncBlur) {
+      const contentEl = document.querySelector('.content');
+      contentEl?.style.removeProperty('--blur-opacity');
+    }
   });
 
   return { isSticky, refresh };
