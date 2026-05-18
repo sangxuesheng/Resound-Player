@@ -23,6 +23,8 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   // 标记是否需要同步 blur 到 .content（仅当 scrollHost 不是 .content 自身时，
   // 即 PlaylistDetailPage 场景，::before 无法随滚动自然消失）
   let shouldSyncBlur = false;
+  // 吸顶激活时间戳：激活后指定时间内不允许退出，防止 header 高度变化导致 scrollTop 钳位触发误退出
+  let activatedAt = 0;
 
   function resolveScrollHostSelector(): string {
     if (typeof scrollHostSelector === 'function') {
@@ -39,17 +41,20 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     return document.querySelector(headerWrapSelector) as HTMLElement | null;
   }
 
-  function update(): void {
+  function update(force = false): void {
     if (!scrollHost || !headerEl) return;
     const st = scrollHost.scrollTop;
 
     // 已吸顶时：用 hysteresis 阈值算 progress，使背景随回滚平滑淡出而非瞬间归零
     if (isSticky.value) {
       const hysteresisThreshold = Math.max(1, initialOffset - 150);
-      isSticky.value = st >= hysteresisThreshold;
+      // 激活冷启动保护：激活后 300ms 内不允许退出，防止 header 高度变化导致的 scrollTop 钳位误触发
+      if (Date.now() - activatedAt > 300) {
+        isSticky.value = st >= hysteresisThreshold;
+      }
       const effectiveSt = Math.max(0, st - hysteresisThreshold);
       const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
-      headerEl.style.setProperty('--sticky-progress', String(progress));
+      writeStickyProgress(progress, force);
       syncBlurOpacity(progress);
       return;
     }
@@ -57,13 +62,30 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     // 普通态：从 initialOffset 开始算
     const effectiveSt = Math.max(0, st - initialOffset);
     const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
-    headerEl.style.setProperty('--sticky-progress', String(progress));
+    writeStickyProgress(progress, force);
     syncBlurOpacity(progress);
 
     // 首次激活：内容高度必须足够
     const scrollRange = scrollHost.scrollHeight - scrollHost.clientHeight;
     const requiredRange = Math.max(initialOffset, PROGRESS_DISTANCE) + 40;
-    isSticky.value = st >= initialOffset && scrollRange >= requiredRange;
+    const shouldSticky = st >= initialOffset && scrollRange >= requiredRange;
+    if (shouldSticky) {
+      activatedAt = Date.now();
+      isSticky.value = true;
+    } else {
+      isSticky.value = false;
+    }
+  }
+
+  /** 写入 --sticky-progress，跳过变化量过小的帧以减少 inline style 写入 */
+  let lastProgress = -1;
+  function writeStickyProgress(progress: number, force = false): void {
+    if (!headerEl) return;
+    const delta = Math.abs(progress - lastProgress);
+    // progress 范围 0~1，324px滚动范围 → 0.005 ≈ 1.6px滚动，足够精细
+    if (!force && delta < 0.005) return;
+    lastProgress = progress;
+    headerEl.style.setProperty('--sticky-progress', String(progress));
   }
 
   /** 同步 content::before blur 的透明度，仅在 scrollHost 不是 .content 时生效 */

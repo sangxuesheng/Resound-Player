@@ -79,10 +79,6 @@
   max-height: 58px;
   overflow: visible;
   padding-top: 2px;
-  transition:
-    opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    max-height 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    margin 0.3s cubic-bezier(0.33, 0, 0.1, 1);
   margin: calc(var(--space-2) - 2px) 0 var(--space-4);
 }
 .playlist-detail-back.back-fade,

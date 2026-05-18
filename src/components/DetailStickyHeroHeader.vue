@@ -104,13 +104,14 @@ onMounted(remeasureHeight);
   padding-bottom: var(--space-2);
   transform: translateZ(0);
   backface-visibility: hidden;
+  will-change: height, opacity;
   background: color-mix(in srgb, var(--bg-solid) calc(var(--sticky-progress, 0) * 100%), transparent);
   backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   -webkit-backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   transition:
     border-radius 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     box-shadow 0.3s cubic-bezier(0.33, 0, 0.1, 1);
-  /* transition 历史: height / padding / margin 曾在此 transition，因触发布局重排已移除 */
+  /* height transition 曾在此，因小幅度滑动时触发布局重排导致头部弹跳，已移除 */
 }
 
 /* 分隔线 */
@@ -204,12 +205,14 @@ onMounted(remeasureHeight);
 
 /* 元数据 + 描述 + 标题 — 统一 transition */
 :deep(.hero-meta-shell) {
+  will-change: opacity, transform;
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
   /* transition 历史: max-width 曾在此 transition，因触发布局重排已移除 */
 }
 :deep(.desc) {
+  will-change: opacity, transform;
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
