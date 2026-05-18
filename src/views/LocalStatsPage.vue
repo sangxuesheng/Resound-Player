@@ -161,6 +161,14 @@ function playTrack(track: any) {
 .dir-actions {
   display: flex;
   gap: var(--space-2);
+  align-items: center;
+}
+.dir-actions .button-surface,
+.dir-actions .button-danger {
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-label-sm);
+  border-radius: var(--radius-sm);
 }
 .dir-item {
   display: flex;

@@ -367,7 +367,13 @@ function handlePlayAll() {
 <style scoped>
 .local-page { display: grid; gap: var(--space-4); }
 .local-page-actions { display: flex; gap: var(--space-2); align-items: center; position: relative; }
-.local-search { flex: 1; max-width: 320px; }
+.local-page-actions .button-surface {
+  height: 34px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-label-sm);
+  border-radius: var(--radius-sm);
+}
+.local-search { flex: 1; max-width: 320px; height: 38px; }
 .local-empty { text-align: center; padding: var(--space-8); color: var(--text-soft); }
 .local-scanning { padding: var(--space-3); background: var(--accent-soft); border-radius: var(--radius-sm); color: var(--accent); font-size: var(--text-label-sm); }
 

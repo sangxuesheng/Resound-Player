@@ -639,7 +639,8 @@ button,
 .button-surface--danger,
 .action-btn,
 .remove-btn,
-.btn-danger {
+.btn-danger,
+.button-danger {
   background: var(--button-danger-bg) !important;
   border: 1px solid var(--button-danger-border) !important;
   box-shadow: var(--button-surface-shadow) !important;
@@ -883,7 +884,8 @@ a,
   .button-surface--danger:hover,
   .action-btn:hover,
   .remove-btn:hover,
-  .btn-danger:hover {
+  .btn-danger:hover,
+  .button-danger:hover {
     background: var(--button-danger-hover-bg) !important;
     border-color: var(--button-danger-hover-border) !important;
     box-shadow: var(--button-surface-hover-shadow) !important;
