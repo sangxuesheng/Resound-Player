@@ -1,0 +1,522 @@
+import { reactive, computed } from 'vue'
+import { platform } from '../utils/platform'
+
+export interface LocalTrack {
+  id: string
+  path: string
+  title: string
+  artist: string
+  album: string
+  albumArtist: string
+  duration: number
+  coverUrl: string
+  hasLyrics: boolean
+  source: 'local'
+  createdAt: string
+}
+
+export type LocalView = 'songs' | 'artists' | 'albums' | 'folders' | 'playlists' | 'playlist-detail' | 'stats'
+export type SortField = 'title' | 'artist' | 'album' | 'duration'
+export type SortOrder = 'asc' | 'desc'
+
+export interface FolderNode {
+  name: string
+  path: string
+  children: FolderNode[]
+  count: number
+}
+
+export const localMusicStore = reactive({
+  tracks: [] as LocalTrack[],
+  directories: [] as string[],
+  scanning: false,
+  progress: { current: 0, total: 0 },
+  searchKeyword: '',
+  sortField: 'title' as SortField,
+  sortOrder: 'asc' as SortOrder,
+  activeView: 'songs' as LocalView,
+  selectedArtist: '',
+  selectedAlbum: '',
+  selectedFolderPath: '',
+  collapsedFolders: new Set<string>(),
+  playlists: [] as any[],
+  activePlaylistId: '',
+  activePlaylistDetail: null as any,
+
+  get hasLocalSupport() {
+    return platform.hasLocalMusicSupport
+  },
+
+  get filteredTracks() {
+    let list = this.tracks
+    if (this.searchKeyword) {
+      const kw = this.searchKeyword.toLowerCase()
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(kw) ||
+        t.artist.toLowerCase().includes(kw) ||
+        t.album.toLowerCase().includes(kw)
+      )
+    }
+    // 排序
+    const field = this.sortField
+    const order = this.sortOrder
+    list = [...list].sort((a, b) => {
+      let cmp = 0
+      if (field === 'duration') {
+        cmp = a.duration - b.duration
+      } else {
+        cmp = (a[field] || '').localeCompare(b[field] || '', 'zh-CN')
+      }
+      return order === 'desc' ? -cmp : cmp
+    })
+    return list
+  },
+
+  toggleSort(field: SortField) {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc'
+    } else {
+      this.sortField = field
+      this.sortOrder = 'asc'
+    }
+  },
+
+  get sortLabel(): string {
+    const labels: Record<SortField, string> = { title: '标题', artist: '歌手', album: '专辑', duration: '时长' }
+    const arrow = this.sortOrder === 'asc' ? '↑' : '↓'
+    return `${labels[this.sortField]} ${arrow}`
+  },
+
+  get artistList() {
+    const map = new Map<string, LocalTrack[]>()
+    for (const t of this.tracks) {
+      const artists = t.artist.replace(/\s*\/\s*/g, '/').split('/')
+      for (const a of artists) {
+        const key = a.trim()
+        if (!key) continue
+        if (!map.has(key)) map.set(key, [])
+        map.get(key)!.push(t)
+      }
+    }
+    return Array.from(map.entries())
+      .map(([name, tracks]) => ({ name, count: tracks.length, tracks }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+  },
+
+  get albumList() {
+    const map = new Map<string, LocalTrack[]>()
+    for (const t of this.tracks) {
+      const key = t.album || '未知专辑'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(t)
+    }
+    return Array.from(map.entries())
+      .map(([name, tracks]) => ({ name, count: tracks.length, tracks, coverUrl: tracks[0]?.coverUrl || '' }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'zh-CN'))
+  },
+
+  get selectedArtistTracks() {
+    if (!this.selectedArtist) return this.filteredTracks
+    return this.filteredTracks.filter(t =>
+      t.artist.toLowerCase().includes(this.selectedArtist.toLowerCase())
+    )
+  },
+
+  get selectedAlbumTracks() {
+    if (!this.selectedAlbum) return this.filteredTracks
+    return this.filteredTracks.filter(t => t.album === this.selectedAlbum)
+  },
+
+  // ── 文件夹树 ──
+  get folderTree(): FolderNode[] {
+    // 如果目录列表为空，尝试从 localStorage 恢复
+    if (!this.directories.length) this.loadDirectories()
+
+    // 构建扫描目录映射：baseName → 完整路径（同名时后者覆盖，属于可接受限制）
+    const dirMap = new Map<string, string>()
+    for (const d of this.directories) {
+      const normalized = d.replace(/\/$/g, '')
+      const baseName = normalized.split('/').filter(Boolean).pop() || normalized
+      dirMap.set(baseName, normalized)
+    }
+
+    // 计算每个 track 相对于对应扫描目录的路径
+    const dirs = new Set<string>()
+    for (const t of this.tracks) {
+      const absDir = this.getDirPath(t.path)
+      if (!absDir) continue
+      dirs.add(this._toTreePath(absDir, dirMap))
+    }
+
+    // 构建树节点
+    const roots: FolderNode[] = []
+    for (const dir of [...dirs].sort()) {
+      const parts = dir.replace(/\\/g, '/').split('/').filter(Boolean)
+      let current = roots
+      let pathAcc = ''
+      for (const part of parts) {
+        pathAcc = pathAcc ? `${pathAcc}/${part}` : part
+        let node = current.find(n => n.name === part)
+        if (!node) {
+          node = { name: part, path: pathAcc, children: [], count: 0 }
+          current.push(node)
+        }
+        current = node.children
+      }
+    }
+
+    // 统计每个目录下的歌曲数（仅本级）
+    const countMap = new Map<string, number>()
+    for (const t of this.tracks) {
+      const absDir = this.getDirPath(t.path)
+      if (!absDir) continue
+      const key = this._toTreePath(absDir, dirMap)
+      if (key) countMap.set(key, (countMap.get(key) || 0) + 1)
+    }
+
+    const setCount = (nodes: FolderNode[]): void => {
+      for (const n of nodes) {
+        n.count = countMap.get(n.path) || 0
+        setCount(n.children)
+      }
+    }
+    setCount(roots)
+    return roots
+  },
+
+  /** 将绝对目录路径转换为树路径（相对扫描目录），无匹配时返回原路径去前导 / */
+  _toTreePath(absDir: string, dirMap: Map<string, string>): string {
+    for (const [baseName, scannedDir] of dirMap) {
+      if (absDir === scannedDir) return baseName
+      if (absDir.startsWith(scannedDir + '/')) {
+        return baseName + absDir.slice(scannedDir.length)
+      }
+    }
+    return absDir.replace(/^\//, '')
+  },
+
+  setSelectedFolder(path: string) {
+    this.selectedFolderPath = path
+  },
+
+  toggleFolderCollapse(path: string) {
+    if (this.collapsedFolders.has(path)) {
+      this.collapsedFolders.delete(path)
+    } else {
+      this.collapsedFolders.add(path)
+    }
+  },
+
+  get selectedFolderTracks(): LocalTrack[] {
+    if (!this.selectedFolderPath) return []
+    const relativePath = this.selectedFolderPath.replace(/\/$/g, '')
+
+    // 构建同样的扫描目录映射
+    const dirMap = new Map<string, string>()
+    for (const d of this.directories) {
+      const normalized = d.replace(/\/$/g, '')
+      const baseName = normalized.split('/').filter(Boolean).pop() || normalized
+      dirMap.set(baseName, normalized)
+    }
+
+    // 从相对路径还原完整目录路径并匹配
+    const firstSeg = relativePath.split('/')[0]
+    const scannedDir = dirMap.get(firstSeg)
+
+    return this.tracks.filter(t => {
+      const absDir = this.getDirPath(t.path)
+      if (!absDir) return false
+      if (scannedDir) {
+        if (absDir === scannedDir) return relativePath === firstSeg
+        if (absDir.startsWith(scannedDir + '/')) {
+          const rest = absDir.slice(scannedDir.length)
+          return (firstSeg + rest) === relativePath
+        }
+        return false
+      }
+      // 无匹配时回退到直接比较
+      return absDir.replace(/^\//, '') === relativePath
+    })
+  },
+
+  /** 从文件路径提取目录路径 */
+  getDirPath(filePath: string): string {
+    const normalized = filePath.replace(/\\/g, '/')
+    const idx = normalized.lastIndexOf('/')
+    if (idx === -1) return ''
+    return normalized.substring(0, idx) || '/'
+  },
+
+  async scanAll() {
+    if (!platform.localApi || this.scanning) return
+    this.scanning = true
+    this.progress = { current: 0, total: 0 }
+
+    // 先清理旧的监听器再注册，防重复注册
+    platform.localApi.removeScanListeners()
+    platform.localApi.onScanProgress((data: any) => {
+      if (data.type === 'progress') {
+        this.progress = { current: data.current, total: data.total }
+      }
+    })
+
+    for (const dir of this.directories) {
+      try {
+        await platform.localApi.scan(dir)
+      } catch (e) {
+        console.error('[localMusic] scan failed:', dir, e)
+      }
+    }
+    this.scanning = false
+    platform.localApi.removeScanListeners()
+    await this.loadTracks()
+  },
+
+  async scanSingleDirectory(dirPath: string) {
+    if (!platform.localApi) return
+    this.scanning = true
+    this.progress = { current: 0, total: 0 }
+
+    platform.localApi.removeScanListeners()
+    platform.localApi.onScanProgress((data: any) => {
+      if (data.type === 'progress') {
+        this.progress = { current: data.current, total: data.total }
+      }
+    })
+
+    try {
+      await platform.localApi.scan(dirPath)
+    } catch (e) {
+      console.error('[localMusic] scan dir failed:', dirPath, e)
+    }
+
+    this.scanning = false
+    platform.localApi.removeScanListeners()
+    await this.loadTracks()
+  },
+
+  addDirectoryPath(dirPath: string) {
+    if (!dirPath || this.directories.includes(dirPath)) return
+    this.directories.push(dirPath)
+  },
+
+  removeDirectoryPath(dirPath: string) {
+    this.directories = this.directories.filter(d => d !== dirPath)
+  },
+
+  async clearAll() {
+    this.directories = []
+    // 先清空 localStorage 中的目录列表，防止 saveDirectories 合并旧数据加回来
+    localStorage.setItem('local_music_dirs', '[]')
+    if (platform.localApi) {
+      try {
+        await platform.localApi.clearAllData()
+      } catch (e) {
+        console.error('[localMusic] clear all failed:', e)
+      }
+    }
+    await this.loadTracks()
+    this._statsRefresh++
+    this._coverCache.clear()
+    this.saveDirectories()
+  },
+
+  async loadTracks() {
+    if (!platform.localApi) return
+    try {
+      const rows = await platform.localApi.getAll()
+      this.tracks = (rows || []).map((t: any) => ({
+        id: t.id,
+        path: t.path,
+        title: t.title,
+        artist: t.artist,
+        album: t.album,
+        albumArtist: t.albumArtist || '',
+        duration: t.duration || 0,
+        coverUrl: this._coverCache.has(t.id) ? this._coverCache.get(t.id)! : '',
+        hasLyrics: Boolean(t.hasLyrics),
+        source: 'local' as const,
+        createdAt: t.createdAt || '',
+      }))
+      // 重置封面加载状态，确保新 tracks 能重新开始加载封面
+      this._coversLoading = false
+      // 懒加载封面（在空闲时逐个加载）
+      this.lazyLoadCovers()
+    } catch (e) {
+      console.error('[localMusic] load tracks failed:', e)
+    }
+  },
+
+  // 封面缓存 Map<trackId, base64Url>
+  _coverCache: new Map<string, string>(),
+
+  async getCoverUrl(trackId: string, filePath: string): Promise<string> {
+    if (this._coverCache.has(trackId)) return this._coverCache.get(trackId)!
+    if (!platform.localApi) return ''
+    try {
+      const url = await platform.localApi.getCover(filePath)
+      if (url) {
+        this._coverCache.set(trackId, url)
+        return url
+      }
+    } catch { /* no cover */ }
+    return ''
+  },
+
+  // 封面加载中标志，防止并发
+  _coversLoading: false,
+  _statsRefresh: 0,
+
+  lazyLoadCovers() {
+    if (!platform.localApi || !this.tracks.length || this._coversLoading) return
+    this._coversLoading = true
+    const pending = this.tracks.filter(t => !this._coverCache.has(t.id))
+    if (!pending.length) {
+      this._coversLoading = false
+      return
+    }
+    Promise.all(pending.map(track =>
+      this.getCoverUrl(track.id, track.path).then(url => {
+        if (url && this.tracks.includes(track)) {
+          track.coverUrl = url
+        }
+      })
+    )).then(() => { this._coversLoading = false })
+  },
+
+  async addDirectory() {
+    if (!platform.localApi || !platform.localApi.selectDirectory) return
+    try {
+      const result = await platform.localApi.selectDirectory()
+      if (result) {
+        this.directories.push(result)
+        this.saveDirectories()
+        await this.scanAll()
+      }
+    } catch (e) {
+      console.error('[localMusic] add directory failed:', e)
+    }
+  },
+
+  saveDirectories() {
+    try {
+      // 合并已有的 localStorage 数据，防止因 loadDirectories 未执行而覆盖丢失
+      const existing = localStorage.getItem('local_music_dirs')
+      if (existing) {
+        const parsed = JSON.parse(existing) as string[]
+        for (const dir of parsed) {
+          if (!this.directories.includes(dir)) {
+            this.directories.push(dir)
+          }
+        }
+      }
+      localStorage.setItem('local_music_dirs', JSON.stringify(this.directories))
+    } catch { /* ignore */ }
+  },
+
+  loadDirectories() {
+    try {
+      const saved = localStorage.getItem('local_music_dirs')
+      if (saved) this.directories = JSON.parse(saved)
+    } catch { /* ignore */ }
+  },
+
+  // ── 歌单管理 ──
+
+  async loadPlaylists() {
+    if (!platform.localApi) return
+    try {
+      this.playlists = await platform.localApi.listPlaylists()
+    } catch (e) {
+      console.error('[localMusic] load playlists failed:', e)
+    }
+  },
+
+  async createPlaylist(name: string, description?: string) {
+    if (!platform.localApi) return null
+    try {
+      const result = await platform.localApi.createPlaylist(name, description || '')
+      await this.loadPlaylists()
+      return result
+    } catch (e) {
+      console.error('[localMusic] create playlist failed:', e)
+      return null
+    }
+  },
+
+  async deletePlaylist(id: string) {
+    if (!platform.localApi) return
+    try {
+      await platform.localApi.deletePlaylist(id)
+      if (this.activePlaylistId === id) {
+        this.activePlaylistId = ''
+        this.activePlaylistDetail = null
+      }
+      await this.loadPlaylists()
+    } catch (e) {
+      console.error('[localMusic] delete playlist failed:', e)
+    }
+  },
+
+  async renamePlaylist(id: string, name: string) {
+    if (!platform.localApi) return
+    try {
+      await platform.localApi.renamePlaylist(id, name)
+      await this.loadPlaylists()
+      if (this.activePlaylistDetail?.id === id) {
+        this.activePlaylistDetail.name = name
+      }
+    } catch (e) {
+      console.error('[localMusic] rename playlist failed:', e)
+    }
+  },
+
+  async openPlaylist(id: string) {
+    if (!platform.localApi) return
+    try {
+      const detail = await platform.localApi.getPlaylist(id)
+      const tracks = await platform.localApi.getPlaylistTracks(id)
+      this.activePlaylistDetail = { ...detail, tracks: tracks || [] }
+      this.activePlaylistId = id
+      this.activeView = 'playlist-detail'
+    } catch (e) {
+      console.error('[localMusic] open playlist failed:', e)
+    }
+  },
+
+  async addTrackToPlaylist(playlistId: string, trackId: string) {
+    if (!platform.localApi) return
+    try {
+      await platform.localApi.addTrackToPlaylist(playlistId, trackId)
+      if (this.activePlaylistId === playlistId) {
+        await this.openPlaylist(playlistId)
+      }
+      await this.loadPlaylists()
+    } catch (e) {
+      console.error('[localMusic] add track to playlist failed:', e)
+    }
+  },
+
+  async removeTrackFromPlaylist(playlistId: string, trackId: string) {
+    if (!platform.localApi) return
+    try {
+      await platform.localApi.removeTrackFromPlaylist(playlistId, trackId)
+      if (this.activePlaylistId === playlistId) {
+        await this.openPlaylist(playlistId)
+      }
+      await this.loadPlaylists()
+    } catch (e) {
+      console.error('[localMusic] remove track from playlist failed:', e)
+    }
+  },
+
+  formatDuration(seconds: number): string {
+    if (!seconds || seconds <= 0) return '--:--'
+    const m = Math.floor(seconds / 60)
+    const s = Math.floor(seconds % 60)
+    return `${m}:${s.toString().padStart(2, '0')}`
+  },
+})
+
+// 初始化：从 localStorage 恢复已保存的扫描目录
+localMusicStore.loadDirectories()

@@ -60,8 +60,9 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
-import { BarChart3, BookAudio, Clapperboard, Compass, History, Home, ListMusic, Search, Settings, Trophy, User } from 'lucide-vue-next';
+import { BarChart3, BookAudio, Clapperboard, Compass, Disc3, FolderOpen, FolderTree, History, Home, ListMusic, Mic2, Search, Settings, Trophy, User } from 'lucide-vue-next';
 import AnimatedAppear from './AnimatedAppear.vue';
+import { platform } from '../utils/platform';
 
 const STORAGE_KEY = 'tm_sidebar_collapsed';
 
@@ -116,6 +117,9 @@ const items = [
   { key: 'podcast-list', label: '播客有声书', icon: BookAudio },
   { key: 'history', label: '收藏历史', icon: History },
   { key: 'stats', label: '听歌统计', icon: BarChart3 },
+  ...(platform.isDesktop ? [
+    { key: 'local-music', label: '本地音乐', icon: Disc3 },
+  ] : []),
   { key: 'user', label: '用户', icon: User },
   { key: 'settings', label: '设置', icon: Settings },
   { key: 'discover', label: '发现', icon: Compass },

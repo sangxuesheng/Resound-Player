@@ -406,6 +406,31 @@ export function useLyrics() {
       const source = track?.source;
       const cloudSid = track?.cloudSid;
 
+      // 本地歌曲：通过 IPC 获取外部歌词
+      if (source === 'local') {
+        const localApi = (window as any).localApi
+        if (localApi?.getLyric) {
+          const filePath = (track as any).path
+          if (filePath) {
+            try {
+              const result = await localApi.getLyric(filePath)
+              if (result?.text) {
+                // parseLyrics 需要 { lrc/yrc: { lyric: '...' } } 格式
+                const payload: any = {}
+                const fmt = result.format || 'lrc'
+                payload[fmt] = { lyric: result.text }
+                const lines = parseLyrics(payload)
+                if (lines.length) {
+                  lyricLines.value = lines
+                  isLoading.value = false
+                  return
+                }
+              }
+            } catch { /* fall through to online */ }
+          }
+        }
+      }
+
       // 云盘歌词：优先走云盘专属 API
       if (source === 'cloud' && cloudSid) {
         const data = (await getCloudLyric(Number(track?.cloudOwnerId || track?.uid || 0), cloudSid)).data;

@@ -88,9 +88,11 @@ function spawnNeteaseApi(port) {
   child.stdout.on('data', (chunk) => {
     console.log(`[netease-api] ${chunk.toString().trim()}`);
   });
+  child.stdout.on('error', () => {});
   child.stderr.on('data', (chunk) => {
     console.error(`[netease-api:err] ${chunk.toString().trim()}`);
   });
+  child.stderr.on('error', () => {});
   child.on('exit', (code, signal) => {
     console.log(`[netease-api] exited code=${code} signal=${signal}`);
   });
@@ -117,9 +119,11 @@ function spawnUnblockProxy(port) {
   child.stdout.on('data', (chunk) => {
     console.log(`[unblock-proxy] ${chunk.toString().trim()}`);
   });
+  child.stdout.on('error', () => {});
   child.stderr.on('data', (chunk) => {
     console.error(`[unblock-proxy:err] ${chunk.toString().trim()}`);
   });
+  child.stderr.on('error', () => {});
   child.on('exit', (code, signal) => {
     console.log(`[unblock-proxy] exited code=${code} signal=${signal}`);
   });
@@ -142,9 +146,11 @@ function spawnUnblockMatch(port, unblockProxyPort) {
   child.stdout.on('data', (chunk) => {
     console.log(`[unblock-match] ${chunk.toString().trim()}`);
   });
+  child.stdout.on('error', () => {});
   child.stderr.on('data', (chunk) => {
     console.error(`[unblock-match:err] ${chunk.toString().trim()}`);
   });
+  child.stderr.on('error', () => {});
   child.on('exit', (code, signal) => {
     console.log(`[unblock-match] exited code=${code} signal=${signal}`);
   });

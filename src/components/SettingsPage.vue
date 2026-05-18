@@ -460,6 +460,7 @@ import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import { getSourceMeta } from '../config/musicSources';
 import { lyricsSettings } from '../stores/lyricsSettings';
+import { platform } from '../utils/platform';
 
 type SettingItem = {
   key: string;
@@ -482,6 +483,7 @@ type SettingGroup = {
 const allTabs = [
   { key: 'playback', label: '播放' },
   { key: 'appearance', label: '外观' },
+  { key: 'local', label: '本地音乐' },
   { key: 'account', label: '账号' },
   { key: 'about', label: '关于' },
 ] as const;
@@ -517,6 +519,15 @@ const groupsMap: Record<string, SettingGroup[]> = {
         { key: 'barLyric', label: '底部栏歌词', desc: '播放时底部栏显示歌词', type: 'switch' },
         { key: 'showIntelligenceIndicator', label: '控制中心心动图标', desc: '在播放器控制栏显示心动模式图标', type: 'switch' },
         { key: 'autoHidePlayerUI', label: '全屏播放页自动隐藏 UI', desc: '在全屏播放页中，无操作时自动隐藏顶部栏、右侧按钮和底部控制台', type: 'switch' },
+      ],
+    },
+  ],
+  local: [
+    {
+      title: '本地音乐目录',
+      items: [
+        { key: 'localAddDir', label: '添加目录', desc: '选择本地音乐文件夹进行扫描', type: 'action', actionText: '选择文件夹' },
+        { key: 'localScan', label: '扫描本地音乐', desc: '立即重新扫描所有已添加的目录', type: 'action', actionText: '扫描' },
       ],
     },
   ],
@@ -640,6 +651,10 @@ const currentGroups = computed(() => {
         if (item.key === 'logout') return userStore.isLogin;
         if (item.key === 'cookieEditor') return userStore.isLogin;
         if (!userStore.isLogin && activeTab.value === 'account') {
+          return false;
+        }
+        // 本地音乐功能仅桌面端可用
+        if (['localAddDir', 'localScan'].includes(item.key) && !platform.isDesktop) {
           return false;
         }
         return true;
@@ -921,6 +936,36 @@ async function handleAction(key: string) {
     await userStore.logout();
     activeTab.value = 'account';
     showLogoutMessage('已退出登录');
+  }
+
+  if (key === 'localAddDir') {
+    const { localMusicStore } = await import('../stores/localMusic')
+    if (!localMusicStore.hasLocalSupport) {
+      console.warn('[settings] hasLocalSupport=false, isDesktop=', platform.isDesktop, 'localApi=', !!(window as any).localApi)
+      showLogoutMessage(platform.isDesktop ? '正在扫描…' : '本地音乐功能仅支持桌面端')
+      if (platform.isDesktop) {
+        await localMusicStore.addDirectory()
+        showLogoutMessage('已添加目录')
+      }
+      return
+    }
+    await localMusicStore.addDirectory()
+    showLogoutMessage('已添加目录')
+  }
+
+  if (key === 'localScan') {
+    const { localMusicStore } = await import('../stores/localMusic')
+    if (!localMusicStore.hasLocalSupport) {
+      console.warn('[settings] hasLocalSupport=false, isDesktop=', platform.isDesktop, 'localApi=', !!(window as any).localApi)
+      showLogoutMessage(platform.isDesktop ? '正在扫描…' : '本地音乐功能仅支持桌面端')
+      if (platform.isDesktop) {
+        await localMusicStore.scanAll()
+        showLogoutMessage('扫描完成')
+      }
+      return
+    }
+    await localMusicStore.scanAll()
+    showLogoutMessage('扫描完成')
   }
 }
 </script>

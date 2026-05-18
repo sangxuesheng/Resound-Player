@@ -1,9 +1,12 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, protocol } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolveServicePorts } from './port-manager.js';
 import { startAllServices, waitApiReady, killAllServices } from './serviceManager.js';
+import { LocalMusicDB } from './services/db/LocalMusicDB.js';
+import { NodeMusicScanner } from './services/scanner/NodeMusicScanner.js';
+import { registerLocalMusicIpc } from './services/ipc/localMusicIpc.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -355,7 +358,32 @@ async function bootstrap() {
     return;
   }
 
-  // ── Create main window ──
+  // ── 注册 local:// 协议（本地文件播放）──
+  protocol.registerFileProtocol('local', (request, callback) => {
+    try {
+      let filePath = decodeURIComponent(request.url.replace(/^local:\/\//, ''));
+      if (/^\/[a-zA-Z]:\//.test(filePath)) filePath = filePath.slice(1);
+      filePath = path.normalize(filePath);
+      if (!fs.existsSync(filePath)) return callback({ error: -6 });
+      callback({ path: filePath });
+    } catch {
+      callback({ error: -2 });
+    }
+  });
+
+  // ── 初始化本地音乐服务 ──
+  let localMusicDb, localMusicScanner;
+  try {
+    localMusicDb = new LocalMusicDB();
+    await localMusicDb.init();
+    localMusicScanner = new NodeMusicScanner();
+    registerLocalMusicIpc(localMusicScanner, localMusicDb);
+    console.log('[main] 本地音乐服务就绪');
+  } catch (err) {
+    console.warn('[main] 本地音乐服务初始化失败:', err.message);
+  }
+
+  // ── 创建主窗口 ──
   console.log('[main] API 就绪，创建主窗口...');
   setupChineseMenu();
   await createMainWindow(ports);

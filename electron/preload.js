@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Parse the --service-ports argument injected by main.js
 const portsArg = process.argv.find((s) => s.startsWith('--service-ports='));
@@ -26,6 +26,42 @@ contextBridge.exposeInMainWorld('appEnv', {
     setItem: (data) => ipcRenderer.invoke('cache:set', data),
     clear: () => ipcRenderer.invoke('cache:clear'),
   },
+});
+
+// ── 本地音乐 IPC ──
+contextBridge.exposeInMainWorld('localApi', {
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  scan: (dirPath) => ipcRenderer.invoke('local:scan', dirPath),
+  search: (query) => ipcRenderer.invoke('local:search', query),
+  getAll: () => ipcRenderer.invoke('local:get-all'),
+  trackCount: () => ipcRenderer.invoke('local:track-count'),
+  getLyric: (filePath) => ipcRenderer.invoke('local:get-lyric', filePath),
+  getCover: (filePath) => ipcRenderer.invoke('local:get-cover', filePath),
+  readFile: (filePath) => ipcRenderer.invoke('local:read-file', filePath),
+  onScanProgress: (cb) => {
+    ipcRenderer.on('local:scan-progress', (_e, data) => cb(data));
+  },
+  removeScanListeners: () => {
+    ipcRenderer.removeAllListeners('local:scan-progress');
+  },
+
+  // ── 本地歌单 API ──
+  createPlaylist: (name, description) => ipcRenderer.invoke('local:playlist-create', name, description),
+  listPlaylists: () => ipcRenderer.invoke('local:playlist-list'),
+  getPlaylist: (id) => ipcRenderer.invoke('local:playlist-get', id),
+  deletePlaylist: (id) => ipcRenderer.invoke('local:playlist-delete', id),
+  renamePlaylist: (id, name) => ipcRenderer.invoke('local:playlist-rename', id, name),
+  addTrackToPlaylist: (playlistId, trackId) => ipcRenderer.invoke('local:playlist-add-track', playlistId, trackId),
+  removeTrackFromPlaylist: (playlistId, trackId) => ipcRenderer.invoke('local:playlist-remove-track', playlistId, trackId),
+  getPlaylistTracks: (playlistId) => ipcRenderer.invoke('local:playlist-tracks', playlistId),
+
+  deleteTracksByDirectory: (dirPath) => ipcRenderer.invoke('local:remove-tracks-by-dir', dirPath),
+  removeTracks: (paths) => ipcRenderer.invoke('local:remove-tracks', paths),
+  clearAllData: () => ipcRenderer.invoke('local:clear-all'),
+
+  // ── 本地歌曲统计 ──
+  getRecent: (limit) => ipcRenderer.invoke('local:get-recent', limit),
+  getStats: () => ipcRenderer.invoke('local:get-stats'),
 });
 
 // ── 窗口控制：通过主进程 page-title-updated 事件实现 ──

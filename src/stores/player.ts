@@ -10,7 +10,7 @@ import { eqSettings } from './eqSettings';
 
 type Artist = { name: string };
 type Album = { name?: string; picUrl?: string };
-type TrackSource = 'song' | 'podcast' | 'cloud';
+type TrackSource = 'song' | 'podcast' | 'cloud' | 'local';
 type PodcastMeta = { rid?: number; programId?: number; createTime?: number; feeBadge?: string; feeTone?: string };
 type ThemeMode = '浅色' | '深色' | '跟随系统';
 type PersonalFmFetcher = () => Promise<any[]>;
@@ -31,6 +31,8 @@ export type Track = {
   cloudSid?: number;
   cloudOwnerId?: number;
   uid?: number;
+  // 本地歌曲
+  path?: string;
 };
 
 const PLAYER_STORAGE_KEY = 'gm_player_state_v1';
@@ -43,7 +45,7 @@ function formatTrack(raw: any): Track {
     ar: raw.ar || raw.artists || [],
     al: raw.al || raw.album || {},
     url: raw.url,
-    source: raw.source === 'podcast' ? 'podcast' : raw.source === 'cloud' ? 'cloud' : 'song',
+    source: raw.source === 'podcast' ? 'podcast' : raw.source === 'cloud' ? 'cloud' : raw.source === 'local' ? 'local' : 'song',
     podcast: raw.podcast,
     liked: Boolean(raw.liked || raw.isLiked),
     isLiked: Boolean(raw.isLiked || raw.liked),
@@ -51,6 +53,7 @@ function formatTrack(raw: any): Track {
     cloudSid: raw.cloudSid,
     cloudOwnerId: raw.cloudOwnerId,
     uid: raw.uid,
+    path: raw.path,
   };
 }
 
@@ -746,6 +749,28 @@ export const playerStore = reactive({
     this.loading = true;
     try {
       let playUrl = track.url || '';
+
+      // ── 本地歌曲：直接使用 local:// 协议，不走在线流程 ──
+      if (track.source === 'local' && (track as any).path) {
+        playUrl = `local:///${(track as any).path}`;
+        this.currentSource = 'local';
+        this.loading = false;
+        this.audio.src = playUrl;
+        try {
+          await this.audio.play();
+        } catch {
+          this.isPlaying = false;
+          this.persist();
+          return false;
+        }
+        this.isPlaying = true;
+        this.currentTrack = track;
+        this.currentSongId = Number(track.id || 0);
+        this.recordCurrentTrackToHistory();
+        this.persist();
+        return true;
+      }
+
       // 使用 apiClient 的 proxy 逻辑：通过 unblock proxy 获取歌曲 URL
       const unblockProxyUrl = platform.unblockProxyUrl;
 

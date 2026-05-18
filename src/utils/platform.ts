@@ -5,15 +5,43 @@
  * 避免在业务代码中散写 `window.appEnv?.xxx` 检测。
  */
 
+/** 本地歌曲 API 接口类型 */
+export interface LocalApi {
+  selectDirectory(): Promise<string | null>
+  scan(dirPath: string): Promise<{ success: boolean }>
+  search(query: string): Promise<any[]>
+  getAll(): Promise<any[]>
+  trackCount(): Promise<number>
+  getLyric(filePath: string): Promise<{ text: string; format: string } | null>
+  getCover(filePath: string): Promise<string | null>
+  readFile(filePath: string): Promise<ArrayBuffer | null>
+  onScanProgress(cb: (data: any) => void): void
+  removeScanListeners(): void
+  // 本地歌单
+  createPlaylist(name: string, description?: string): Promise<{ id: string }>
+  listPlaylists(): Promise<any[]>
+  getPlaylist(id: string): Promise<any | null>
+  deletePlaylist(id: string): Promise<{ success: boolean }>
+  renamePlaylist(id: string, name: string): Promise<{ success: boolean }>
+  addTrackToPlaylist(playlistId: string, trackId: string): Promise<{ success: boolean }>
+  removeTrackFromPlaylist(playlistId: string, trackId: string): Promise<{ success: boolean }>
+  getPlaylistTracks(playlistId: string): Promise<any[]>
+  // 删除指定目录下的所有歌曲
+  deleteTracksByDirectory(dirPath: string): Promise<{ success: boolean }>
+  removeTracks(paths: string[]): Promise<{ success: boolean }>
+  clearAllData(): Promise<{ success: boolean }>
+  // 本地歌曲统计
+  getRecent(limit?: number): Promise<any[]>
+  getStats(): Promise<{ totalTracks: number; totalArtists: number; totalAlbums: number; totalDuration: number; totalSize: number }>
+}
+
 export const platform = {
   /**
    * 是否运行在 Electron 桌面端
    */
   get isDesktop(): boolean {
     if (typeof window === 'undefined') return false
-    // 优先通过 preload contextBridge 检测
     if (!!(window as any).appEnv?.isDesktop) return true
-    // 兜底：User-Agent 检测（不受 contextBridge 影响）
     return typeof navigator !== 'undefined' && navigator.userAgent.includes('Electron')
   },
 
@@ -49,7 +77,9 @@ export const platform = {
 
   /** API 基础 URL */
   get apiBaseUrl(): string {
-    if (this.isDesktop) {
+    // Electron 打包后通过 file:// 加载 → 直接连 API 端口
+    // 开发模式（web 或 Electron 加载自 localhost）→ 走 Vite proxy /api
+    if (this.isDesktop && typeof window !== 'undefined' && window.location.protocol === 'file:') {
       return (window as any).appEnv?.apiBaseUrl || '/api'
     }
     return '/api'
@@ -81,5 +111,16 @@ export const platform = {
   get nodeVersion(): string {
     if (!this.isDesktop) return ''
     return (window as any).appEnv?.nodeVersion || ''
+  },
+
+  /** 本地歌曲 API（仅桌面端存在，Web 端为 null） */
+  get localApi(): LocalApi | null {
+    if (!this.isDesktop) return null
+    return (window as any).localApi ?? null
+  },
+
+  /** 是否支持本地歌曲功能 */
+  get hasLocalMusicSupport(): boolean {
+    return this.isDesktop && Boolean((window as any).localApi)
   },
 }

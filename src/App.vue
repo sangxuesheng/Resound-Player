@@ -163,6 +163,8 @@
           <SongCommentPage v-else-if="activePage === 'song-comment'" :song-id="activeSongId" @back="goBackFromComment" @open-artist="openArtistFromComment" @open-album="(albumId) => openAlbumDetail(albumId, 'song-comment')" @play-song="playSongFromComment" @open-user="openUserFromComment" />
           <SettingsPage v-else-if="activePage === 'settings'" :initial-tab="settingsInitialTab" @go-login="openUserLogin" />
           <LanguageDetailPage v-else-if="activePage === 'language-detail'" :language-name="activeLanguage" :back-label="activeLanguageReturnPage === 'song-comment' ? '评论' : undefined" @back="backToLanguage" @open-detail="(playlistId) => openPlaylistDetail(playlistId, undefined, activePage)" />
+          <LocalMusicHub v-else-if="activePage === 'local-music' && platform.isDesktop" />
+          <LocalPlaylistDetailPage v-else-if="activePage === 'local-playlist-detail' && platform.isDesktop" />
           <PlaceholderPanel v-else :page-key="activePage" />
         </KeepAlive>
         </div>
@@ -179,6 +181,7 @@
 
 <script setup lang="ts">
 import { computed, KeepAlive, onBeforeUnmount, onMounted, watch, ref } from 'vue';
+import { platform } from './utils/platform';
 import HomePanel from './components/HomePanel.vue';
 import PlayerBar from './components/PlayerBar.vue';
 import PlayQueuePanel from './components/PlayQueuePanel.vue';
@@ -198,6 +201,14 @@ import SongCommentPage from './components/SongCommentPage.vue';
 import LoginModal from './components/LoginModal.vue';
 import MvPlayPage from './components/MvPlayPage.vue';
 import LanguageDetailPage from './components/LanguageDetailPage.vue';
+import LocalMusicHub from './components/LocalMusicHub.vue';
+import LocalSongsPage from './views/LocalSongsPage.vue';
+import LocalArtistsPage from './views/LocalArtistsPage.vue';
+import LocalAlbumsPage from './views/LocalAlbumsPage.vue';
+import LocalFoldersPage from './views/LocalFoldersPage.vue';
+import LocalPlaylistsPage from './views/LocalPlaylistsPage.vue';
+import LocalPlaylistDetailPage from './views/LocalPlaylistDetailPage.vue';
+import LocalStatsPage from './views/LocalStatsPage.vue';
 import PodcastListPage from './components/PodcastListPage.vue';
 import PodcastCategoryPage from './components/PodcastCategoryPage.vue';
 import PodcastDetailPage from './components/PodcastDetailPage.vue';
@@ -1051,9 +1062,20 @@ watch(
   },
 );
 
+/** 处理本地页面间导航事件 */
+function handleLocalNavigate(e: Event) {
+  const detail = (e as CustomEvent).detail
+  if (detail?.page && ['local-songs', 'local-artists', 'local-albums', 'local-folders', 'local-playlists'].includes(detail.page)) {
+    if (activePage.value === detail.page) return
+    navHistory.push({ page: detail.page })
+    activePage.value = detail.page
+  }
+}
+
 onMounted(async () => {
   syncViewport();
   window.addEventListener('resize', syncViewport);
+  window.addEventListener('local-navigate', handleLocalNavigate);
 
   await userStore.hydrate();
   playerStore.init();
@@ -1073,6 +1095,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport);
+  window.removeEventListener('local-navigate', handleLocalNavigate);
 });
 </script>
 
