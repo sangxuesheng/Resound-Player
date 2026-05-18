@@ -72,6 +72,7 @@ export const userStore = reactive({
   loading: false,
   loginCookie: '',
   loginMode: 'none' as LoginMode,
+  loginVerified: false,
   authRequestSeq: 0,
   async hydrate() {
     this.loginCookie = localStorage.getItem(LOGIN_COOKIE_KEY) || '';
@@ -396,6 +397,7 @@ export const userStore = reactive({
         requestId,
       });
     }
+    this.loginVerified = true;
   },
   async fetchPlaylists(uid: number) {
     const { data } = await getUserPlaylist(uid, this.loginCookie || undefined);

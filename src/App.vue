@@ -305,11 +305,22 @@ const keepAlivePages = new Set([
   'home', 'search', 'playlist', 'rank', 'user',
   'history', 'settings', 'mv', 'podcast-list', 'stats',
 ]);
-// KeepAlive include 匹配组件名需与文件名（PascalCase）一致
+// KeepAlive include 匹配组件名需与文件导出的 __name（PascalCase）一致
+// 不能通过 pattern 自动推导，因为组件命名不统一（Panel vs Page）
+const PAGE_TO_COMPONENT: Record<string, string> = {
+  'home': 'HomePanel',
+  'search': 'SearchPage',
+  'playlist': 'PlaylistPanel',
+  'rank': 'RankPanel',
+  'user': 'UserPanel',
+  'history': 'HistoryPanel',
+  'settings': 'SettingsPage',
+  'mv': 'MvPanel',
+  'podcast-list': 'PodcastListPage',
+  'stats': 'StatsPage',
+};
 const keepAliveNames = computed(() =>
-  [...keepAlivePages].map(p =>
-    p.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('') + 'Page'
-  )
+  [...keepAlivePages].map(p => PAGE_TO_COMPONENT[p]).filter(Boolean)
 );
 
 function syncViewport() {

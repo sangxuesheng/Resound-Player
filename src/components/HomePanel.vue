@@ -1641,6 +1641,17 @@ onMounted(async () => {
   window.addEventListener('click', onFmPopoverDocClick);
   window.addEventListener('keydown', onFmPopoverKeydown);
 
+  // 等待登录验证完成后再加载所有数据，确保所有卡片同时出现
+  if (!userStore.loginVerified && userStore.loginCookie) {
+    await new Promise<void>((resolve) => {
+      const unwatch = watch(() => userStore.loginVerified, (val) => {
+        if (val) { unwatch(); resolve(); }
+      });
+      // 安全超时：20 秒后强制继续
+      setTimeout(() => { unwatch(); resolve(); }, 20000);
+    });
+  }
+
   await Promise.all([loadMoreHotSongs(), fetchDailyRecommendSongs(), fetchDailyRecommendPlaylists(), fetchPublicRecoPlaylists(), fetchPersonalFm(), fetchTopArtists(), fetchTopAlbums(), fetchLatestMusic(), fetchMvList(), fetchPodcastList(), fetchRadarPlaylists()]);
 
   await nextTick();
