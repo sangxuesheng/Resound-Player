@@ -631,6 +631,9 @@ button,
 .category-tabs__item,
 .tab,
 .sub-tab {
+  border-radius: var(--radius-sm) !important;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-label-sm);
   background: var(--button-surface-bg) !important;
   border: 1px solid var(--button-surface-border) !important;
   box-shadow: var(--button-surface-shadow) !important;
@@ -641,6 +644,9 @@ button,
 .remove-btn,
 .btn-danger,
 .button-danger {
+  border-radius: var(--radius-sm) !important;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-label-sm);
   background: var(--button-danger-bg) !important;
   border: 1px solid var(--button-danger-border) !important;
   box-shadow: var(--button-surface-shadow) !important;
