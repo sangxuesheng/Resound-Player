@@ -11,7 +11,8 @@
   overflow: hidden;
 }
 
-.playlist-detail-page {
+.playlist-detail-page,
+.artist-detail-page {
   width: 100%;
   box-sizing: border-box;
   position: relative;
@@ -73,9 +74,14 @@
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* 返回按钮容器 — 默认允许 hover 上浮外溢，隐藏态再裁切，避免按钮顶部被截断 */
+/* 返回按钮容器 — 绝对定位脱离文档流，避免隐藏时产生布局变化 */
 .playlist-detail-back,
 .artist-detail-back {
+  position: absolute;
+  top: 0;
+  left: var(--space-4);
+  right: var(--space-4);
+  z-index: 3;
   max-height: 58px;
   overflow: visible;
   padding-top: 2px;
@@ -85,10 +91,6 @@
 .artist-detail-back.back-fade {
   opacity: 0;
   pointer-events: none;
-  max-height: 0;
-  overflow: hidden;
-  padding-top: 0;
-  margin: 0;
 }
 
 .back-btn:hover {
