@@ -413,6 +413,7 @@ function resolvePlaylistCover(playlistLike: any) {
 
 const { refresh } = useDetailStickyState({
   scrollHostSelector: () => '.playlist-detail-page',
+  stickyClassTarget: '.playlist-detail-header-wrap',
 });
 
 let fetchToken = 0;

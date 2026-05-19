@@ -3,6 +3,8 @@ import { onMounted, onBeforeUnmount, nextTick } from 'vue';
 interface UseDetailStickyStateOptions {
   scrollHostSelector?: string | (() => string | undefined);
   headerWrapSelector?: string;
+  /** 可选：指定一个 CSS 选择器，progress >= 0.95 时自动添加 is-sticky-header class */
+  stickyClassTarget?: string;
 }
 
 export function useDetailStickyState(options: UseDetailStickyStateOptions = {}): {
@@ -46,6 +48,7 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
     writeStickyProgress(progress, force);
     syncBlurOpacity(progress);
+    syncStickyClass(progress);
   }
 
   /** 写入 --sticky-progress 到 scrollHost（公共祖先），跳过变化量过小的帧 */
@@ -67,6 +70,14 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
       const blurOpacity = Math.max(0, 1 - progress * 1.5);
       contentEl.style.setProperty('--blur-opacity', String(blurOpacity));
     }
+  }
+
+  /** 同步 is-sticky-header class，仅在设置了 stickyClassTarget 时生效 */
+  function syncStickyClass(progress: number): void {
+    if (!options.stickyClassTarget) return;
+    const target = document.querySelector(options.stickyClassTarget) as HTMLElement | null;
+    if (!target) return;
+    target.classList.toggle('is-sticky-header', progress >= 0.95);
   }
 
   function onScroll(): void {
@@ -113,6 +124,10 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     if (shouldSyncBlur) {
       const contentEl = document.querySelector('.content');
       contentEl?.style.removeProperty('--blur-opacity');
+    }
+    // 清理 is-sticky-header class
+    if (options.stickyClassTarget) {
+      document.querySelector(options.stickyClassTarget)?.classList.remove('is-sticky-header');
     }
   });
 

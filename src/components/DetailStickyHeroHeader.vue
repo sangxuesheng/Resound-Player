@@ -175,23 +175,31 @@ onMounted(remeasureHeight);
 }
 
 /* =========================================
- * 主内容区 — grid: 标题与按钮在 row1，meta 在 row2
- * actions 的 margin-top 在普通态将其推到 meta 下方
+ * 主内容区 — 普通态 flex column（38585db 样式），吸顶态 grid（并排）
  * ========================================= */
 :deep(.hero-main-shell) {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+/* 吸顶态 — grid: title + actions 同行，meta 第二行 */
+.playlist-detail-header-wrap.is-sticky-header :deep(.hero-main-shell) {
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-rows: auto auto;
   grid-template-areas:
     "title actions"
     "meta   meta";
-  width: 100%;
 }
 
 /* 标题 */
 :deep(.hero-title-shell) {
-  grid-area: title;
   min-width: 0;
+}
+.playlist-detail-header-wrap.is-sticky-header :deep(.hero-title-shell) {
+  grid-area: title;
 }
 :deep(.hero-title-shell .title) {
   display: block;
@@ -205,16 +213,14 @@ onMounted(remeasureHeight);
   text-overflow: ellipsis;
 }
 
-/* 操作按钮 — 与标题同一行右侧，margin-top 在普通态推到 meta 下方 */
+/* 操作按钮 — 普通态：正常流排在 meta 下方 / 吸顶态：grid 与标题同行 */
 :deep(.hero-actions-shell--under-cover) {
-  grid-area: actions;
-  align-self: start;
   display: flex;
   align-items: center;
-  margin-top: calc(200px - var(--sticky-progress, 0) * 200px);
-  transition:
-    opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
-    transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+}
+.playlist-detail-header-wrap.is-sticky-header :deep(.hero-actions-shell--under-cover) {
+  grid-area: actions;
+  align-self: start;
 }
 .hero-actions-shell--under-cover :deep(.ops) {
   display: flex;
@@ -226,15 +232,17 @@ onMounted(remeasureHeight);
   margin-top: 0;
 }
 
-/* 元数据 + 描述 — 第二行，progress 驱动淡出 + 高度坍缩 */
+/* 元数据 + 描述 — progress 驱动淡出 + 高度坍缩 */
 :deep(.hero-meta-shell) {
-  grid-area: meta;
   max-height: calc(200px - var(--sticky-progress, 0) * 200px);
   overflow: hidden;
   opacity: calc(1 - var(--sticky-progress, 0) * 2);
   pointer-events: none;
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1);
+}
+.playlist-detail-header-wrap.is-sticky-header :deep(.hero-meta-shell) {
+  grid-area: meta;
 }
 :deep(.desc) {
   max-height: calc(200px - var(--sticky-progress, 0) * 200px);
