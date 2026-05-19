@@ -220,7 +220,8 @@ onMounted(remeasureHeight);
   flex-direction: row;
   align-items: center;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
   margin-top: 0;
 }
 
