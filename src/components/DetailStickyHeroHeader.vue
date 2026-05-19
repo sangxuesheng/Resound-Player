@@ -244,10 +244,10 @@ onMounted(remeasureHeight);
  * 标签栏容器 — flex 末尾自然吸附
  * ========================================= */
 .header-tabs-area {
-  flex-shrink: 0;
-  padding: 0 var(--space-3) var(--space-2);
+  padding: calc(var(--sticky-progress, 0) * 8px) var(--space-4) calc(var(--space-2) - var(--sticky-progress, 0) * 4px);
   position: relative;
   z-index: 1;
+  border-radius: 0 0 calc(var(--sticky-progress, 0) * 16px) calc(var(--sticky-progress, 0) * 16px);
 }
 
 /* =========================================
