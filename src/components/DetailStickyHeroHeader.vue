@@ -175,21 +175,22 @@ onMounted(remeasureHeight);
 }
 
 /* =========================================
- * 主内容区 — 垂直排列: title → meta → actions
- * progress 驱动 meta 高度坍缩 + 淡出
+ * 主内容区 — flex row + wrap: progress 驱动标题宽度
+ * progress=0: 标题占100%行 → 按钮换行到下一行
+ * progress=1: 标题 flex-grow 填充剩余 → 按钮并排
  * ========================================= */
 :deep(.hero-main-shell) {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   width: 100%;
   min-height: 36px;
 }
 
-/* 标题 — 始终截断 */
+/* 标题 — flex-basis: 100%→0%，progress 驱动 */
 :deep(.hero-title-shell) {
   min-width: 0;
-  flex: 1 1 auto;
-  order: 1;
+  flex: 1 1 calc((1 - var(--sticky-progress, 0)) * 100%);
 }
 :deep(.hero-title-shell .title) {
   display: block;
@@ -203,14 +204,12 @@ onMounted(remeasureHeight);
   text-overflow: ellipsis;
 }
 
-/* 操作按钮 — 在描述下方，垂直排列底部 */
+/* 操作按钮 — DOM 顺序排在 meta 之后，flex wrap 换行到自己的行 */
 :deep(.hero-actions-shell--under-cover) {
-  order: 3;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   width: auto;
-  margin-top: calc(var(--space-3) - var(--sticky-progress, 0) * var(--space-3));
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
@@ -227,7 +226,7 @@ onMounted(remeasureHeight);
 
 /* 元数据 + 描述 — 在标题和按钮之间，progress 驱动淡出 + 高度坍缩 */
 :deep(.hero-meta-shell) {
-  order: 2;
+  flex: 0 0 100%;
   max-height: calc(200px - var(--sticky-progress, 0) * 200px);
   overflow: hidden;
   opacity: calc(1 - var(--sticky-progress, 0) * 2);
