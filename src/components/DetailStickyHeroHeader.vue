@@ -290,18 +290,21 @@ onMounted(remeasureHeight);
  * tabs 标签 button — transform scale 视觉缩小（免布局触发）
  * ========================================= */
 :deep(.artist-tab) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26));
-  transform-origin: left center;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26)) !important;
+  transform-origin: left center !important;
+  transition: none !important;
 }
 :deep(.playlist-tab) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26));
-  transform-origin: left center;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26)) !important;
+  transform-origin: left center !important;
+  transition: none !important;
 }
 
 /* 搜索输入框 — transform scale 视觉缩小 */
 :deep(.tab-search-input) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.24));
-  transform-origin: right center;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.24)) !important;
+  transform-origin: right center !important;
+  transition: none !important;
 }
 
 /* =========================================
