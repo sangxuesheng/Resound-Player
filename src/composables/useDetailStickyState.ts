@@ -25,6 +25,9 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   let shouldSyncBlur = false;
   // 吸顶激活时间戳：激活后指定时间内不允许退出，防止 header 高度变化导致 scrollTop 钳位触发误退出
   let activatedAt = 0;
+  // 滚动停止检测：200ms 无 scroll 事件后启用平滑 transition
+  const TRANSITION_READY_DELAY = 200;
+  let scrollStopTimer: ReturnType<typeof setTimeout> | null = null;
 
   function resolveScrollHostSelector(): string {
     if (typeof scrollHostSelector === 'function') {
@@ -102,6 +105,16 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   function onScroll(): void {
     cancelAnimationFrame(rafId);
     rafId = requestAnimationFrame(update);
+
+    // 滚动中关闭平滑 transition（降级为默认 60ms），防止布局重排影响滚动性能
+    headerEl?.classList.remove('sticky-transition-ready');
+
+    // 滚动停止后重新启用平滑 transition
+    if (scrollStopTimer !== null) clearTimeout(scrollStopTimer);
+    scrollStopTimer = setTimeout(() => {
+      headerEl?.classList.add('sticky-transition-ready');
+      scrollStopTimer = null;
+    }, TRANSITION_READY_DELAY);
   }
 
   function refresh(): void {
@@ -141,8 +154,13 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
   onBeforeUnmount(() => {
     scrollHost?.removeEventListener('scroll', onScroll);
     cancelAnimationFrame(rafId);
-    // 清理 --sticky-progress，避免下一个页面复用 header 时有视觉残留
+    // 清理 scroll-stop 计时器和 transition-ready 类
+    if (scrollStopTimer !== null) {
+      clearTimeout(scrollStopTimer);
+      scrollStopTimer = null;
+    }
     if (headerEl) {
+      headerEl.classList.remove('sticky-transition-ready');
       headerEl.style.removeProperty('--sticky-progress');
     }
     // 清理 blur opacity，仅 PlaylistDetailPage 设置了它

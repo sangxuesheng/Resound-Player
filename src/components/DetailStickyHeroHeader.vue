@@ -109,9 +109,10 @@ onMounted(remeasureHeight);
   backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   -webkit-backdrop-filter: blur(calc(var(--sticky-progress, 0) * 10px)) saturate(calc(1 + var(--sticky-progress, 0) * 0.32));
   transition:
+    height 0.06s cubic-bezier(0.33, 0, 0.1, 1),
     border-radius 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     box-shadow 0.3s cubic-bezier(0.33, 0, 0.1, 1);
-  /* height transition 曾在此，因小幅度滑动时触发布局重排导致头部弹跳，已移除 */
+  /* 始终保留 60ms height transition 消除跳动感；停止滚动后由 sticky-transition-ready 升级为 350ms */
 }
 
 /* 分隔线 */
@@ -366,6 +367,16 @@ onMounted(remeasureHeight);
   top: -18px;
   margin: 0 -18px 0;
   padding: var(--space-3) 18px;
+}
+
+/* =========================================
+ * 滚动停止平滑过渡：由 useDetailStickyState 负责类切换
+ * ========================================= */
+.playlist-detail-header-wrap.sticky-transition-ready {
+  transition:
+    height 0.35s cubic-bezier(0.33, 0, 0.1, 1),
+    border-radius 0.3s cubic-bezier(0.33, 0, 0.1, 1),
+    box-shadow 0.3s cubic-bezier(0.33, 0, 0.1, 1);
 }
 
 /* =========================================
