@@ -245,10 +245,9 @@ onMounted(remeasureHeight);
  * ========================================= */
 .header-tabs-area {
   flex-shrink: 0;
-  padding: calc(var(--sticky-progress, 0) * 8px) var(--space-4) calc(var(--space-2) - var(--sticky-progress, 0) * 4px);
+  padding: 0 var(--space-3) var(--space-2);
   position: relative;
   z-index: 1;
-  border-radius: 0 0 calc(var(--sticky-progress, 0) * 16px) calc(var(--sticky-progress, 0) * 16px);
 }
 
 /* =========================================
@@ -288,30 +287,21 @@ onMounted(remeasureHeight);
 }
 
 /* =========================================
- * tabs 标签 button — progress 驱动压缩
+ * tabs 标签 button — transform scale 视觉缩小（免布局触发）
  * ========================================= */
 :deep(.artist-tab) {
-  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
-  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px) !important;
-  font-size: calc(14px - var(--sticky-progress, 0) * 2px) !important;
-}
-:deep(.artist-tabs) {
-  gap: calc(12px - var(--sticky-progress, 0) * 4px) !important;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26));
+  transform-origin: left center;
 }
 :deep(.playlist-tab) {
-  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
-  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px) !important;
-  font-size: calc(14px - var(--sticky-progress, 0) * 2px) !important;
-}
-:deep(.playlist-tabs) {
-  gap: calc(12px - var(--sticky-progress, 0) * 4px) !important;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26));
+  transform-origin: left center;
 }
 
-/* 搜索输入框 — progress 驱动压缩 */
+/* 搜索输入框 — transform scale 视觉缩小 */
 :deep(.tab-search-input) {
-  height: calc(34px - var(--sticky-progress, 0) * 8px) !important;
-  font-size: calc(13px - var(--sticky-progress, 0) * 1px) !important;
-  padding: 0 calc(32px - var(--sticky-progress, 0) * 4px) 0 calc(14px - var(--sticky-progress, 0) * 4px) !important;
+  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.24));
+  transform-origin: right center;
 }
 
 /* =========================================
