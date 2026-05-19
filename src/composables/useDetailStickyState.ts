@@ -3,7 +3,7 @@ import { onMounted, onBeforeUnmount, nextTick } from 'vue';
 interface UseDetailStickyStateOptions {
   scrollHostSelector?: string | (() => string | undefined);
   headerWrapSelector?: string;
-  /** 可选：指定一个 CSS 选择器，progress >= 0.95 时自动添加 is-sticky-header class */
+  /** 可选：指定一个 CSS 选择器，progress >= 0.998 时自动添加 is-sticky-header class */
   stickyClassTarget?: string;
 }
 
@@ -77,7 +77,7 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     if (!options.stickyClassTarget) return;
     const target = document.querySelector(options.stickyClassTarget) as HTMLElement | null;
     if (!target) return;
-    target.classList.toggle('is-sticky-header', progress >= 0.95);
+    target.classList.toggle('is-sticky-header', progress >= 0.998);
   }
 
   function onScroll(): void {

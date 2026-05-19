@@ -896,6 +896,7 @@ function openAlbum(albumId: number) {
   min-height: 0;
   overflow: clip auto;
   overflow-clip-margin: 16px;
+  overflow-anchor: none;
   /* 延伸至 .content 的 padding 区域，使 overflow-x:clip 裁切边界对齐视口边缘，
      让 header 负 margin 可以真正铺满全宽 */
   margin-left: calc(var(--space-4) * -1);
