@@ -291,20 +291,20 @@ onMounted(remeasureHeight);
  * tabs 标签 button — progress 驱动压缩
  * ========================================= */
 :deep(.artist-tab) {
-  height: calc(38px - var(--sticky-progress, 0) * 10px);
-  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px);
-  font-size: calc(14px - var(--sticky-progress, 0) * 2px);
+  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
+  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px) !important;
+  font-size: calc(14px - var(--sticky-progress, 0) * 2px) !important;
 }
 :deep(.artist-tabs) {
-  gap: calc(12px - var(--sticky-progress, 0) * 4px);
+  gap: calc(12px - var(--sticky-progress, 0) * 4px) !important;
 }
 :deep(.playlist-tab) {
-  height: calc(38px - var(--sticky-progress, 0) * 10px);
-  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px);
-  font-size: calc(14px - var(--sticky-progress, 0) * 2px);
+  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
+  padding: 0 calc(16px - var(--sticky-progress, 0) * 6px) !important;
+  font-size: calc(14px - var(--sticky-progress, 0) * 2px) !important;
 }
 :deep(.playlist-tabs) {
-  gap: calc(12px - var(--sticky-progress, 0) * 4px);
+  gap: calc(12px - var(--sticky-progress, 0) * 4px) !important;
 }
 
 /* =========================================
