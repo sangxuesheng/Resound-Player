@@ -1,0 +1,70 @@
+---
+description: CodeGraph 代码知识图谱工具使用规则 — AI agent 优先使用预索引图谱而非 grep/glob/read
+globs: 
+---
+# CodeGraph 使用规则
+
+本项目已初始化 CodeGraph（`.codegraph/` 目录存在），AI agent 应优先使用 CodeGraph 的 MCP 工具进行代码探索。
+
+## 使用原则
+
+1. **探索类任务**（如"解释 X 如何工作"、"Y 在哪里实现"）必须 spawn Explore agent，在 prompt 中告知使用 `codegraph_explore` 作为主要工具
+2. **轻量查表**（如"查找符号定义"、"追踪调用链"、"分析影响范围"）可在主会话中直接使用以下工具：
+   - `codegraph_search` — 按名称搜索符号
+   - `codegraph_callers` / `codegraph_callees` — 追踪调用流
+   - `codegraph_impact` — 分析改动影响半径
+   - `codegraph_node` — 获取单个符号详情
+   - `codegraph_files` — 获取索引的文件结构
+   - `codegraph_status` — 检查索引健康状态
+3. 禁止在主会话中调用 `codegraph_explore` 或 `codegraph_context`，它们返回大量源码会撑爆上下文
+
+## Explore Agent 指令模板
+
+当 spawn Explore agent 时，包含以下指令：
+
+> 本项目已初始化 CodeGraph（`.codegraph/` 存在）。使用 `codegraph_explore` 作为主要工具 — 它一次调用返回所有相关文件的完整源码。
+>
+> **规则：**
+> 1. 遵循 `codegraph_explore` 工具描述中的调用预算（根据项目规模自动缩放）
+> 2. 对于已返回源码的文件，不要重复用 Read 读取
+> 3. 仅在 `codegraph_explore` 返回的"Additional relevant files"中需要更多细节时，才回退到 grep/glob/read
+
+## 索引自动同步
+
+CodeGraph MCP 服务器通过 OS 原生文件事件（FSEvents）自动监听文件变更，2 秒 debounce 后增量同步索引。代码保存后等待 2-3 秒即可查询最新状态。
+
+手动同步：`codegraph sync`
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+This project has a CodeGraph MCP server (`codegraph_*` tools) configured. CodeGraph is a tree-sitter-parsed knowledge graph of every symbol, edge, and file. Reads are sub-millisecond and return structural information grep cannot.
+
+### When to prefer codegraph over native search
+
+Use codegraph for **structural** questions — what calls what, what would break, where is X defined, what is X's signature. Use native grep/read only for **literal text** queries (string contents, comments, log messages) or after you already have a specific file open.
+
+| Question | Tool |
+|---|---|
+| "Where is X defined?" / "Find symbol named X" | `codegraph_search` |
+| "What calls function Y?" | `codegraph_callers` |
+| "What does Y call?" | `codegraph_callees` |
+| "What would break if I changed Z?" | `codegraph_impact` |
+| "Show me Y's signature / source / docstring" | `codegraph_node` |
+| "Give me focused context for a task/area" | `codegraph_context` |
+| "Survey an unfamiliar module/topic" | `codegraph_explore` |
+| "What files exist under path/" | `codegraph_files` |
+| "Is the index healthy?" | `codegraph_status` |
+
+### Rules of thumb
+
+- **Trust codegraph results.** They come from a full AST parse. Do NOT re-verify them with grep — that's slower, less accurate, and wastes context.
+- **Don't grep first** when looking up a symbol by name. `codegraph_search` is faster and returns kind + location + signature in one call.
+- **Don't chain `codegraph_search` + `codegraph_node`** when you just want context — `codegraph_context` is one call.
+- **`codegraph_explore` is the heavy hitter** for unfamiliar areas — it returns full source from all relevant files in one call, but is token-heavy. If your harness supports parallel subagents (e.g., Claude Code's Task tool), spawn one for explore-class questions to keep main session context clean.
+- **Index lag**: the file watcher debounces ~500ms behind writes; don't re-query immediately after editing a file in the same turn.
+
+### If `.codegraph/` doesn't exist
+
+The MCP server returns "not initialized." Ask the user: *"I notice this project doesn't have CodeGraph initialized. Want me to run `codegraph init -i` to build the index?"*
+<!-- CODEGRAPH_END -->
