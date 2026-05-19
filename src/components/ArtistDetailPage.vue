@@ -1,11 +1,10 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="artist-detail-page" :style="shellStyle">
-    <div :class="['artist-detail-back', { 'back-fade': isSticky }]">
+    <div class="artist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :loading="loading"
       :ready="!!artist"
       :error="error"
@@ -463,7 +462,7 @@ function openComment(songId: number) {
   emit('open-comment', songId);
 }
 
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
 </script>

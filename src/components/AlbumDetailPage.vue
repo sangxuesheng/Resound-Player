@@ -1,11 +1,10 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
-    <div v-if="!embedded" :class="['playlist-detail-back', { 'back-fade': isSticky }]">
+    <div v-if="!embedded" class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :embedded="embedded"
       :loading="loading"
       :ready="!!album"
@@ -254,7 +253,7 @@ const detailPageClassName = computed(() => {
   if (props.embedded) classNames.push('playlist-detail-page--embedded');
   return classNames.join(' ');
 });
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => '.content',
 });
 

@@ -1,11 +1,10 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-detail-page" :style="shellStyle">
-    <div :class="['playlist-detail-back', { 'back-fade': isSticky }]">
+    <div class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :loading="loading"
       :ready="!!userDetail"
       :error="error"
@@ -212,7 +211,7 @@ function normalizePlaylistArray(payload: any): any[] {
   return [];
 }
 
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
 

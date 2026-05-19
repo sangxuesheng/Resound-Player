@@ -1,11 +1,10 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
-    <div v-if="!isUserDetail" :class="['playlist-detail-back', { 'back-fade': isSticky }]">
+    <div v-if="!isUserDetail" class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :embedded="embedded"
       :loading="detailLoading"
       :ready="!!playlist"
@@ -412,7 +411,7 @@ function resolvePlaylistCover(playlistLike: any) {
   return playlistLike?.coverImgUrl || playlistLike?.coverUrl || firstTrackCover || '';
 }
 
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => '.playlist-detail-page',
 });
 

@@ -1,11 +1,10 @@
 <template>
   <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="language-detail-page" :class="{ 'language-detail-page--embedded': embedded }">
-    <div :class="['playlist-detail-back', { 'back-fade': isSticky }]">
+    <div class="playlist-detail-back">
       <button class="back-btn" @click="$emit('back')">← {{ backLabel }}</button>
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :embedded="embedded"
       :loading="loading && !dataReady"
       :ready="dataReady"
@@ -128,7 +127,7 @@ const hasMore = ref(false);
 
 let fetchToken = 0;
 
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => '.content',
 });
 

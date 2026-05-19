@@ -5,7 +5,6 @@
     </div>
 
     <DetailStickyHeroHeader
-      :sticky="isSticky"
       :embedded="embedded"
       :loading="loading"
       :ready="!!heroTitle"
@@ -177,7 +176,7 @@ const filteredItems = computed(() => {
 
 const isDescriptionExpanded = ref(false);
 
-const { isSticky, refresh } = useDetailStickyState({
+const { refresh } = useDetailStickyState({
   scrollHostSelector: () => props.scrollHostSelector || '.content',
 });
 const detail = computed(() => props.detail?.voiceList || props.detail?.data?.voiceList || props.detail?.data || props.detail || props.items?.[0]?.voiceList || props.items?.[0]?.detail || props.items?.[0]?.program?.radio || props.items?.[0]?.program || props.items?.[0] || null);
