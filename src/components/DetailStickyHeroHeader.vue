@@ -175,18 +175,22 @@ onMounted(remeasureHeight);
 }
 
 /* =========================================
- * 主内容区 — column 布局，actions absolute 定位到右上角
- * progress 驱动 top 值从下方到标题旁
+ * 主内容区 — grid: 标题与按钮在 row1，meta 在 row2
+ * actions 的 margin-top 在普通态将其推到 meta 下方
  * ========================================= */
 :deep(.hero-main-shell) {
-  display: flex;
-  flex-direction: column;
-  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "title actions"
+    "meta   meta";
   width: 100%;
 }
 
-/* 标题 — 正常 block 布局，始终截断 */
+/* 标题 */
 :deep(.hero-title-shell) {
+  grid-area: title;
   min-width: 0;
 }
 :deep(.hero-title-shell .title) {
@@ -201,13 +205,13 @@ onMounted(remeasureHeight);
   text-overflow: ellipsis;
 }
 
-/* 操作按钮 — absolute 定位到右上角，top 由 progress 驱动从下方移到标题旁 */
+/* 操作按钮 — 与标题同一行右侧，margin-top 在普通态推到 meta 下方 */
 :deep(.hero-actions-shell--under-cover) {
-  position: absolute;
-  right: 0;
-  top: calc(176px - var(--sticky-progress, 0) * 152px);
+  grid-area: actions;
+  align-self: start;
   display: flex;
   align-items: center;
+  margin-top: calc(200px - var(--sticky-progress, 0) * 200px);
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
@@ -222,8 +226,9 @@ onMounted(remeasureHeight);
   margin-top: 0;
 }
 
-/* 元数据 + 描述 — 在标题和按钮之间，progress 驱动淡出 + 高度坍缩 */
+/* 元数据 + 描述 — 第二行，progress 驱动淡出 + 高度坍缩 */
 :deep(.hero-meta-shell) {
+  grid-area: meta;
   max-height: calc(200px - var(--sticky-progress, 0) * 200px);
   overflow: hidden;
   opacity: calc(1 - var(--sticky-progress, 0) * 2);
