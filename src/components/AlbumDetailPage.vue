@@ -152,7 +152,7 @@
 <script setup lang="ts">
 import HeroCoverMedia from './HeroCoverMedia.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import { useDominantColor } from '../composables/useDominantColor';
 import { useApiData } from '../composables/useApiData';
@@ -251,6 +251,11 @@ const { refresh } = useDetailStickyState(
   computed(() => album.value?.picUrl?.trim() || ''),
   !!props.embedded,
 );
+
+// 专辑切换时重置滚动位置
+watch(() => album.value?.id, () => {
+  requestAnimationFrame(() => refresh());
+});
 
 function getSongArtists(song: any) {
   const artists = Array.isArray(song?.ar)

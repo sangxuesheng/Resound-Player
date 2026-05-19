@@ -210,6 +210,11 @@ const { refresh } = useDetailStickyState(
   computed(() => avatarUrl.value?.trim() || ''),
 );
 
+// 切换标签时重置滚动位置
+watch(activeTab, () => {
+  refresh();
+});
+
 onMounted(() => {
   fetchUserDetail(props.userId);
 });

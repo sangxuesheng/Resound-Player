@@ -436,7 +436,8 @@
   overflow: visible !important;
   overflow-x: visible !important;
   overflow-y: visible !important;
-  min-height: calc(100% + 200px);
+  height: auto;
+  min-height: calc(100% + 600px);
   margin: 0;
   width: auto;
   padding: 0;

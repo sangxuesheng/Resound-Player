@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page podcast-detail-page">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[embedded && 'playlist-detail-page--embedded', 'podcast-detail-page']">
     <div v-if="!embedded" class="playlist-detail-back">
       <button class="back-btn" type="button" @click="emit('back')">← 返回播客列表</button>
     </div>
