@@ -1,60 +1,45 @@
-import { onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { onMounted, onBeforeUnmount, nextTick, type ComputedRef, watch } from 'vue';
 
-interface UseDetailStickyStateOptions {
-  scrollHostSelector?: string | (() => string | undefined);
-  headerWrapSelector?: string;
-  /** 可选：指定一个 CSS 选择器，progress >= 0.998 时自动添加 is-sticky-header class */
-  stickyClassTarget?: string;
-}
-
-export function useDetailStickyState(options: UseDetailStickyStateOptions = {}): {
-  refresh: () => void;
-} {
-  const {
-    scrollHostSelector = '.content',
-    headerWrapSelector = '.playlist-detail-header-wrap',
-  } = options;
+/**
+ * 详情页吸顶栏统一状态管理。
+ *
+ * 所有配置集中于此 composable，各页面无需单独传参：
+ * - `scrollHost` 固定为 `.playlist-detail-page`（所有详情页共享同一 class）
+ * - `stickyClassTarget` 固定为 `.playlist-detail-header-wrap`
+ * - 自动同步 `--cover-bg-url` 到 `.content`（提供 blur 背景）
+ * - 自动清理所有副作用（scroll event、CSS 变量、sticky class）
+ *
+ * @param coverUrl 可选，封面 URL 的 ComputedRef，用于自动同步 blur 背景
+ * @param embedded 可选，是否嵌入在 UserSplitView 中。为 true 时使用 `.detail-panel` 作为滚动宿主
+ */
+export function useDetailStickyState(
+  coverUrl?: ComputedRef<string>,
+  embedded = false,
+): { refresh: () => void } {
+  const SCROLL_HOST_SELECTOR = embedded ? '.detail-panel' : '.playlist-detail-page';
+  const HEADER_WRAP_SELECTOR = '.playlist-detail-header-wrap';
+  const STICKY_CLASS_TARGET = HEADER_WRAP_SELECTOR;
 
   let rafId = 0;
   let scrollHost: HTMLElement | null = null;
-  let initialOffset = 0;
-  const PROGRESS_DISTANCE = 324;
-  // 标记是否需要同步 blur 到 .content（仅当 scrollHost 不是 .content 自身时，
-  // 即 PlaylistDetailPage 场景，::before 无法随滚动自然消失）
-  let shouldSyncBlur = false;
-
-  function resolveScrollHostSelector(): string {
-    if (typeof scrollHostSelector === 'function') {
-      return scrollHostSelector() || '.content';
-    }
-    return scrollHostSelector || '.content';
-  }
+  const PROGRESS_DISTANCE = embedded ? 120 : 324;
 
   function getScrollHost(): HTMLElement | null {
-    return document.querySelector(resolveScrollHostSelector()) as HTMLElement | null;
-  }
-
-  /** 获取 --sticky-progress 的目标宿主：scrollHost（公共祖先，返回按钮和 header 都能读到） */
-  function getProgressHost(): HTMLElement | null {
-    return getScrollHost();
+    return document.querySelector(SCROLL_HOST_SELECTOR) as HTMLElement | null;
   }
 
   function update(force = false): void {
     if (!scrollHost) return;
     const st = scrollHost.scrollTop;
-
-    // 纯滚动位置 → progress（0→1），不再区分吸顶态/普通态，不再有布尔切换
-    const effectiveSt = Math.max(0, st - initialOffset);
-    const progress = Math.max(0, Math.min(1, effectiveSt / PROGRESS_DISTANCE));
+    const progress = Math.max(0, Math.min(1, st / PROGRESS_DISTANCE));
     writeStickyProgress(progress, force);
     syncBlurOpacity(progress);
     syncStickyClass(progress);
   }
 
-  /** 写入 --sticky-progress 到 scrollHost（公共祖先），跳过变化量过小的帧 */
   let lastProgress = -1;
   function writeStickyProgress(progress: number, force = false): void {
-    const host = getProgressHost();
+    const host = getScrollHost();
     if (!host) return;
     const delta = Math.abs(progress - lastProgress);
     if (!force && delta < 0.005) return;
@@ -62,9 +47,8 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     host.style.setProperty('--sticky-progress', String(progress));
   }
 
-  /** 同步 content::before blur 的透明度，仅在 scrollHost 不是 .content 时生效 */
+  /** 同步 content::before blur 的透明度 */
   function syncBlurOpacity(progress: number): void {
-    if (!shouldSyncBlur) return;
     const contentEl = document.querySelector('.content');
     if (contentEl) {
       const blurOpacity = Math.max(0, 1 - progress * 1.5);
@@ -72,27 +56,39 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     }
   }
 
-  /** 同步 is-sticky-header class，仅在设置了 stickyClassTarget 时生效 */
+  /** 同步 is-sticky-header class */
   function syncStickyClass(progress: number): void {
-    if (!options.stickyClassTarget) return;
-    const target = document.querySelector(options.stickyClassTarget) as HTMLElement | null;
+    const target = document.querySelector(STICKY_CLASS_TARGET) as HTMLElement | null;
     if (!target) return;
     target.classList.toggle('is-sticky-header', progress >= 0.998);
   }
 
   function onScroll(): void {
     cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(update);
+    rafId = requestAnimationFrame(() => update());
+  }
+
+  /**
+   * 自动同步封面图到 `.content`，供 `content::before` blur 使用。
+   * 页面销毁时自动清理 `--cover-bg-url`，避免残留到下一个详情页。
+   */
+  if (coverUrl) {
+    watch(coverUrl, (url) => {
+      const el = document.querySelector('.content') as HTMLElement | null;
+      if (!el) return;
+      if (url?.trim()) {
+        el.style.setProperty('--cover-bg-url', `url("${url.trim()}")`);
+      } else {
+        el.style.removeProperty('--cover-bg-url');
+      }
+    }, { immediate: true });
   }
 
   function refresh(): void {
     nextTick(() => {
       scrollHost = getScrollHost();
       if (scrollHost) {
-        const hostRect = scrollHost.getBoundingClientRect();
-        // 用 scrollHost 自身位置计算 initialOffset
-        // position:sticky 的 header 初始时在滚动容器顶部，offset = 0
-        initialOffset = 0;
+        scrollHost.scrollTop = 0;
       }
       update(true);
     });
@@ -102,12 +98,8 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     requestAnimationFrame(() => {
       scrollHost = getScrollHost();
       if (scrollHost) {
-        initialOffset = 0;
         scrollHost.addEventListener('scroll', onScroll, { passive: true });
-        // 初始设一次 progress=0
-        getProgressHost()?.style.setProperty('--sticky-progress', '0');
-        // 检测是否需要同步 blur：scrollHost 不是 .content（即 PlaylistDetailPage）
-        shouldSyncBlur = resolveScrollHostSelector() !== '.content';
+        getScrollHost()?.style.setProperty('--sticky-progress', '0');
       }
     });
   });
@@ -116,19 +108,17 @@ export function useDetailStickyState(options: UseDetailStickyStateOptions = {}):
     scrollHost?.removeEventListener('scroll', onScroll);
     cancelAnimationFrame(rafId);
     // 清理 --sticky-progress
-    const host = getProgressHost();
+    const host = getScrollHost();
     if (host) {
       host.style.removeProperty('--sticky-progress');
     }
-    // 清理 blur opacity，仅 PlaylistDetailPage 设置了它
-    if (shouldSyncBlur) {
-      const contentEl = document.querySelector('.content');
-      contentEl?.style.removeProperty('--blur-opacity');
-    }
+    // 清理 blur opacity
+    const contentEl = document.querySelector('.content');
+    contentEl?.style.removeProperty('--blur-opacity');
     // 清理 is-sticky-header class
-    if (options.stickyClassTarget) {
-      document.querySelector(options.stickyClassTarget)?.classList.remove('is-sticky-header');
-    }
+    document.querySelector(STICKY_CLASS_TARGET)?.classList.remove('is-sticky-header');
+    // 清理 --cover-bg-url（避免残留到下一个详情页）
+    contentEl?.style.removeProperty('--cover-bg-url');
   });
 
   return { refresh };

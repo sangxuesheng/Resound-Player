@@ -26,7 +26,6 @@
           :playlist-id="item.id"
           back-label="返回用户中心"
           :embedded="true"
-          scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
           @open-artist="(artist) => emit('open-artist', artist)"
           @open-comment="(songId) => emit('open-comment', songId)"
@@ -37,7 +36,6 @@
           :album-id="item.id"
           back-label="返回用户中心"
           :embedded="true"
-          scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
           @open-artist="(artist) => emit('open-artist', artist)"
         />
@@ -48,7 +46,6 @@
           :items="djDetailItems"
           :loading="djDetailLoading"
           :embedded="true"
-          scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
           @play-item="playPodcastItem"
           @play-all="playPodcastAll"
@@ -60,7 +57,6 @@
           back-label="返回用户中心"
           :embedded="true"
           :injected-playlist="cloudPseudoPlaylist"
-          scroll-host-selector=".detail-panel"
           @back="selectedItem = null"
           @open-artist="(artist) => emit('open-artist', artist)"
         />

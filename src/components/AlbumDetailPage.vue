@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']">
     <div v-if="!embedded" class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
@@ -178,12 +178,10 @@ const props = withDefaults(
     albumId: number;
     backLabel?: string;
     embedded?: boolean;
-    scrollHostSelector?: string;
   }>(),
   {
     backLabel: '返回首页',
     embedded: false,
-    scrollHostSelector: '.content',
   },
 );
 
@@ -243,19 +241,16 @@ const subscribeState = useEntitySubscribe({
 const albumDescription = computed(() => album.value?.description?.trim() || '');
 const shouldShowDescriptionToggle = computed(() => albumDescription.value.length > DESC_COLLAPSE_THRESHOLD);
 const isUserDetail = computed(() => props.backLabel === '返回用户中心');
-const shellStyle = computed<Record<string, string>>(() => {
-  const coverUrl = album.value?.picUrl?.trim();
-  return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
-});
 const detailPageClassName = computed(() => {
   const classNames: string[] = [];
   if (isUserDetail.value) classNames.push('user-detail-panel');
   if (props.embedded) classNames.push('playlist-detail-page--embedded');
   return classNames.join(' ');
 });
-const { refresh } = useDetailStickyState({
-  scrollHostSelector: () => '.content',
-});
+const { refresh } = useDetailStickyState(
+  computed(() => album.value?.picUrl?.trim() || ''),
+  !!props.embedded,
+);
 
 function getSongArtists(song: any) {
   const artists = Array.isArray(song?.ar)

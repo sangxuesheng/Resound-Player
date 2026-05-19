@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="artist-detail-page" :style="shellStyle">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page artist-detail-page">
     <div class="artist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
@@ -215,12 +215,10 @@ const props = withDefaults(
   defineProps<{
     artistId: number;
     backLabel?: string;
-    scrollHostSelector?: string;
     initialTab?: string;
   }>(),
   {
     backLabel: '返回搜索结果',
-    scrollHostSelector: '.content',
     initialTab: 'songs',
   },
 );
@@ -293,9 +291,6 @@ const tabs = [
 
 const coverUrl = computed(() => resolveArtistImageUrl(artist.value));
 useDominantColor(coverUrl);
-const shellStyle = computed<Record<string, string>>(() => {
-  return coverUrl.value ? { '--cover-bg-url': `url("${coverUrl.value}")` } : {};
-});
 const artistAreaText = computed(() => artist.value?.area ? `地区：${artist.value.area}` : '歌手详情');
 const artistDescriptionPreview = computed(() => {
   const brief = bio.value?.briefDesc || artist.value?.briefDesc || '';
@@ -462,17 +457,11 @@ function openComment(songId: number) {
   emit('open-comment', songId);
 }
 
-const { refresh } = useDetailStickyState({
-  scrollHostSelector: () => props.scrollHostSelector || '.content',
-});
+const { refresh } = useDetailStickyState(coverUrl);
 </script>
 
 <style scoped>
 @import '../styles/detail-page.css';
-
-.artist-detail-page {
-  min-height: 100%;
-}
 
 .artist-detail-back {
   display: block;
@@ -531,7 +520,8 @@ const { refresh } = useDetailStickyState({
 }
 
 .artist-detail-body {
-  min-height: calc(100vh - 280px);
+  flex: 1;
+  min-height: 0;
 }
 
 .album-grid,

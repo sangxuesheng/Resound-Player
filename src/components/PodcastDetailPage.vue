@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page podcast-detail-page" :style="shellStyle">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page podcast-detail-page">
     <div v-if="!embedded" class="playlist-detail-back">
       <button class="back-btn" type="button" @click="emit('back')">← 返回播客列表</button>
     </div>
@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useDetailStickyState } from '../composables/useDetailStickyState';
 import AnimatedAppear from './AnimatedAppear.vue';
 import DetailStickyHeroHeader from './DetailStickyHeroHeader.vue';
@@ -142,12 +142,10 @@ const props = withDefaults(
     detail?: any;
     items: any[];
     loading?: boolean;
-    scrollHostSelector?: string;
     embedded?: boolean;
   }>(),
   {
     embedded: false,
-    scrollHostSelector: '.content',
   },
 );
 const emit = defineEmits<{
@@ -176,9 +174,6 @@ const filteredItems = computed(() => {
 
 const isDescriptionExpanded = ref(false);
 
-const { refresh } = useDetailStickyState({
-  scrollHostSelector: () => props.scrollHostSelector || '.content',
-});
 const detail = computed(() => props.detail?.voiceList || props.detail?.data?.voiceList || props.detail?.data || props.detail || props.items?.[0]?.voiceList || props.items?.[0]?.detail || props.items?.[0]?.program?.radio || props.items?.[0]?.program || props.items?.[0] || null);
 const fallbackCover = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" rx="32" fill="#e2e8f0"/><circle cx="100" cy="84" r="40" fill="#cbd5e1"/><rect x="46" y="136" width="108" height="20" rx="10" fill="#cbd5e1"/></svg>`);
 const hero = computed(() => {
@@ -193,6 +188,11 @@ const hero = computed(() => {
 const heroTitle = computed(() => hero.value.name || props.title || '当前播客');
 const heroDescription = computed(() => hero.value.description || '暂无简介，后续可继续补充节目说明和更完整的播客元数据。');
 const shouldShowDescriptionToggle = computed(() => heroDescription.value.length > DESC_COLLAPSE_THRESHOLD);
+
+const { refresh } = useDetailStickyState(
+  computed(() => hero.value.coverUrl?.trim() || ''),
+  !!props.embedded,
+);
 
 // podcast radio ID — extracted from detail source or first item's radio
 const podcastRid = computed(() => {
@@ -210,32 +210,6 @@ const podcastRid = computed(() => {
 const subscribeState = useEntitySubscribe({
   type: 'podcast',
   id: podcastRid as any,
-});
-
-const shellStyle = computed<Record<string, string>>(() => {
-  const coverUrl = hero.value.coverUrl?.trim();
-  return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
-});
-
-// 同步封面图到 .content，供 content::before blur 使用
-watch(
-  () => hero.value.coverUrl,
-  (url) => {
-    const el = document.querySelector('.content') as HTMLElement | null;
-    if (!el) return;
-    if (url?.trim()) {
-      el.style.setProperty('--cover-bg-url', `url("${url.trim()}")`);
-    } else {
-      el.style.removeProperty('--cover-bg-url');
-    }
-  },
-  { immediate: true },
-);
-
-// 离开页面时清理 .content 上的封面图，避免残留到上一个详情页
-onBeforeUnmount(() => {
-  const el = document.querySelector('.content') as HTMLElement | null;
-  el?.style.removeProperty('--cover-bg-url');
 });
 
 const displayedRawItems = computed(() => [...props.items].reverse());

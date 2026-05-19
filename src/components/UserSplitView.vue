@@ -229,8 +229,8 @@ defineEmits<{
 .playlist-main, .dj-main { display: grid; gap: 4px; min-width: 0; flex: 1; }
 .playlist-main strong, .playlist-main span, .dj-main strong, .dj-main span, .dj-main small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .playlist-main span, .dj-main span, .dj-main small { color: var(--text-sub); font-size: 13px; }
-.detail-panel { padding: 18px; min-height: 0; max-height: 100%; position: relative; overflow-y: auto; overflow-x: hidden; isolation: isolate; scrollbar-width: none; -ms-overflow-style: none; }
-.detail-body-wrap { min-height: 320px; position: relative; z-index: 1; }
+.detail-panel { padding: 18px; min-height: 0; max-height: 100%; height: 100%; position: relative; overflow-y: auto; overflow-x: hidden; isolation: isolate; scrollbar-width: none; -ms-overflow-style: none; }
+.detail-body-wrap { min-height: 320px; height: 100%; position: relative; z-index: 1; }
 .detail-empty { min-height: 320px; display: grid; place-items: center; gap: 14px; text-align: center; color: var(--text-sub); }
 .detail-empty h3 { margin: 0; color: var(--text-main); }
 .detail-empty p { margin: 0; max-width: 28ch; line-height: 1.6; }

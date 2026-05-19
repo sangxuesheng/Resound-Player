@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']" :style="shellStyle">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page" :class="[detailPageClassName, embedded && 'playlist-detail-page--embedded']">
     <div v-if="!isUserDetail" class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
@@ -229,13 +229,11 @@ const props = withDefaults(
       trackCount?: number;
       tracks?: any[];
     } | null;
-    scrollHostSelector?: string;
   }>(),
   {
     backLabel: '返回歌单分类',
     embedded: false,
     injectedPlaylist: null,
-    scrollHostSelector: '.content',
   },
 );
 
@@ -357,8 +355,9 @@ onMounted(() => {
     });
     songListResizeObserver.observe(songListRef.value);
   }
-  // 监听 .playlist-detail-page 滚动，更新虚拟滚动位置
-  const page = document.querySelector('.playlist-detail-page');
+  // 根据模式选择正确的滚动容器：独立模式 .playlist-detail-page / 嵌入模式 .detail-panel
+  const scrollHostSelector = props.embedded ? '.detail-panel' : '.playlist-detail-page';
+  const page = document.querySelector(scrollHostSelector);
   if (page) {
     cachedPageEl = page as HTMLElement;
     pageScrollListener = () => onSongListScroll();
@@ -375,30 +374,9 @@ onBeforeUnmount(() => {
     }
     pageScrollListener = null;
   }
-  const el = document.querySelector('.content') as HTMLElement | null;
-  el?.style.removeProperty('--cover-bg-url');
   scrollObserver?.disconnect();
   scrollObserver = null;
 });
-const shellStyle = computed<Record<string, string>>(() => {
-  const coverUrl = playlist.value?.coverImgUrl?.trim();
-  return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
-});
-
-// 同步封面图到 .content，供 content::before blur 使用
-watch(
-  () => playlist.value?.coverImgUrl,
-  (url) => {
-    const el = document.querySelector('.content') as HTMLElement | null;
-    if (!el) return;
-    if (url?.trim()) {
-      el.style.setProperty('--cover-bg-url', `url("${url.trim()}")`);
-    } else {
-      el.style.removeProperty('--cover-bg-url');
-    }
-  },
-  { immediate: true },
-);
 
 function resolvePlaylistCover(playlistLike: any) {
   const firstTrack = Array.isArray(playlistLike?.tracks) ? playlistLike.tracks[0] : null;
@@ -411,12 +389,13 @@ function resolvePlaylistCover(playlistLike: any) {
   return playlistLike?.coverImgUrl || playlistLike?.coverUrl || firstTrackCover || '';
 }
 
-const { refresh } = useDetailStickyState({
-  scrollHostSelector: () => '.playlist-detail-page',
-  stickyClassTarget: '.playlist-detail-header-wrap',
-});
+const { refresh } = useDetailStickyState(
+  computed(() => playlist.value?.coverImgUrl?.trim() || ''),
+  !!props.embedded,
+);
 
 let fetchToken = 0;
+let currentToken = 0;
 
 async function fetchDetail(id: number) {
   if (injectedPlaylist.value) {
@@ -435,7 +414,7 @@ async function fetchDetail(id: number) {
 
   if (!id) return;
 
-  const currentToken = ++fetchToken;
+  currentToken = ++fetchToken;
   detailLoading.value = true;
   error.value = '';
 
@@ -452,7 +431,7 @@ async function fetchDetail(id: number) {
   }
 
   try {
-    const { data } = await getPlaylistDetail(id, 100, userStore.loginCookie || undefined);
+    const { data } = await getPlaylistDetail(id, 1000, userStore.loginCookie || undefined);
     if (currentToken !== fetchToken) return;
 
     const detail = data?.playlist || null;
@@ -548,13 +527,18 @@ function setupInfiniteScroll() {
     const sentinel = sentinelRef.value;
     if (!sentinel) return;
 
+    // 嵌入模式下 scroll root 是 .detail-panel，独立模式是 .playlist-detail-page
+    const scrollRoot = props.embedded
+      ? document.querySelector('.detail-panel')
+      : document.querySelector('.playlist-detail-page');
+
     scrollObserver = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && infiniteState.value.hasMore && playlist.value?.id) {
           loadMoreSongs(Number(playlist.value.id));
         }
       },
-      { rootMargin: '400px' },
+      { root: scrollRoot, rootMargin: '400px' },
     );
     scrollObserver.observe(sentinel);
   });
@@ -888,21 +872,7 @@ function openAlbum(albumId: number) {
   padding-right: 0;
 }
 
-/* 虚拟滚动容器 — .playlist-detail-page 作为滚动容器 */
-.playlist-detail-page {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  overflow: clip auto;
-  overflow-clip-margin: 16px;
-  overflow-anchor: none;
-  /* 延伸至 .content 的 padding 区域，使 overflow-x:clip 裁切边界对齐视口边缘，
-     让 header 负 margin 可以真正铺满全宽 */
-  margin-left: calc(var(--space-4) * -1);
-  margin-right: calc(var(--space-4) * -1);
-  width: calc(100% + var(--space-4) * 2);
-}
+/* 虚拟滚动容器 */
 .playlist-detail-body {
   flex: 1;
   min-height: 0;

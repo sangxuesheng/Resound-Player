@@ -325,6 +325,13 @@ onMounted(remeasureHeight);
   padding: var(--space-3) 18px;
 }
 
+/* 嵌入 + 吸顶态 — 用 width + 负 margin 填满 .detail-panel 的 padding 区域 */
+.playlist-detail-header-wrap.detail-sticky-header--embedded.is-sticky-header {
+  width: calc(100% + 36px) !important;
+  margin: 0 -18px !important;
+  box-sizing: border-box;
+}
+
 /* =========================================
  * 减少动效降级
  * ========================================= */

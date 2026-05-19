@@ -1,5 +1,5 @@
 <template>
-  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="user-detail-page" :style="shellStyle">
+  <AnimatedAppear tag="section" variant="content" rhythm="shell" class-name="playlist-detail-page user-detail-page">
     <div class="playlist-detail-back">
       <button class="back-btn" @click="emit('back')">← {{ props.backLabel }}</button>
     </div>
@@ -38,23 +38,24 @@
           @click="openFirstPlaylist"
         >打开首个歌单</AnimatedAppear>
       </template>
+      <template #tabs>
+        <AnimatedAppear v-if="userDetail" tag="div" variant="content" rhythm="body" class-name="user-tabs" role="tablist" aria-label="用户歌单标签">
+          <AnimatedAppear
+            v-for="tab in tabs"
+            :key="tab.key"
+            tag="button"
+            variant="control"
+            rhythm="actions"
+            class-name="user-tab"
+            :class="{ active: activeTab === tab.key }"
+            type="button"
+            @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+          </AnimatedAppear>
+        </AnimatedAppear>
+      </template>
     </DetailStickyHeroHeader>
-
-    <AnimatedAppear v-if="userDetail" tag="div" variant="content" rhythm="body" class-name="user-tabs" role="tablist" aria-label="用户歌单标签">
-      <AnimatedAppear
-        v-for="tab in tabs"
-        :key="tab.key"
-        tag="button"
-        variant="control"
-        rhythm="actions"
-        class-name="user-tab"
-        :class="{ active: activeTab === tab.key }"
-        type="button"
-        @click="activeTab = tab.key"
-      >
-        {{ tab.label }}
-      </AnimatedAppear>
-    </AnimatedAppear>
 
     <AnimatedAppear tag="div" variant="content" rhythm="body" class-name="user-detail-body">
       <AnimatedAppear v-if="loading && !userDetail" tag="div" variant="text" rhythm="body" class-name="state">用户详情加载中…</AnimatedAppear>
@@ -100,11 +101,9 @@ const props = withDefaults(
   defineProps<{
     userId: number;
     backLabel?: string;
-    scrollHostSelector?: string;
   }>(),
   {
     backLabel: '返回搜索结果',
-    scrollHostSelector: '.content',
   },
 );
 
@@ -130,10 +129,6 @@ const followState = useUserFollow({ id: userIdRef });
 const displayName = computed(() => userDetail.value?.profile?.nickname || userDetail.value?.nickname || '未命名用户');
 const avatarUrl = computed(() => normalizeImageUrl(userDetail.value?.profile?.avatarUrl || userDetail.value?.avatarUrl || ''));
 useDominantColor(avatarUrl);
-const shellStyle = computed<Record<string, string>>(() => {
-  const coverUrl = avatarUrl.value?.trim();
-  return coverUrl ? { '--cover-bg-url': `url("${coverUrl}")` } : {};
-});
 const userSignature = computed(() => userDetail.value?.profile?.signature || userDetail.value?.signature || '这个用户还没有留下签名。');
 const playlistList = computed(() => activeTab.value === 'created' ? createdPlaylists.value : collectedPlaylists.value);
 
@@ -211,9 +206,9 @@ function normalizePlaylistArray(payload: any): any[] {
   return [];
 }
 
-const { refresh } = useDetailStickyState({
-  scrollHostSelector: () => props.scrollHostSelector || '.content',
-});
+const { refresh } = useDetailStickyState(
+  computed(() => avatarUrl.value?.trim() || ''),
+);
 
 onMounted(() => {
   fetchUserDetail(props.userId);
@@ -222,10 +217,6 @@ onMounted(() => {
 
 <style scoped>
 @import '../styles/detail-page.css';
-
-.user-detail-page {
-  min-height: 100%;
-}
 
 .cover {
   width: 308px;
@@ -283,7 +274,8 @@ onMounted(() => {
 }
 
 .user-detail-body {
-  min-height: 320px;
+  flex: 1;
+  min-height: 400px;
 }
 
 @media (max-width: 767px) {
