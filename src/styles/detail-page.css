@@ -404,3 +404,14 @@
     radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 62%);
   pointer-events: none;
 }
+
+/* =========================================
+ * 吸顶态操作按钮缩小 — 由 --sticky-progress 驱动
+ * ========================================= */
+.playlist-detail-page .add-to-queue,
+.playlist-detail-page .play-all {
+  height: calc(36px - var(--sticky-progress, 0) * 8px);
+}
+.playlist-detail-page .dd-trigger {
+  height: calc(36px - var(--sticky-progress, 0) * 8px) !important;
+}
