@@ -175,13 +175,12 @@ onMounted(remeasureHeight);
 }
 
 /* =========================================
- * 主内容区 — 始终 flex row: [title actions] [meta 单独行]
+ * 主内容区 — 垂直排列: title → meta → actions
+ * progress 驱动 meta 高度坍缩 + 淡出
  * ========================================= */
 :deep(.hero-main-shell) {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   width: 100%;
   min-height: 36px;
 }
@@ -204,14 +203,14 @@ onMounted(remeasureHeight);
   text-overflow: ellipsis;
 }
 
-/* 操作按钮 — 始终在标题右侧 */
+/* 操作按钮 — 在描述下方，垂直排列底部 */
 :deep(.hero-actions-shell--under-cover) {
-  order: 2;
+  order: 3;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   width: auto;
-  margin-top: 0;
+  margin-top: calc(var(--space-3) - var(--sticky-progress, 0) * var(--space-3));
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
@@ -225,16 +224,19 @@ onMounted(remeasureHeight);
   margin-top: 0;
 }
 
-/* 元数据 + 描述 — 单独一行，跟随 progress 淡出 */
+/* 元数据 + 描述 — 在标题和按钮之间，progress 驱动淡出 + 高度坍缩 */
 :deep(.hero-meta-shell) {
-  flex: 0 0 100%;
-  order: 3;
+  order: 2;
+  max-height: calc(200px - var(--sticky-progress, 0) * 200px);
+  overflow: hidden;
   opacity: calc(1 - var(--sticky-progress, 0) * 2);
   pointer-events: none;
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1);
 }
 :deep(.desc) {
+  max-height: calc(200px - var(--sticky-progress, 0) * 200px);
+  overflow: hidden;
   opacity: calc(1 - var(--sticky-progress, 0) * 2);
   transition:
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1);
