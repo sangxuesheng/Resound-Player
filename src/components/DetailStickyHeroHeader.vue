@@ -307,6 +307,13 @@ onMounted(remeasureHeight);
   gap: calc(12px - var(--sticky-progress, 0) * 4px) !important;
 }
 
+/* 搜索输入框 — progress 驱动压缩 */
+:deep(.tab-search-input) {
+  height: calc(34px - var(--sticky-progress, 0) * 8px) !important;
+  font-size: calc(13px - var(--sticky-progress, 0) * 1px) !important;
+  padding: 0 calc(32px - var(--sticky-progress, 0) * 4px) 0 calc(14px - var(--sticky-progress, 0) * 4px) !important;
+}
+
 /* =========================================
  * 嵌入模式变体 — progress 驱动偏移
  * ========================================= */
