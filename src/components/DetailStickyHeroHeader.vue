@@ -102,7 +102,7 @@ onMounted(remeasureHeight);
   margin-right: calc(var(--space-4) * -1);
   padding-left: var(--space-4);
   padding-right: var(--space-4);
-  padding-bottom: calc(var(--space-2) - var(--sticky-progress, 0) * 0px);
+  padding-bottom: calc(var(--space-2) - var(--sticky-progress, 0) * 8px);
   padding-top: calc(var(--sticky-progress, 0) * 22px);
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -290,21 +290,18 @@ onMounted(remeasureHeight);
  * tabs 标签 button — transform scale 视觉缩小（免布局触发）
  * ========================================= */
 :deep(.artist-tab) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26)) !important;
-  transform-origin: left center !important;
-  transition: none !important;
+  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
+  min-height: 0 !important;
 }
 :deep(.playlist-tab) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.26)) !important;
-  transform-origin: left center !important;
-  transition: none !important;
+  height: calc(38px - var(--sticky-progress, 0) * 10px) !important;
+  min-height: 0 !important;
 }
 
-/* 搜索输入框 — transform scale 视觉缩小 */
+/* 搜索输入框 — height 布局缩小 */
 :deep(.tab-search-input) {
-  transform: scale(calc(1 - var(--sticky-progress, 0) * 0.24)) !important;
-  transform-origin: right center !important;
-  transition: none !important;
+  height: calc(34px - var(--sticky-progress, 0) * 8px) !important;
+  min-height: 0 !important;
 }
 
 /* =========================================
