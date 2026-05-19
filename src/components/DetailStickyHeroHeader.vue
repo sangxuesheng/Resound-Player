@@ -215,7 +215,7 @@ onMounted(remeasureHeight);
     opacity 0.3s cubic-bezier(0.33, 0, 0.1, 1),
     transform 0.3s cubic-bezier(0.33, 0, 0.1, 1);
 }
-:deep(.hero-actions-shell--under-cover) :deep(.ops) {
+.hero-actions-shell--under-cover :deep(.ops) {
   display: flex;
   flex-direction: row;
   align-items: center;
