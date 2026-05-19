@@ -446,6 +446,7 @@ import { getPlaylistDetail, getSongDetailBatch, searchMusic, searchMusicDefault,
 import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { normalizeImageUrl, resolveArtistImageUrl } from '../utils/image';
+import { getSongArtists, isCurrentTrack as isCurrentTrackUtil } from '../utils/trackHelpers';
 import AnimatedAppear from './AnimatedAppear.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import SearchHistory, { type SearchHistoryRecord } from './SearchHistory.vue';
@@ -619,17 +620,6 @@ function resolveSubtitle(item: any) {
     item.userName ||
     '暂无描述'
   );
-}
-
-function getSongArtists(song: any) {
-  const artists = Array.isArray(song?.ar)
-    ? song.ar
-    : Array.isArray(song?.artists)
-      ? song.artists
-      : Array.isArray(song?.album?.artists)
-        ? song.album.artists
-        : [];
-  return artists.filter((artist: any) => artist?.id || artist?.name);
 }
 
 function openArtistDetail(artist: any) {
@@ -984,7 +974,7 @@ function onSongItemDblClick(event: MouseEvent, index: number) {
 }
 
 function isCurrentTrack(song: any) {
-  return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
+  return isCurrentTrackUtil(Number(song?.id || 0), Number(playerStore.currentSongId || 0));
 }
 
 async function playSong(index: number) {
@@ -1058,7 +1048,6 @@ onBeforeUnmount(() => {
   overflow-x: clip;
 }
 
-.artist-link,
 .artist-jump {
   border: none;
   background: transparent;
@@ -1068,18 +1057,10 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.artist-link:hover,
-.artist-link:focus-visible,
 .artist-jump:hover,
 .artist-jump:focus-visible {
   color: var(--accent);
   text-decoration: underline;
-}
-
-.artist-link + .artist-link::before {
-  content: '/';
-  margin: 0 2px;
-  color: var(--text-sub);
 }
 
 .search-shell {
@@ -1087,10 +1068,7 @@ onBeforeUnmount(() => {
   gap: var(--space-4);
 }
 
-.card {
-  padding: var(--layout-card-padding);
-  min-width: 0;
-}
+.card { min-width: 0; }
 
 h3,
 .panel-title {

@@ -320,6 +320,8 @@ import FancySwitch from './ui/FancySwitch.vue';
 import EqPanel from './EqPanel.vue';
 import { useBgLoaded } from '../composables/useBgLoaded';
 import { useAutoHideUI } from '../composables/useAutoHideUI';
+import { formatTime } from '../utils/formatTime';
+import { useCurrentTrackLike } from '../composables/useCurrentTrackLike';
 
 const emit = defineEmits<{ 'open-artist': [artist: Record<string, any>]; 'open-album': [albumId: number]; 'open-user': [userId: number]; 'open-podcast-detail': [item: any] }>();
 
@@ -406,8 +408,15 @@ function onOpenSettings() {
 }
 
 const isPersonalFmCurrentTrack = computed(() => playerStore.isPersonalFmTrack(playerStore.currentTrack));
-const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
-const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
+const {
+  currentTrackId,
+  currentPodcastRid,
+  isCurrentPodcast,
+  canToggleCurrentLike,
+  isCurrentLiked,
+  likeLoading,
+  toggleCurrentLike,
+} = useCurrentTrackLike();
 const currentPodcastProgramId = computed(() => Number(playerStore.currentTrack?.podcast?.programId || 0));
 const podcastPublishTime = computed(() => {
   const t = Number(playerStore.currentTrack?.podcast?.createTime || 0);
@@ -416,22 +425,11 @@ const podcastPublishTime = computed(() => {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 });
-const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
 const commentResourceId = computed(() => isCurrentPodcast.value && currentPodcastProgramId.value > 0 ? currentPodcastProgramId.value : (currentTrackId.value > 0 ? currentTrackId.value : 0));
 const commentResourceType = computed(() => isCurrentPodcast.value ? 4 : 0);
 const commentFetcher = computed(() => isCurrentPodcast.value ? api.getDjComments : api.getSongComments);
 const commentDeleter = computed(() => isCurrentPodcast.value ? deleteDjComment : api.deleteSongComment);
 const canComment = computed(() => currentTrackId.value > 0);
-const canToggleCurrentLike = computed(() => isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0);
-const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
-const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
-const isCurrentLiked = computed(() => {
-  void likedSongSignature.value; void subscribedDjSignature.value;
-  if (isCurrentPodcast.value) return userStore.subscribedDjIds.includes(currentPodcastRid.value);
-  return currentTrackId.value > 0 ? userStore.likedSongIds.includes(currentTrackId.value) : false;
-});
-const likeLoading = ref(false);
-watch(() => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`, () => { likeLoading.value = false; }, { immediate: true });
 
 const isSeeking = ref(false);
 const seekPreviewTime = ref(0);
@@ -613,29 +611,10 @@ watch(trackId, (newId, oldId) => {
 });
 
 function onVolume(e: Event) { playerStore.setVolume(Number((e.target as HTMLInputElement).value) / 100); }
-async function toggleCurrentLike() {
-  if (likeLoading.value || !canToggleCurrentLike.value) return;
-  const next = !isCurrentLiked.value; likeLoading.value = true;
-  try {
-    const response = isCurrentPodcast.value
-      ? await toggleDjSubscribe({ rid: currentPodcastRid.value, subscribe: next, cookie: userStore.loginCookie || undefined })
-      : await toggleSongLike({ id: currentTrackId.value, like: next, uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
-    if (typeof (response?.data?.code ?? response?.data?.data?.code) === 'number' && (response?.data?.code ?? response?.data?.data?.code) !== 200) throw new Error('收藏失败');
-    if (isCurrentPodcast.value) {
-      const rid = currentPodcastRid.value;
-      if (next && !userStore.subscribedDjIds.includes(rid)) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
-      if (!next) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
-    } else {
-      if (next && !userStore.likedSongIds.includes(currentTrackId.value)) userStore.likedSongIds = [...userStore.likedSongIds, currentTrackId.value];
-      if (!next) userStore.likedSongIds = userStore.likedSongIds.filter((id) => id !== currentTrackId.value);
-    }
-  } catch { console.error('[player-expanded] toggle like failed'); }
-  finally { likeLoading.value = false; }
-}
 function onSeekStart() { isSeeking.value = true; seekPreviewTime.value = playerStore.currentTime || 0; }
 function onSeek(e: Event) { const t = Number((e.target as HTMLInputElement).value); seekPreviewTime.value = t; playerStore.seek(t); }
 function onSeekEnd() { seekPreviewTime.value = playerStore.currentTime || 0; setTimeout(() => { isSeeking.value = false; }, 80); }
-function formatTime(sec: number) { const s = Math.max(0, Math.floor(sec || 0)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+
 function scrollPlaylistIntoView() { if (!isPersonalFmCurrentTrack.value) showPlaylistPopup.value = true; }
 async function playFromPopup(index: number) { await playerStore.playByIndex(index); showPlaylistPopup.value = false; }
 function onRemoveTrack(index: number) { playerStore.removeFromPlaylist(index); }

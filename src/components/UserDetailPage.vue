@@ -236,18 +236,6 @@ onMounted(() => {
   gap: 8px;
 }
 
-.meta-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  color: var(--text-sub);
-  font-size: var(--text-label-sm);
-}
-
 .user-tabs {
   display: flex;
   flex-wrap: wrap;

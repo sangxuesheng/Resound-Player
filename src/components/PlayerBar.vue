@@ -170,7 +170,8 @@ import {
 import { uiStore } from '../stores/ui';
 import { lyricsSettings } from '../stores/lyricsSettings';
 import { playerStore } from '../stores/player';
-import { getSongUrlV1, toggleDjSubscribe, toggleSongLike, trashPersonalFm } from '../api/music';
+import { getSongUrlV1, trashPersonalFm } from '../api/music';
+import { useCurrentTrackLike } from '../composables/useCurrentTrackLike';
 import { userStore } from '../stores/user';
 import { clearCacheEntry } from '../stores/unblock-cache';
 import AnimatedAppear from './AnimatedAppear.vue';
@@ -178,27 +179,13 @@ import EqPanel from './EqPanel.vue';
 import { useLyrics } from '../composables/useLyrics';
 import { showGlobalToast } from '../stores/loginModal';
 import { useBgLoaded } from '../composables/useBgLoaded';
+import { formatTime } from '../utils/formatTime';
+import { QUALITY_OPTIONS as qualityOptions, isQualityAvailable as isQualityAvailableRaw } from '../config/qualityOptions';
 
-const qualityOptions = [
-  { label: '标准', level: 'standard', vip: '' },
-  { label: '较高', level: 'higher', vip: '' },
-  { label: '极高(HQ)', level: 'exhigh', vip: '' },
-  { label: '无损(SQ)', level: 'lossless', vip: '黑胶VIP' },
-  { label: 'Hi-Res', level: 'hires', vip: '黑胶VIP' },
-  { label: '高清臻音', level: 'jyeffect', vip: 'SVIP' },
-  { label: '沉浸环绕声', level: 'sky', vip: 'SVIP' },
-  { label: '杜比全景声', level: 'dolby', vip: 'SVIP' },
-  { label: '超清母带', level: 'jymaster', vip: 'SVIP' },
-];
-
-/** 需要 VIP 的 API level（与 player.ts 中 VIP_ONLY_API_LEVELS 保持一致） */
-const VIP_ONLY_LEVELS = new Set([
-  'lossless', 'hires', 'jyeffect', 'sky', 'dolby', 'jymaster',
-]);
+const isRealLogin = computed(() => userStore.loginMode === 'cookie' || userStore.loginMode === 'qr');
 
 function isQualityAvailable(level: string): boolean {
-  if (userStore.isVip) return true;
-  return !VIP_ONLY_LEVELS.has(level);
+  return isQualityAvailableRaw(level, isRealLogin.value, userStore.isVip);
 }
 
 const showQualityPopup = ref(false);
@@ -372,19 +359,15 @@ onUnmounted(() => {
   window.removeEventListener('scroll', onResize, true);
 });
 
-const currentTrackId = computed(() => Number(playerStore.currentTrack?.id || 0));
-const currentPodcastRid = computed(() => Number(playerStore.currentTrack?.podcast?.rid || 0));
-const isCurrentPodcast = computed(() => playerStore.currentTrack?.source === 'podcast' && currentPodcastRid.value > 0);
-const canToggleCurrentLike = computed(() => (isCurrentPodcast.value ? currentPodcastRid.value > 0 : currentTrackId.value > 0));
-const likedSongSignature = computed(() => userStore.likedSongIds.join(','));
-const subscribedDjSignature = computed(() => userStore.subscribedDjIds.join(','));
-const isCurrentLiked = computed(() => {
-  void likedSongSignature.value;
-  void subscribedDjSignature.value;
-  if (isCurrentPodcast.value) return userStore.subscribedDjIds.includes(currentPodcastRid.value);
-  return currentTrackId.value > 0 ? userStore.likedSongIds.includes(currentTrackId.value) : false;
-});
-const likeLoading = ref(false);
+const {
+  currentTrackId,
+  currentPodcastRid,
+  isCurrentPodcast,
+  canToggleCurrentLike,
+  isCurrentLiked,
+  likeLoading,
+  toggleCurrentLike,
+} = useCurrentTrackLike();
 
 /* 加载歌词 */
 watch(() => playerStore.currentTrack?.id, async (id) => {
@@ -392,13 +375,6 @@ watch(() => playerStore.currentTrack?.id, async (id) => {
   await loadLyrics(playerStore.currentTrack);
 }, { immediate: true });
 
-watch(
-  () => `${currentTrackId.value}-${currentPodcastRid.value}-${playerStore.currentTrack?.source || 'song'}`,
-  () => {
-    likeLoading.value = false;
-  },
-  { immediate: true },
-);
 
 /* 播放时显示当前歌词行 */
 const { lyricLines, currentLyricIndex, effectiveTime, startTick, isLoading, loadLyrics } = useLyrics();
@@ -467,39 +443,7 @@ function onSeek(e: Event) {
   playerStore.seek(t);
 }
 
-async function toggleCurrentLike() {
-  if (likeLoading.value || !canToggleCurrentLike.value) return;
-  const next = !isCurrentLiked.value;
-  likeLoading.value = true;
-  try {
-    const response = isCurrentPodcast.value
-      ? await toggleDjSubscribe({ rid: currentPodcastRid.value, subscribe: next, cookie: userStore.loginCookie || undefined })
-      : await toggleSongLike({ id: currentTrackId.value, like: next, uid: userStore.profile?.userId, cookie: userStore.loginCookie || undefined });
-    const code = response?.data?.code ?? response?.data?.data?.code;
-    if (typeof code === 'number' && code !== 200) throw new Error(`收藏失败，接口返回 ${code}`);
-    if (isCurrentPodcast.value) {
-      const rid = currentPodcastRid.value;
-      const exists = userStore.subscribedDjIds.includes(rid);
-      if (next && !exists) userStore.subscribedDjIds = [...userStore.subscribedDjIds, rid];
-      if (!next && exists) userStore.subscribedDjIds = userStore.subscribedDjIds.filter((id) => id !== rid);
-      return;
-    }
-    const id = currentTrackId.value;
-    if (next) { if (!userStore.likedSongIds.includes(id)) userStore.likedSongIds = [...userStore.likedSongIds, id]; }
-    else { userStore.likedSongIds = userStore.likedSongIds.filter((songId) => songId !== id); }
-  } catch (error) {
-    console.error('[player-bar] toggle like failed', error);
-  } finally {
-    likeLoading.value = false;
-  }
-}
 
-function formatTime(sec: number) {
-  const s = Math.max(0, Math.floor(sec || 0));
-  const m = Math.floor(s / 60);
-  const r = s % 60;
-  return `${m}:${String(r).padStart(2, '0')}`;
-}
 </script>
 
 <style scoped>

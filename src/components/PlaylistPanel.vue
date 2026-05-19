@@ -83,7 +83,6 @@ import { getHighQualityPlaylists, getPlaylistCatList, getTopPlaylists } from '..
 import { apiCache, CACHE_TTL } from '../stores/apiCache';
 import { resolvePlaylistCoverUrl } from '../utils/image';
 import AnimatedAppear from './AnimatedAppear.vue';
-import HoverPlayButton from './HoverPlayButton.vue';
 import GradientCard from './ui/GradientCard.vue';
 import HorizontalScrollRail from './ui/HorizontalScrollRail.vue';
 import PlaylistHighlightSection from './PlaylistHighlightSection.vue';

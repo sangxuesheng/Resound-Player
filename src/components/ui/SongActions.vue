@@ -151,6 +151,7 @@ import { getSongUrlV1, getSongLyric, getSongLyricNew, importToCloud } from '../.
 import { userStore } from '../../stores/user';
 import { tryUnblockMatch } from '../../api/unblock';
 import { showGlobalToast, showLoginModal } from '../../stores/loginModal';
+import { QUALITY_OPTIONS as qualityOptions, isQualityAvailable as isQualityAvailableRaw } from '../../config/qualityOptions';
 
 const props = defineProps<{
   song: any;
@@ -191,26 +192,10 @@ function openEncyclopedia() {
   showEncyclopediaId.value = Number(props.song?.id || 0);
 }
 
-const qualityOptions = [
-  { label: '标准', level: 'standard', vip: '' },
-  { label: '较高', level: 'higher', vip: '' },
-  { label: '极高(HQ)', level: 'exhigh', vip: '' },
-  { label: '无损(SQ)', level: 'lossless', vip: '黑胶VIP' },
-  { label: 'Hi-Res', level: 'hires', vip: '黑胶VIP' },
-  { label: '高清臻音', level: 'jyeffect', vip: 'SVIP' },
-  { label: '沉浸环绕声', level: 'sky', vip: 'SVIP' },
-  { label: '杜比全景声', level: 'dolby', vip: 'SVIP' },
-  { label: '超清母带', level: 'jymaster', vip: 'SVIP' },
-];
-
-const VIP_ONLY_LEVELS = new Set([
-  'lossless', 'hires', 'jyeffect', 'sky', 'dolby', 'jymaster',
-]);
+const isRealLogin = computed(() => userStore.loginMode === 'cookie' || userStore.loginMode === 'qr');
 
 function isQualityAvailable(level: string): boolean {
-  const isRealLogin = userStore.loginMode === 'cookie' || userStore.loginMode === 'qr';
-  if (isRealLogin && userStore.isVip) return true;
-  return !VIP_ONLY_LEVELS.has(level);
+  return isQualityAvailableRaw(level, isRealLogin.value, userStore.isVip);
 }
 
 const isUnblockSource = computed(() => {

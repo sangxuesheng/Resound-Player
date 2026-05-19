@@ -320,7 +320,6 @@ function openDetail(item: any) { if (item) emit('open-detail', item); }
 
 <style scoped>
 .podcast-page,.podcast-main{display:grid;gap:var(--space-4)}
-.podcast-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--space-4);align-items:start}
 .main-card{display:grid;gap:var(--space-4);padding:var(--space-4);border-radius:var(--radius-xl,24px)}
 .hero-top,.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-3)}
 .card-head--wrap{flex-wrap:wrap}.content-meta span{color:var(--text-sub)}

@@ -874,9 +874,6 @@ onMounted(() => {
 .global-track-text .artist-link,
 .global-track-text .track-separator { color: inherit; }
 .track-separator { color: var(--text-soft); }
-.artist-link { border: 0; padding: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
-.artist-link:hover { color: var(--accent); text-decoration: underline; }
-.artist-link + .artist-link::before { content: '/'; margin: 0 2px; color: var(--text-soft); }
 .muted { margin: 0; color: var(--text-soft); }
 .rank-content { display: grid; gap: var(--space-3); }
 @media (max-width: 1280px) { .featured-scroll { grid-template-columns: repeat(3, minmax(0, 1fr)); } .curated-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .language-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } .genre-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .car-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } .grid-wrap { grid-template-columns: repeat(2, minmax(0, 1fr)); } .global-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

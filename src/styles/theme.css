@@ -654,37 +654,6 @@ button,
   box-shadow: var(--button-surface-shadow) !important;
 }
 
-/* Icon-only play/pause button (SVG uses currentColor) */
-.play-icon-btn {
-  width: 32px;
-  min-width: 32px;
-  padding: 0 !important;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 999px !important;
-  background: var(--glass-reflection), var(--theme-primary-soft) !important;
-  border-color: color-mix(in srgb, var(--theme-primary-strong) 34%, var(--border)) !important;
-  color: var(--theme-primary-strong) !important;
-  box-shadow: var(--glass-highlight) !important;
-}
-
-.play-icon-btn:hover {
-  background: var(--glass-reflection), var(--theme-primary-hover) !important;
-  border-color: color-mix(in srgb, var(--theme-primary-strong) 46%, var(--border)) !important;
-  box-shadow: 0 12px 22px color-mix(in srgb, var(--theme-primary-strong) 12%, transparent), var(--glass-highlight) !important;
-}
-
-.play-icon-btn:active {
-  background: var(--glass-reflection), var(--theme-primary-active) !important;
-}
-
-.play-icon-btn svg {
-  width: 16px;
-  height: 16px;
-  display: block;
-  fill: currentColor;
-}
-
 .text-btn,
 .artist-chip,
 .menu-item,
@@ -1346,6 +1315,25 @@ textarea:disabled {
   pointer-events: none;
   z-index: 99999;
   animation: tooltip-fade-in 0.14s ease both;
+}
+
+/* --- 统一卡片 --- */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  padding: var(--layout-card-padding);
+  overflow: hidden;
+}
+
+/* --- 可点击卡片（hover 上浮）--- */
+.card-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12);
 }
 
 @keyframes tooltip-fade-in {

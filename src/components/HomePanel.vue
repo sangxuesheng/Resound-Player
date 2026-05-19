@@ -601,7 +601,6 @@ import { playerStore } from '../stores/player';
 import { uiStore } from '../stores/ui';
 import { userStore } from '../stores/user';
 import AnimatedAppear from './AnimatedAppear.vue';
-import HoverPlayButton from './HoverPlayButton.vue';
 import GradientCard from './ui/GradientCard.vue';
 import BookmarkIconButton from './ui/BookmarkIconButton.vue';
 import PlayPauseIconButton from './ui/PlayPauseIconButton.vue';
@@ -2067,7 +2066,7 @@ async function playLatestSong(index: number) {
 .fm-bottom-zone:hover .fm-control-panel,
 .fm-bottom-zone:focus-within .fm-control-panel { opacity: 1; max-height: 140px; transform: translateY(0); pointer-events: auto; }
 .home-grid { width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-.card { border: 1px solid var(--border); border-radius: 16px; background: var(--bg-surface); padding: var(--layout-card-padding); padding-top: calc(var(--layout-card-padding) + 10px); }
+.card { padding-top: calc(var(--layout-card-padding) + 10px); }
 .card.list { overflow-y: auto; overflow-x: hidden; }
 .card.list::-webkit-scrollbar { width: 0; height: 0; }
 .card.list { scrollbar-width: none; }

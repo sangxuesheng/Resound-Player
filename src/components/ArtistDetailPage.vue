@@ -169,24 +169,14 @@
     </AnimatedAppear>
   </AnimatedAppear>
   <!-- 收藏至歌单选择器 -->
-  <Teleport to="body">
-    <div v-if="showPlaylistPicker" class="pp-mask" @click.self="showPlaylistPicker = false">
-      <div class="pp-popup">
-        <h3 class="pp-title">添加至歌单</h3>
-        <ul class="pp-list">
-          <li v-for="p in playlistPickerList" :key="p.id" class="pp-item" :class="{ 'pp-item--selected': selectedPlaylistId === p.id }" @click="selectedPlaylistId = p.id">
-            <img v-if="p.coverImgUrl" class="pp-cover" :src="p.coverImgUrl + '?param=40y40'" alt="" loading="lazy" />
-            <span class="pp-name">{{ p.name }}</span>
-          </li>
-          <li v-if="!playlistPickerList.length" class="pp-empty">暂无可用歌单</li>
-        </ul>
-        <div class="pp-actions">
-          <button class="pp-close" @click="showPlaylistPicker = false">取消</button>
-          <button class="pp-confirm" :disabled="!selectedPlaylistId" @click="confirmAddToPlaylist()">确认添加</button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <PlaylistPickerModal
+    :visible="showPlaylistPicker"
+    :playlists="playlistPickerList"
+    :selected-id="selectedPlaylistId"
+    @update:visible="showPlaylistPicker = $event"
+    @select="selectedPlaylistId = $event"
+    @confirm="confirmAddToPlaylist()"
+  />
 </template>
 
 <script setup lang="ts">
@@ -202,7 +192,10 @@ import PlayPauseButton from './ui/PlayPauseButton.vue';
 import MvHoverPoster from './MvHoverPoster.vue';
 import SongActions from './ui/SongActions.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
+import PlaylistPickerModal from './common/PlaylistPickerModal.vue';
 import { useEntitySubscribe } from '../composables/useEntitySubscribe';
+import { useSongRowConfig } from '../composables/useSongRowConfig';
+import { getSongArtists } from '../utils/trackHelpers';
 import { getArtistAlbums, getArtistDescription, getArtistDetail, getArtistMvs, getArtistTopSongs, getUserPlaylist, addTrackToPlaylist } from '../api/music';
 import { resolveArtistImageUrl, normalizeImageUrl } from '../utils/image';
 import { playerStore } from '../stores/player';
@@ -312,17 +305,6 @@ function resolveSongCover(song: any) {
   return normalizeImageUrl(song?.al?.picUrl || song?.album?.picUrl || song?.album?.blurPicUrl || song?.picUrl || '');
 }
 
-function getSongArtists(song: any) {
-  const artists = Array.isArray(song?.ar)
-    ? song.ar
-    : Array.isArray(song?.artists)
-      ? song.artists
-      : Array.isArray(song?.album?.artists)
-        ? song.album.artists
-        : [];
-  return artists.filter((artistItem: any) => artistItem?.id || artistItem?.name);
-}
-
 function resolveSongSubtitle(song: any) {
   return song?.ar?.map((item: any) => item.name).join('/') || song?.artists?.map((item: any) => item.name).join('/') || song?.al?.name || '未知歌曲';
 }
@@ -404,21 +386,15 @@ async function playTopSongs() {
   await playerStore.playByIndex(0);
 }
 
-function isCurrentTrack(song: any) {
-  return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
-}
 
-function onSongItemDblClick(event: MouseEvent, index: number) {
-  const target = event.target as HTMLElement | null;
-  if (target?.closest('button, a, input, select, textarea, [role="button"]')) return;
-  void playSong(index);
-}
 
 async function playSong(index: number) {
   if (!topSongs.value.length) return;
   playerStore.setPlaylist(topSongs.value, index);
   await playerStore.playByIndex(index);
 }
+
+const { isCurrentTrack, onSongItemDblClick } = useSongRowConfig(playSong);
 
 /* 操作按钮 */
 const { checkAuth, showToast } = useAuthAction(
@@ -475,18 +451,6 @@ const { refresh } = useDetailStickyState(coverUrl);
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-}
-
-.meta-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  color: var(--text-sub);
-  font-size: var(--text-label-sm);
 }
 
 .artist-tabs {
@@ -602,27 +566,6 @@ const { refresh } = useDetailStickyState(coverUrl);
   gap: 0;
 }
 
-.artist-link {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.artist-link:hover,
-.artist-link:focus-visible {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
-.artist-link + .artist-link::before {
-  content: '/';
-  margin: 0 2px;
-  color: var(--text-sub);
-}
-
 .entity-date {
   font-size: var(--text-label-sm);
   opacity: 0.88;
@@ -675,24 +618,5 @@ const { refresh } = useDetailStickyState(coverUrl);
     grid-template-columns: 1fr;
   }
 }
-/* 歌单选择器 */
-.pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
-.pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-solid); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
-.pp-title { margin: 0; color: var(--text-main); font-size: 15px; font-weight: 700; padding: var(--space-1) var(--space-2); }
-.pp-list { overflow-y: auto; display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; scrollbar-width: none; -ms-overflow-style: none; }
-.pp-list::-webkit-scrollbar { display: none; }
-.pp-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.12s ease; }
-.pp-item:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); }
-.pp-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
-.pp-name { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pp-empty { padding: var(--space-4); text-align: center; color: var(--text-soft); font-size: 13px; }
-.pp-close { padding: 8px; border: none; border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); color: var(--text-sub); cursor: pointer; font-size: 13px; }
-.pp-close:hover { background: color-mix(in srgb, var(--accent) 10%, var(--bg-solid)); color: var(--text-main); }
-.pp-actions { display: flex; gap: var(--space-2); }
-.pp-actions > * { flex: 1; }
-.pp-confirm { flex: 1; padding: 8px; border: none; border-radius: 10px; background: var(--accent, #5c6bc0); color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s ease; }
-.pp-confirm:disabled { opacity: 0.35; cursor: default; }
-.pp-confirm:not(:disabled):hover { opacity: 0.85; }
-.pp-item--selected { background: color-mix(in srgb, var(--accent) 18%, var(--bg-solid)); }
-.pp-item--selected .pp-name { color: var(--text-main); }
+
 </style>

@@ -172,24 +172,14 @@
       </AnimatedAppear>
     </AnimatedAppear>
     <!-- 收藏至歌单选择器 -->
-    <Teleport to="body">
-      <div v-if="showPlaylistPicker" class="pp-mask" @click.self="showPlaylistPicker = false">
-        <div class="pp-popup">
-          <h3 class="pp-title">添加至歌单</h3>
-          <ul class="pp-list">
-            <li v-for="p in playlistPickerList" :key="p.id" class="pp-item" :class="{ 'pp-item--selected': selectedPlaylistId === p.id }" @click="selectedPlaylistId = p.id">
-              <img v-if="p.coverImgUrl" class="pp-cover" :src="p.coverImgUrl + '?param=40y40'" alt="" loading="lazy" />
-              <span class="pp-name">{{ p.name }}</span>
-            </li>
-            <li v-if="!playlistPickerList.length" class="pp-empty">暂无可用歌单</li>
-          </ul>
-          <div class="pp-actions">
-            <button class="pp-close" @click="showPlaylistPicker = false">取消</button>
-            <button class="pp-confirm" :disabled="!selectedPlaylistId" @click="confirmAddToPlaylist()">确认添加</button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <PlaylistPickerModal
+      :visible="showPlaylistPicker"
+      :playlists="playlistPickerList"
+      :selected-id="selectedPlaylistId"
+      @update:visible="showPlaylistPicker = $event"
+      @select="selectedPlaylistId = $event"
+      @confirm="confirmAddToPlaylist()"
+    />
   </AnimatedAppear>
 </template>
 
@@ -211,7 +201,10 @@ import SongActions from './ui/SongActions.vue';
 import EntitySubscribeButton from './ui/EntitySubscribeButton.vue';
 import CommentPanel from './CommentPanel.vue';
 import DetailTabBar from './ui/DetailTabBar.vue';
+import PlaylistPickerModal from './common/PlaylistPickerModal.vue';
 import { useEntitySubscribe } from '../composables/useEntitySubscribe';
+import { useSongRowConfig } from '../composables/useSongRowConfig';
+import { getSongArtists } from '../utils/trackHelpers';
 import * as commentApi from '../api/music';
 
 const DESC_COLLAPSE_THRESHOLD = 60;
@@ -683,17 +676,6 @@ function onHistorySelect(value: string) {
   if (hit) void loadHistoryByDate(hit.value);
 }
 
-function getSongArtists(song: any) {
-  const artists = Array.isArray(song?.ar)
-    ? song.ar
-    : Array.isArray(song?.artists)
-      ? song.artists
-      : Array.isArray(song?.album?.artists)
-        ? song.album.artists
-        : [];
-  return artists.filter((artist: any) => artist?.id || artist?.name);
-}
-
 function openArtistDetail(artist: any) {
   const artistId = Number(artist?.id || artist?.artistId || 0);
   if (!artistId) return;
@@ -705,9 +687,6 @@ function openLanguageDetail(language: string) {
   emit('open-language', language);
 }
 
-function isCurrentTrack(song: any) {
-  return Number(song?.id) > 0 && Number(song?.id) === Number(playerStore.currentSongId || 0);
-}
 
 function buildLocalPlaylistHistoryEntry() {
   const current = playlist.value;
@@ -754,11 +733,6 @@ function addAllToQueue() {
   }
 }
 
-function onSongItemDblClick(event: MouseEvent, index: number) {
-  const target = event.target as HTMLElement | null;
-  if (target?.closest('button, a, input, select, textarea, [role="button"]')) return;
-  void playOne(index);
-}
 
 async function playOne(index: number) {
   if (!tracks.value.length) return;
@@ -766,6 +740,8 @@ async function playOne(index: number) {
   playerStore.setPlaylist(tracks.value, index, props.playlistId);
   await playerStore.playByIndex(index);
 }
+
+const { isCurrentTrack, onSongItemDblClick } = useSongRowConfig(playOne);
 
 onMounted(() => {
   fetchDetail(props.playlistId);
@@ -847,29 +823,6 @@ function openAlbum(albumId: number) {
 .play-all {
   order: 1;
   flex: 0 0 auto;
-}
-
-.playlist-detail-page--embedded {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-  margin: 0;
-  width: auto;
-}
-
-.playlist-detail-page--embedded::before,
-.playlist-detail-page--embedded::after,
-.playlist-detail-page--embedded.user-detail-panel::before,
-.playlist-detail-page--embedded.user-detail-panel::after {
-  content: none;
-}
-
-.playlist-detail-page--embedded .playlist-detail-header {
-  padding-left: 0;
-  padding-right: 0;
 }
 
 /* 虚拟滚动容器 */
@@ -963,10 +916,6 @@ function openAlbum(albumId: number) {
   padding-left: 0;
   padding-right: 0;
   overflow: hidden;
-}
-
-.song-item--playing .song-cover {
-  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.18));
 }
 
 .playlist-detail-page--embedded.user-detail-panel {
@@ -1076,26 +1025,6 @@ function openAlbum(albumId: number) {
   gap: 0;
 }
 
-.artist-link {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.artist-link:hover {
-  color: var(--accent);
-  text-decoration: underline;
-}
-
-.artist-link + .artist-link::before {
-  content: '/';
-  margin: 0 2px;
-  color: var(--text-sub);
-}
-
 @media (max-width: 767px) {
   .detail-hero .header {
     grid-template-columns: 1fr;
@@ -1152,24 +1081,4 @@ function openAlbum(albumId: number) {
   padding: var(--space-2) 0;
 }
 
-/* 歌单选择器 */
-.pp-mask { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: grid; place-items: center; }
-.pp-popup { width: min(380px, calc(100vw - 40px)); max-height: 60vh; background: var(--bg-solid); border-radius: 16px; padding: var(--space-3); display: grid; grid-template-rows: auto 1fr auto; gap: var(--space-2); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
-.pp-title { margin: 0; color: var(--text-main); font-size: 15px; font-weight: 700; padding: var(--space-1) var(--space-2); }
-.pp-list { overflow-y: auto; display: grid; gap: 2px; list-style: none; margin: 0; padding: 0; scrollbar-width: none; -ms-overflow-style: none; }
-.pp-list::-webkit-scrollbar { display: none; }
-.pp-item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: 8px; cursor: pointer; font-size: 13px; transition: background 0.12s ease; }
-.pp-item:hover { background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); }
-.pp-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: rgba(255,255,255,0.06); }
-.pp-name { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pp-empty { padding: var(--space-4); text-align: center; color: var(--text-soft); font-size: 13px; }
-.pp-close { padding: 8px; border: none; border-radius: 10px; background: color-mix(in srgb, var(--accent) 6%, var(--bg-solid)); color: var(--text-sub); cursor: pointer; font-size: 13px; }
-.pp-close:hover { background: color-mix(in srgb, var(--accent) 10%, var(--bg-solid)); color: var(--text-main); }
-.pp-actions { display: flex; gap: var(--space-2); }
-.pp-actions > * { flex: 1; }
-.pp-confirm { flex: 1; padding: 8px; border: none; border-radius: 10px; background: var(--accent, #5c6bc0); color: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: opacity 0.15s ease; }
-.pp-confirm:disabled { opacity: 0.35; cursor: default; }
-.pp-confirm:not(:disabled):hover { opacity: 0.85; }
-.pp-item--selected { background: color-mix(in srgb, var(--accent) 18%, var(--bg-solid)); }
-.pp-item--selected .pp-name { color: var(--text-main); }
 </style>

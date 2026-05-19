@@ -453,3 +453,75 @@
   background: transparent;
   box-shadow: none;
 }
+
+/* =========================================
+ * 歌手链接 — 内联可点击歌手名链接
+ * ========================================= */
+.artist-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.artist-link--inline {
+  display: inline;
+}
+
+.artist-link:hover,
+.artist-link:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.artist-link + .artist-link::before {
+  content: '/';
+  margin: 0 2px;
+  color: var(--text-sub);
+}
+
+/* =========================================
+ * 元数据小药丸标签
+ * ========================================= */
+.meta-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-surface) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  color: var(--text-sub);
+  font-size: var(--text-label-sm);
+}
+
+/* =========================================
+ * 嵌入模式 — 详情页嵌入面板时的伪元素清除与 header 边距复位
+ * ========================================= */
+.playlist-detail-page--embedded::before,
+.playlist-detail-page--embedded::after,
+.playlist-detail-page--embedded.user-detail-panel::before,
+.playlist-detail-page--embedded.user-detail-panel::after {
+  content: none;
+}
+
+.playlist-detail-page--embedded .playlist-detail-header {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* =========================================
+ * 正在播放歌曲封面高亮 / podcast 网格容器
+ * ========================================= */
+.song-item--playing .song-cover {
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.18));
+}
+
+.podcast-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}

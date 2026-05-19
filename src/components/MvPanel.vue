@@ -69,7 +69,7 @@
     <AnimatedAppear v-if="error" tag="p" variant="text" rhythm="body" class-name="error">{{ error }}</AnimatedAppear>
 
     <AnimatedAppear v-if="list.length" tag="div" variant="content" rhythm="list" class-name="list-wrap">
-      <AnimatedAppear v-for="(item, idx) in list" :key="item.id" tag="article" variant="media" rhythm="list" :index="idx" class-name="card">
+      <AnimatedAppear v-for="(item, idx) in list" :key="item.id" tag="article" variant="media" rhythm="list" :index="idx" class-name="card card-clickable">
         <MvHoverPoster :src="item.cover" :alt="item.name" :count="item.playCount" @click="playMv(item)" />
         <AnimatedAppear tag="div" variant="content" rhythm="list" :index="idx" class-name="info">
           <AnimatedAppear tag="p" variant="text" rhythm="list" :index="idx" class-name="name" :title="item.name">{{ item.name }}</AnimatedAppear>
@@ -333,8 +333,6 @@ onBeforeUnmount(() => {
 .error { color: #b91c1c; margin: 0; }
 
 .list-wrap { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
-.card { border: 1px solid #edf2f7; border-radius: 12px; overflow: hidden; background: #fff; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.card:hover { transform: translateY(-2px); box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12); }
 .info { padding: 8px; }
 .info .name { margin: 0; font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .info .sub { margin: 4px 0 0; font-size: var(--text-label-sm); color: #6b7280; }
